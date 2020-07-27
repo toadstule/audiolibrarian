@@ -1,0 +1,160 @@
+#!python
+
+import glob
+import os
+import pprint
+
+import musicbrainzngs
+import mutagen
+from mutagen.flac import FLAC, Picture
+
+musicbrainzngs.set_useragent("jib-audio", "0.1", "")
+
+
+class MusicBrainsInfo:
+    def __init__(self, artist, album):
+        self._input_artist = artist
+        self._input_album = album
+        self.release_group = self._get_release_group()
+        self.tag_list = self._get_tag_list()
+        self.release, self.release_event = self._get_release_and_event()
+        self.medium = self._get_medium()
+        self.track_list = self._get_track_list()
+        self.front_cover = self._get_front_cover()
+
+    def _get_front_cover(self):
+        return musicbrainzngs.get_image_front(self.release["id"], size=500)
+
+    def _get_medium(self):
+        medium = None
+        print(self.release.keys())
+        for medium in self.release.get("medium-list", []):
+            print("M>>>", medium)
+            if medium["format"] == "CD":
+                return medium
+        return medium
+
+    def _get_release_and_event(self):
+        for release in self.release_group["release-list"]:
+            mb_release = musicbrainzngs.get_release_by_id(
+                release["id"], includes=["recordings"]
+            )["release"]
+            # print("MB_RELEASE")
+            # pprint.pp(mb_release)
+            for release_event in mb_release["release-event-list"]:
+                # print("EVENT:")
+                # pprint.pp(release_event)
+                if "US" in release_event.get("area", {}).get(
+                    "iso-3166-1-code-list", []
+                ):
+                    # print("MB_RELEASE:")
+                    # pprint.pp(mb_release)
+                    return mb_release, release_event
+        raise Exception("TODO: handle US release not found")
+
+    def _get_release_group(self):
+        mb_release_group_list = musicbrainzngs.search_release_groups(
+            f"{self._input_artist} {self._input_album}", strict=True
+        )["release-group-list"]
+        for release_group in mb_release_group_list:
+            print("T>>", self._input_album)
+            pprint.pp(release_group)
+            if (
+                # release_group["ext:score"] == "100"
+                # release_group["type"].startswith("Album")
+                release_group["primary-type"] == "Album"
+                and release_group["title"] == self._input_album
+            ):
+                # print("RELEASE_GROUP:")
+                # pprint.pp(release_group)
+                return release_group
+        raise Exception("TODO: handle no good match for release_group")
+
+    def _get_tag_list(self):
+        return self.release_group.get("tag-list", [])
+
+    def _get_track_list(self):
+        if self.medium:
+            return self.medium.get("track-list", [])
+
+
+class AudioLibrarian:
+
+    # mb_release_group
+    # mb_medium
+    # mb_tag_list
+    # mb_release_list
+
+    def __init__(self):
+        self._src_filenames = sorted(glob.glob("*.flac"))
+        self._info = self._get_info()
+        pprint.pp(self._info)
+        os.system(f'cp "{self._src_filenames[0]}" delme.flac')
+        song = FLAC("delme.flac")
+        song.delete()
+        song.clear_pictures()
+        song.update(
+            {
+                "ARTIST": self._info["artist"],
+                "ALBUM": self._info["album"],
+                "ALBUMARTIST": self._info["sort-name"],
+                "DATE": self._info["year"],
+                "GENRE": self._info["genre"],
+                "TITLE": self._info["tracks"]["1"],
+                "TRACKNUMBER": "1",
+                "TRACKTOTAL": str(len(self._info["tracks"])),
+            }
+        )
+        cover = Picture()
+        cover.type = 3
+        cover.mime = "image/jpeg"
+        cover.desc = "front cover"
+        cover.data = self._info["front_cover"]
+        song.add_picture(cover)
+        song.save()
+
+    def _get_artist_album_from_tags(self):
+        for filename in self._src_filenames:
+            album, artist = None, None
+            song = mutagen.File(filename)
+            print(song.tags)
+            artist = (
+                artist
+                or song.tags.get("ALBUMARTIST", [None])[0]
+                or song.tags.get("ARTIST", [None])[0]
+            )
+            print(artist)
+            album = album or song.tags.get("ALBUM", [None])[0]
+            print(album)
+            if artist and album:
+                return artist, album
+        raise Exception("TODO: prompt for album and artist")
+
+    def _get_info(self):
+        artist, album = self._get_artist_album_from_tags()
+        mb_info = MusicBrainsInfo(artist, album)
+
+        if mb_info.tag_list:
+            genre = max(mb_info.tag_list, key=lambda x: x["count"])["name"]
+        else:
+            genre = input("Unable to determine genre; enter the genre: ")
+
+        tracks = {}
+        for track in mb_info.track_list:
+            tracks[track["number"]] = track["recording"]["title"]
+
+        return {
+            "artist": mb_info.release_group["artist-credit"][0]["artist"]["name"],
+            "sort-name": mb_info.release_group["artist-credit"][0]["artist"][
+                "sort-name"
+            ],
+            "album": mb_info.release_group["title"],
+            "year": mb_info.release_event["date"].split("-")[0],
+            "tracks": tracks,
+            "genre": genre,
+            "front_cover": mb_info.front_cover,
+        }
+
+
+if __name__ == "__main__":
+    al = AudioLibrarian()
