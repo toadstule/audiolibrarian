@@ -1,2 +1,4 @@
+fuzzywuzzy
 musicbrainzngs
 mutagen
+python-Levenshtein
