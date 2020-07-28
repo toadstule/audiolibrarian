@@ -35,9 +35,7 @@ class AudioConverter(object):
 
     def to_flac(self, silent=False):
         """Convert to FLAC."""
-        destination_file_name = self._get_destination_file_name(
-            destination_file_type="FLAC"
-        )
+        destination_file_name = self._get_destination_file_name(destination_file_type="FLAC")
         if self._source_file_type == "AVI":
             command = (
                 f'ffmpeg -i "{self._source_file_name}" -c:v libx264 -crf 19 -preset slow -c:a aac -strict '
@@ -58,9 +56,7 @@ class AudioConverter(object):
             if self._source_file_type == "AVI":
                 result = self._source_file_name.replace("avi", "mp4")
             elif self._source_file_type == "HEVC":
-                result = self._source_file_name.replace("hevc", "avc").replace(
-                    "HEVC", "AVC"
-                )
+                result = self._source_file_name.replace("hevc", "avc").replace("HEVC", "AVC")
                 result = result.replace("265", "264").replace(".mkv", ".mp4")
             else:
                 raise UnsupportedSourceFileType(self._source_file_type)

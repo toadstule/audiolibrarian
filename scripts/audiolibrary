@@ -1,78 +1,20 @@
 #!python
+
+"""
+PYTHONPATH=$(pwd) scripts/audiolibrary /media/BlackBox/Music/flac/some_file
+
+"""
 import copy
 import os
 import pprint
 import sys
 
-import musicbrainzngs
 import mutagen
-from mutagen.flac import FLAC, Picture
-from fuzzywuzzy import fuzz
+from mutagen.flac import FLAC
 
-musicbrainzngs.set_useragent("jib-audio", "0.1", "")
+from jibaudio.musicbrains import MusicBrainsInfo
 
 genres = ["alternative", "alternative rock", "progressive rock", "rock"]
-
-
-class MusicBrainsInfo:
-    def __init__(self, artist, album, verbose=True):
-        self._input_artist = artist
-        self._input_album = album
-        self._verbose = verbose
-
-        mb_release_group_list = musicbrainzngs.search_release_groups(
-            f"{self._input_artist} {self._input_album}", strict=True
-        )["release-group-list"]
-        for mb_release_group in mb_release_group_list:
-            self._pprint("MB_RELEASE_GROUP", mb_release_group)
-            print(
-                "R>>>>",
-                fuzz.ratio(
-                    mb_release_group["title"].lower(), self._input_album.lower()
-                ),
-            )
-            title_l = mb_release_group["title"].lower()
-            if not (
-                mb_release_group["primary-type"] == "Album"
-                and fuzz.ratio(title_l, self._input_album.lower()) > 80
-            ):
-                continue
-            for area in ("US", "XW", "GB"):  # XW is "Worldwide"
-                for fmt in ("CD", "Digital Media"):
-                    print(f">>>> looking for {fmt}")
-                    for release in mb_release_group["release-list"]:
-                        mb_release = musicbrainzngs.get_release_by_id(
-                            release["id"], includes=["recordings"]
-                        )["release"]
-                        self._pprint("- MB_RELEASE", mb_release, indent=2)
-                        for mb_release_event in mb_release.get(
-                            "release-event-list", []
-                        ):
-                            self._pprint("--- EVENT", mb_release_event, indent=4)
-                            if area not in mb_release_event.get("area", {}).get(
-                                "iso-3166-1-code-list", []
-                            ):
-                                continue
-                            for mb_medium in mb_release["medium-list"]:
-                                self._pprint("--- MEDIUM", mb_medium, indent=4)
-                                if mb_medium["format"] == fmt:
-                                    self.front_cover = musicbrainzngs.get_image_front(
-                                        mb_release["id"], size=500
-                                    )
-                                    self.medium = mb_medium
-                                    self.release = mb_release
-                                    self.release_event = mb_release_event
-                                    self.release_group = mb_release_group
-                                    self.tag_list = mb_release_group.get("tag-list", [])
-                                    self.track_list = mb_medium["track-list"]
-                                    return
-        raise Exception("TODO: handle unable to find stuff in MB")
-
-    def _pprint(self, name, obj, indent=0):
-        if self._verbose:
-            print(name, "-" * (78 - len(name)))
-            pprint.pp(obj, indent=indent)
-            print("-" * 79)
 
 
 class AudioLibrarian:
@@ -100,12 +42,13 @@ class AudioLibrarian:
                 "TRACKTOTAL": str(len(self._info["tracks"])),
             }
         )
-        cover = Picture()
-        cover.type = 3
-        cover.mime = "image/jpeg"
-        cover.desc = "front cover"
-        cover.data = self._info["front_cover"]
-        song.add_picture(cover)
+        if self._info["front_cover"]:
+            cover = mutagen.flac.Picture()
+            cover.type = 3
+            cover.mime = "image/jpeg"
+            cover.desc = "front cover"
+            cover.data = self._info["front_cover"]
+            song.add_picture(cover)
         song.save()
 
     def _get_artist_album_from_tags(self):
@@ -129,10 +72,14 @@ class AudioLibrarian:
         artist, album = self._get_artist_album_from_tags()
         mb_info = MusicBrainsInfo(artist, album)
 
+        genre = None
         if mb_info.tag_list:
-            pprint.pp(mb_info.tag_list)
-            genre = max(mb_info.tag_list, key=lambda x: x["count"])["name"]
-        else:
+            for genre_tag in reversed(sorted(mb_info.tag_list, key=lambda x: x["count"])):
+                print(">>>>>>>>>>>", genre_tag)
+                if genre_tag["name"].lower() in genres:
+                    genre = genre_tag["name"].title()
+                    break
+        if genre is None:
             genre = input("Unable to determine genre; enter the genre: ")
 
         tracks = {}
@@ -141,9 +88,7 @@ class AudioLibrarian:
 
         return {
             "artist": mb_info.release_group["artist-credit"][0]["artist"]["name"],
-            "sort-name": mb_info.release_group["artist-credit"][0]["artist"][
-                "sort-name"
-            ],
+            "sort-name": mb_info.release_group["artist-credit"][0]["artist"]["sort-name"],
             "album": mb_info.release_group["title"],
             "year": mb_info.release_event["date"].split("-")[0],
             "tracks": tracks,
