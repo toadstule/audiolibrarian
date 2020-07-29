@@ -2,3 +2,4 @@ fuzzywuzzy
 musicbrainzngs
 mutagen
 python-Levenshtein
+requests

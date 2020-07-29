@@ -5,9 +5,11 @@ from fuzzywuzzy import fuzz
 
 musicbrainzngs.set_useragent("jib-audio", "0.1", "")
 
+# TODO:  release group search sucks for Electronic/Electronic. We may want to do an artist search
+
 
 class MusicBrainsInfo:
-    def __init__(self, artist, album, verbose=False):
+    def __init__(self, artist, album, verbose=True):
         self._input_artist = artist
         self._input_album = album
         self._verbose = verbose

@@ -12,7 +12,7 @@ import sys
 import mutagen
 from mutagen.flac import FLAC
 
-from jibaudio.musicbrains import MusicBrainsInfo
+from jibaudio.discogs import MusicBrainsInfo
 
 genres = ["alternative", "alternative rock", "progressive rock", "rock"]
 
@@ -40,6 +40,7 @@ class AudioLibrarian:
                 "TITLE": self._info["tracks"]["1"],
                 "TRACKNUMBER": "1",
                 "TRACKTOTAL": str(len(self._info["tracks"])),
+                "DESCRIPTION":
             }
         )
         if self._info["front_cover"]:

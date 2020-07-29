@@ -1,4 +1,9 @@
+certifi==2020.6.20
+chardet==3.0.4
 fuzzywuzzy==0.18.0
+idna==2.10
 musicbrainzngs==0.7.1
 mutagen==1.45.0
 python-Levenshtein==0.12.0
+requests==2.24.0
+urllib3==1.25.10

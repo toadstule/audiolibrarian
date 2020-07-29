@@ -1,0 +1,22 @@
+#!python
+
+"""
+PYTHONPATH=$(pwd) scripts/audiolibrarian /media/BlackBox/Music/flac/some_file
+
+"""
+import argparse
+
+from audiolibrarian.audiolibrarian import AudioLibrarian
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Audio Librarian")
+    parser.add_argument("--artist", "-a", help="provide artist")
+    parser.add_argument("--album", "-m", help="provide album")
+    parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
+    parser.add_argument("files", nargs="*", help="audio files")
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    al = AudioLibrarian(parse_args())
