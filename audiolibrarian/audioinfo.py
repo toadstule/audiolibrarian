@@ -1,6 +1,7 @@
 import abc
 import pprint
-import string
+
+from audiolibrarian import text
 
 
 class AudioInfo(abc.ABC):
@@ -48,21 +49,9 @@ class AudioInfo(abc.ABC):
     def _add_filenames(self):
         tracks = []
         for track in self.tracks:
-            track["filename"] = track["number"] + "__" + self._get_filename(track["title"])
+            track["filename"] = track["number"] + "__" + text.get_filename(track["title"])
             tracks.append(track)
         self.tracks = tracks
-
-    @staticmethod
-    def _get_filename(title):
-        allowed_chars = string.ascii_letters + string.digits + "_"
-        no_underscore_replace = ".,!'\""
-        result = []
-        for ch in title:
-            if ch in allowed_chars:
-                result.append(ch)
-            elif ch not in no_underscore_replace:
-                result.append("_")
-        return "".join(result).rstrip("_")
 
     def _pprint(self, name, obj, indent=0):
         if self._verbose:

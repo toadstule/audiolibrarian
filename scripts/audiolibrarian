@@ -13,6 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Audio Librarian")
     parser.add_argument("--artist", "-a", help="provide artist")
     parser.add_argument("--album", "-m", help="provide album")
+    parser.add_argument("--db", default="mb", choices=("discogs", "mb"), help="database")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
     parser.add_argument("files", nargs="*", help="audio files")
     return parser.parse_args()

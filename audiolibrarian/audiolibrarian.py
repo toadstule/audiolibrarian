@@ -11,7 +11,9 @@ import mutagen.id3
 import mutagen.mp3
 import mutagen.mp4
 
+from audiolibrarian import text
 from audiolibrarian.discogs import DiscogsInfo
+from audiolibrarian.musicbrains import MusicBrainsInfo
 from audiolibrarian.output import Dots
 
 
@@ -26,7 +28,10 @@ class AudioLibrarian:
         self._wav_dir = os.path.join(self._work_dir, "wav")
 
         artist, album = self._get_artist_album()
-        self._info = DiscogsInfo(artist, album, args.verbose)
+        if args.db == "mb":
+            self._info = MusicBrainsInfo(artist, album, args.verbose)
+        else:
+            self._info = DiscogsInfo(artist, album, args.verbose)
         pprint.pp(self._args.files)
         pprint.pp(self._info)
         if input("Confirm [Y,n]: ").lower() == "n":
@@ -39,6 +44,7 @@ class AudioLibrarian:
         self._make_flac()
         self._make_m4a()
         self._make_mp3()
+        self._move_files()
 
     @property
     def _flac_filenames(self):
@@ -199,6 +205,20 @@ class AudioLibrarian:
             for f in self._args.files
         ]
         self._parallel("Making wav files...", commands, self._wav_dir)
+
+    def _move_files(self):
+        artist_dir = text.get_filename(self._info.artist)
+        album_dir = text.get_filename(f"{self._info.year}__{self._info.album}")
+        flac_dir = f"library/flac/{artist_dir}/{album_dir}"
+        m4a_dir = f"library/m4a/{artist_dir}/{album_dir}"
+        mp3_dir = f"library/mp3/{artist_dir}/{album_dir}"
+        for d in (flac_dir, m4a_dir, mp3_dir):
+            if os.path.isdir(d):
+                shutil.rmtree(d)
+            os.makedirs(d)
+        [os.rename(f, f"{flac_dir}/{os.path.basename(f)}") for f in self._flac_filenames]
+        [os.rename(f, f"{m4a_dir}/{os.path.basename(f)}") for f in self._m4a_filenames]
+        [os.rename(f, f"{mp3_dir}/{os.path.basename(f)}") for f in self._mp3_filenames]
 
     def _normalize(self):
         command = ["wavegain", "--album", "--apply"]

@@ -68,8 +68,10 @@ class DiscogsInfo(AudioInfo):
 
     def _prompt_release_id(self, master_ids, artist_id):
         if master_ids:
-            print("\n\nWe found the following master release(s). Use the links below to ")
-            print("find the release ID that best matches the audio files.\n")
+            print(
+                "\n\nWe found the following master release(s). Use the link(s) below to "
+                "find the release ID that best matches the audio files.\n"
+            )
             for master_id in master_ids:
                 master_info = self._get(f"masters/{master_id}")
                 print(f"{master_info['uri']}?filter=true")
@@ -90,7 +92,7 @@ class DiscogsInfo(AudioInfo):
 
     def _update(self):
         artist_id = self._get_artist_id()
-        print("ARTIST:", artist_id)
+        print("ARTIST_ID:", artist_id)
         master_release_ids = self._get_release_ids(artist_id)
         release_id = self._prompt_release_id(master_release_ids, artist_id)
         print("RELEASE_ID:", release_id)

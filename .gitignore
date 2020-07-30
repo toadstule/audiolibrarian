@@ -1,4 +1,5 @@
 venv/
 *.flac
 *.jpg
+library/
 workdir/
