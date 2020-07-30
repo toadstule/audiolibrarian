@@ -10,4 +10,6 @@ def get_filename(title):
             result.append(ch)
         elif ch not in no_underscore_replace:
             result.append("_")
+        elif ch == "&":
+            result.extent(" and ")
     return "".join(result).rstrip("_")

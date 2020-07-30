@@ -14,10 +14,25 @@ class AudioInfo(abc.ABC):
         self.artist_sort_name = ""
         self.album = ""
         self.year = ""
+        self.original_year = ""
         self.genre = ""
         self.front_cover = ""
         self.comments = []
         self.tracks = []
+
+        self.disc_number = "1"
+        self.media = ""
+        self.organization = ""
+        self.barcode = ""
+        self.asin = ""
+        self.album_type = ""
+        self.album_status = ""
+        self.country = ""
+        self.catalog_number = ""
+        self.mb_album_id = ""
+        self.mb_artist_id = ""
+        self.mb_release_group_id = ""
+        self.mb_release_id = ""
 
         self._update()
         self._add_filenames()
@@ -49,7 +64,7 @@ class AudioInfo(abc.ABC):
     def _add_filenames(self):
         tracks = []
         for track in self.tracks:
-            track["filename"] = track["number"] + "__" + text.get_filename(track["title"])
+            track["filename"] = track["number"].zfill(2) + "__" + text.get_filename(track["title"])
             tracks.append(track)
         self.tracks = tracks
 
