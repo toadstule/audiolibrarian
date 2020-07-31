@@ -5,9 +5,10 @@ from audiolibrarian import text
 
 
 class AudioInfo(abc.ABC):
-    def __init__(self, artist, album, verbose=True):
+    def __init__(self, artist, album, disc_number, verbose=True):
         self._input_artist = artist
         self._input_album = album
+        self._disc_number = disc_number
         self._verbose = verbose
 
         self.artist = ""
@@ -21,7 +22,7 @@ class AudioInfo(abc.ABC):
         self.comments = []
         self.tracks = []
 
-        self.disc_number = "1"
+        self.disc_number = disc_number
         self.media = ""
         self.organization = ""
         self.barcode = ""

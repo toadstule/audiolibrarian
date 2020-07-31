@@ -14,7 +14,7 @@ secret = "NlcgnWwAiTrNAiZYHUtWXiicxUxHRFOj"
 
 
 class DiscogsInfo(AudioInfo):
-    def __init__(self, artist, album, verbose=False):
+    def __init__(self, artist, album, disc_number, verbose=False):
         self._session = requests.Session()
         self._session.headers.update(
             {
@@ -22,7 +22,7 @@ class DiscogsInfo(AudioInfo):
                 "Authorization": f"Discogs key={key}, secret={secret}",
             }
         )
-        super().__init__(artist, album, verbose)
+        super().__init__(artist, album, disc_number, verbose)
 
     def _get(self, path, params=None):
         path = path.lstrip("/")
@@ -143,13 +143,14 @@ class DiscogsInfo(AudioInfo):
 
 
 if __name__ == "__main__":
+    pass
     # print(DiscogsInfo("Cruel Story of Youth", "Cruel Story of Youth"))
     # print(DiscogsInfo("Tom Petty and the Heartbreakers", "Greatest Hits"))
     # print(DiscogsInfo("Electronic", "Electronic"))
     # print(DiscogsInfo("The Alan Parsons Project", "Eye in the Sky"))
     # print(DiscogsInfo("A-ha", "Hunting High and Low"))
     # print(DiscogsInfo("Ligabue", "Ligabue"))
-    print(DiscogsInfo("Litfiba", "Pirata"))
+    # print(DiscogsInfo("Litfiba", "Pirata"))
 
 # Get Master IDs
 # Print URL: https://www.discogs.com/The-Alan-Parsons-Project-Eye-In-The-Sky/master/4424

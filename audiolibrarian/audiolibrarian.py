@@ -36,6 +36,8 @@ class AudioLibrarian:
         self._mp3_dir = os.path.join(self._work_dir, "mp3")
         self._wav_dir = os.path.join(self._work_dir, "wav")
         self._lock_file = "workdir.lock"
+        d = self._args.disc
+        self._disc_number, self._disc_count = d.split("/") if d else ("1", "1")
 
         # if we're given a directory, grab all the flac files therein
         if len(self._args.files) == 1 and os.path.isdir(self._args.files[0]):
@@ -44,9 +46,9 @@ class AudioLibrarian:
         artist, album = self._get_artist_album()
         pprint.pp([os.path.basename(f) for f in self._args.files])
         if args.db == "discogs":
-            self._info = DiscogsInfo(artist, album, args.verbose)
+            self._info = DiscogsInfo(artist, album, self._disc_number, args.verbose)
         else:
-            self._info = MusicBrainsInfo(artist, album, args.verbose)
+            self._info = MusicBrainsInfo(artist, album, self._disc_number, args.verbose)
         pprint.pp(self._info)
         if len(self._args.files) != len(self._info.tracks):
             print("\n*** Track count does not match file count ***\n")
@@ -142,8 +144,8 @@ class AudioLibrarian:
             "genre": [info.genre],
             "description": [info.get_comment_string()],
             "discnumber": [info.disc_number],
-            "disctotal": ["1"],  # TODO
-            "totaldiscs": ["1"],  # TODO
+            "disctotal": [self._disc_count],
+            "totaldiscs": [self._disc_count],
             "script": ["Latn"],
             "asin": [info.asin],
             "originalyear": [info.original_year],
@@ -194,7 +196,7 @@ class AudioLibrarian:
             commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", dst_file, f))
         self._parallel("Making m4a files...", commands, self._m4a_dir)
         info = self._info  # we use this a lot below
-        disc_x_of_y = (int(info.disc_number), 1)  # TODO - get number of discs
+        disc_x_of_y = (int(info.disc_number), int(self._disc_count))
         shared_tags = {
             "\xa9alb": [info.album],
             "----:com.apple.iTunes:MEDIA": [bytes(info.media, "utf8")],
@@ -262,7 +264,7 @@ class AudioLibrarian:
             commands.append(("lame", "--silent", "-h", "-b", "192", f, dst_file))
         self._parallel("Making mp3 files...", commands, self._mp3_dir)
         info = self._info  # we use this a lot below
-        disc_x_of_y = f"{info.disc_number}/1"  # TODO - get number of discs
+        disc_x_of_y = f"{info.disc_number}/{self._disc_count}"
         shared_tags = [
             mutagen.id3.TALB(encoding=3, text=info.album),
             mutagen.id3.TMED(encoding=3, text=info.media),
@@ -340,6 +342,10 @@ class AudioLibrarian:
         flac_dir = f"library/flac/{artist_dir}/{album_dir}"
         m4a_dir = f"library/m4a/{artist_dir}/{album_dir}"
         mp3_dir = f"library/mp3/{artist_dir}/{album_dir}"
+        if self._args.disc:
+            flac_dir += f"/disc{self._disc_number}"
+            m4a_dir += f"/disc{self._disc_number}"
+            mp3_dir += f"/disc{self._disc_number}"
         for d in (flac_dir, m4a_dir, mp3_dir):
             if os.path.isdir(d):
                 shutil.rmtree(d)

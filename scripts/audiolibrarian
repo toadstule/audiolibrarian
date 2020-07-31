@@ -5,6 +5,8 @@ PYTHONPATH=$(pwd) scripts/audiolibrarian /media/BlackBox/Music/flac/some_file
 
 """
 import argparse
+import re
+import sys
 
 from audiolibrarian.audiolibrarian import AudioLibrarian
 
@@ -14,10 +16,20 @@ def parse_args():
     parser.add_argument("--artist", "-a", help="provide artist")
     parser.add_argument("--album", "-m", help="provide album")
     parser.add_argument("--db", default="mb", choices=("discogs", "mb"), help="database")
+    parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
     parser.add_argument("files", nargs="*", help="audio files")
-    return parser.parse_args()
+
+    return validate_args(parser.parse_args())
+
+
+def validate_args(args):
+    if args.disc:
+        if not re.match(r"\d+/d+", args.disc):
+            print("Invalid --disc specification; should be x/y")
+            sys.exit(-1)
+    return args
 
 
 if __name__ == "__main__":
-    al = AudioLibrarian(parse_args())
+    AudioLibrarian(parse_args())
