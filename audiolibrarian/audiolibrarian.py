@@ -46,9 +46,9 @@ class AudioLibrarian:
         self._make_wav()
         self._rename_wav()
         # self._normalize()
-        # self._make_flac()  # TODO
-        self._make_m4a()
-        self._make_mp3()
+        self._make_flac()  # TODO
+        # self._make_m4a()
+        # self._make_mp3()
         self._move_files()
 
     @property
@@ -105,33 +105,59 @@ class AudioLibrarian:
             for f in self._wav_filenames
         ]
         self._parallel("Making flac files...", commands, self._flac_dir)
+        info = self._info
+        shared_tags = {
+            "album": [info.album],
+            "media": [info.media],
+            "label": info.organization,
+            "albumartist": [info.artist],
+            "albumartistsort": [info.artist_sort_name],
+            "date": [str(info.year)],
+            "genre": [info.genre],
+            "description": [info.get_comment_string()],
+            "discnumber": [info.disc_number],
+            "disctotal": ["1"],  # TODO
+            "totaldiscs": ["1"],  # TODO
+            "script": ["Latn"],
+            "asin": [info.asin],
+            "originalyear": [info.original_year],
+            "originaldate": [info.original_date],
+            "barcode": [info.barcode],
+            "catalognumber": [info.catalog_number],
+            "releasetype": info.album_type,
+            "releasestatus": [info.album_status],
+            "releasecountry": [info.country],
+            "musicbrainz_albumid": [info.mb_release_id],
+            "musicbrainz_albumartistid": [info.mb_artist_id],
+            "musicbrainz_releasegroupid": [info.mb_release_group_id],
+        }
         for flac in self._flac_filenames:
-            number = os.path.basename(flac).split("__")[0]
+            number = str(int(os.path.basename(flac).split("__")[0]))
             song = mutagen.flac.FLAC(flac)
-            track = self._info.get_track(number)
+            track = info.get_track(number)
             song.delete()
             song.clear_pictures()
-            song.update(
-                {
-                    "ARTIST": self._info.artist,
-                    "ALBUMARTIST": self._info.artist,
-                    "ARTISTSORT": self._info.artist_sort_name,
-                    "ALBUMARTISTSORT": self._info.artist_sort_name,
-                    "ALBUM": self._info.album,
-                    "DATE": str(self._info.year),
-                    "GENRE": self._info.genre,
-                    "TITLE": track["title"],
-                    "TRACKNUMBER": str(track["number"]),
-                    "TRACKTOTAL": str(len(self._info.tracks)),
-                    "DESCRIPTION": self._info.get_comment_string(),
-                }
-            )
-            if self._info.front_cover:
+            tags = {
+                "artists": track["artist_list"],
+                "musicbrainz_releasetrackid": [track["id"]],
+                "musicbrainz_trackid": [track["recording_id"]],
+                "isrc": track["isrc"],
+                "musicbrainz_artistid": track["artist_id"],
+                "title": [track["title"]],
+                "tracknumber": [str(track["number"])],
+                "artist": [track["artist"]],
+                "artistsort": [track["artist_sort_order"]],
+                "totaltracks": [str(len(info.tracks))],
+                "tracktotal": [str(len(info.tracks))],
+            }
+            song.update(shared_tags)
+            song.update(tags)
+            if info.front_cover:
                 cover = mutagen.flac.Picture()
                 cover.type = 3
                 cover.mime = "image/jpeg"
                 cover.desc = "front cover"
-                cover.data = self._info.front_cover
+                cover.data = info.front_cover
                 song.add_picture(cover)
             song.save()
 
@@ -150,7 +176,6 @@ class AudioLibrarian:
             "aART": [info.artist],
             "soaa": [info.artist_sort_name],
             "\xa9day": [str(info.year)],
-            # TDOR - missing
             "\xa9gen": [info.genre],
             "\xa9cmt": [info.get_comment_string()],
             "disk": [disc_x_of_y],
