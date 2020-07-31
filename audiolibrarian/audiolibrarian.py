@@ -1,3 +1,8 @@
+"""
+
+Useful stuff: https://help.mp3tag.de/main_tags.html
+"""
+
 import glob
 import os
 import pprint
@@ -5,8 +10,8 @@ import shutil
 import subprocess
 
 import mutagen
-import mutagen.flac
 import mutagen.easyid3
+import mutagen.flac
 import mutagen.id3
 import mutagen.mp3
 import mutagen.mp4
@@ -16,24 +21,32 @@ from audiolibrarian.discogs import DiscogsInfo
 from audiolibrarian.musicbrains import MusicBrainsInfo
 from audiolibrarian.output import Dots
 
+TXXX = mutagen.id3.TXXX
+UFID = mutagen.id3.UFID
+
 
 class AudioLibrarian:
     def __init__(self, args):
         self._args = args
-        print(self._args)
         self._work_dir = "workdir"
         self._flac_dir = os.path.join(self._work_dir, "flac")
         self._m4a_dir = os.path.join(self._work_dir, "m4a")
         self._mp3_dir = os.path.join(self._work_dir, "mp3")
         self._wav_dir = os.path.join(self._work_dir, "wav")
 
+        # if we're given a directory, grab all the flac files therein
+        if len(self._args.files) == 1 and os.path.isdir(self._args.files[0]):
+            self._args.files = sorted(glob.glob(os.path.join(self._args.files[0], "*.flac")))
+
         artist, album = self._get_artist_album()
-        if args.db == "mb":
-            self._info = MusicBrainsInfo(artist, album, args.verbose)
-        else:
+        pprint.pp([os.path.basename(f) for f in self._args.files])
+        if args.db == "discogs":
             self._info = DiscogsInfo(artist, album, args.verbose)
-        pprint.pp(self._args.files)
+        else:
+            self._info = MusicBrainsInfo(artist, album, args.verbose)
         pprint.pp(self._info)
+        if len(self._args.files) != len(self._info.tracks):
+            print("\n*** Track count does not match file count ***\n")
         if input("Confirm [Y,n]: ").lower() == "n":
             return
 
@@ -75,15 +88,15 @@ class AudioLibrarian:
         for filename in self._args.files:
             album, artist = None, None
             song = mutagen.File(filename)
-            print(song.tags)
+            pprint.pp(song.tags)
             artist = (
                 artist
                 or song.tags.get("ALBUMARTIST", [None])[0]
                 or song.tags.get("ARTIST", [None])[0]
             )
-            print(artist)
             album = album or song.tags.get("ALBUM", [None])[0]
-            print(album)
+            print("Artist from tags:", artist)
+            print("Album from tags:", album)
             if artist and album:
                 return artist, album
         return None, None
@@ -100,33 +113,59 @@ class AudioLibrarian:
             for f in self._wav_filenames
         ]
         self._parallel("Making flac files...", commands, self._flac_dir)
+        info = self._info
+        shared_tags = {
+            "album": [info.album],
+            "media": [info.media],
+            "label": info.organization,
+            "albumartist": [info.artist],
+            "albumartistsort": [info.artist_sort_name],
+            "date": [str(info.year)],
+            "genre": [info.genre],
+            "description": [info.get_comment_string()],
+            "discnumber": [info.disc_number],
+            "disctotal": ["1"],  # TODO
+            "totaldiscs": ["1"],  # TODO
+            "script": ["Latn"],
+            "asin": [info.asin],
+            "originalyear": [info.original_year],
+            "originaldate": [info.original_date],
+            "barcode": [info.barcode],
+            "catalognumber": [info.catalog_number],
+            "releasetype": info.album_type,
+            "releasestatus": [info.album_status],
+            "releasecountry": [info.country],
+            "musicbrainz_albumid": [info.mb_release_id],
+            "musicbrainz_albumartistid": [info.mb_artist_id],
+            "musicbrainz_releasegroupid": [info.mb_release_group_id],
+        }
         for flac in self._flac_filenames:
-            number = os.path.basename(flac).split("__")[0]
+            number = str(int(os.path.basename(flac).split("__")[0]))
             song = mutagen.flac.FLAC(flac)
-            track = self._info.get_track(number)
+            track = info.get_track(number)
             song.delete()
             song.clear_pictures()
-            song.update(
-                {
-                    "ARTIST": self._info.artist,
-                    "ALBUMARTIST": self._info.artist,
-                    "ARTISTSORT": self._info.artist_sort_name,
-                    "ALBUMARTISTSORT": self._info.artist_sort_name,
-                    "ALBUM": self._info.album,
-                    "DATE": str(self._info.year),
-                    "GENRE": self._info.genre,
-                    "TITLE": track["title"],
-                    "TRACKNUMBER": str(track["number"]),
-                    "TRACKTOTAL": str(len(self._info.tracks)),
-                    "DESCRIPTION": self._info.get_comment_string(),
-                }
-            )
-            if self._info.front_cover:
+            tags = {
+                "artists": track["artist_list"],
+                "musicbrainz_releasetrackid": [track["id"]],
+                "musicbrainz_trackid": [track["recording_id"]],
+                "isrc": track["isrc"],
+                "musicbrainz_artistid": track["artist_id"],
+                "title": [track["title"]],
+                "tracknumber": [str(track["number"])],
+                "artist": [track["artist"]],
+                "artistsort": [track["artist_sort_order"]],
+                "totaltracks": [str(len(info.tracks))],
+                "tracktotal": [str(len(info.tracks))],
+            }
+            song.update(shared_tags)
+            song.update(tags)
+            if info.front_cover:
                 cover = mutagen.flac.Picture()
                 cover.type = 3
                 cover.mime = "image/jpeg"
                 cover.desc = "front cover"
-                cover.data = self._info.front_cover
+                cover.data = info.front_cover
                 song.add_picture(cover)
             song.save()
 
@@ -136,27 +175,65 @@ class AudioLibrarian:
             dst_file = os.path.join(self._m4a_dir, os.path.basename(f).replace(".wav", ".m4a"))
             commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", dst_file, f))
         self._parallel("Making m4a files...", commands, self._m4a_dir)
+        info = self._info  # we use this a lot below
+        disc_x_of_y = (int(info.disc_number), 1)  # TODO - get number of discs
+        shared_tags = {
+            "\xa9alb": [info.album],
+            "----:com.apple.iTunes:MEDIA": [bytes(info.media, "utf8")],
+            "----:com.apple.iTunes:LABEL": [bytes(x, "utf8") for x in info.organization],
+            "aART": [info.artist],
+            "soaa": [info.artist_sort_name],
+            "\xa9day": [str(info.year)],
+            "\xa9gen": [info.genre],
+            "\xa9cmt": [info.get_comment_string()],
+            "disk": [disc_x_of_y],
+            "----:com.apple.iTunes:SCRIPT": [bytes("Latn", "utf8")],
+            "----:com.apple.iTunes:ASIN": [bytes(info.asin, "utf8")],
+            "----:com.apple.iTunes:originalyear": [bytes(info.original_year, "utf8")],
+            "----:com.apple.iTunes:originaldate": [bytes(info.original_date, "utf8")],
+            "----:com.apple.iTunes:BARCODE": [bytes(info.barcode, "utf8")],
+            "----:com.apple.iTunes:CATALOGNUMBER": [bytes(info.catalog_number, "utf8")],
+            "----:com.apple.iTunes:MusicBrainz Album Type": [
+                bytes(x, "utf8") for x in info.album_type
+            ],
+            "----:com.apple.iTunes:MusicBrainz Album Status": [bytes(info.album_status, "utf8")],
+            "----:com.apple.iTunes:MusicBrainz Album Release Country": [
+                bytes(info.country, "utf8")
+            ],
+            "----:com.apple.iTunes:MusicBrainz Album Id": [bytes(info.mb_release_id, "utf8")],
+            "----:com.apple.iTunes:MusicBrainz Album Artist Id": [
+                bytes(info.mb_artist_id, "utf8")
+            ],
+            "----:com.apple.iTunes:MusicBrainz Release Group Id": [
+                bytes(info.mb_release_group_id, "utf8")
+            ],
+        }
         for m4a in self._m4a_filenames:
-            number = os.path.basename(m4a).split("__")[0]
+            number = str(int(os.path.basename(m4a).split("__")[0]))
             song = mutagen.mp4.MP4(m4a)
-            track = self._info.get_track(number)
+            track = info.get_track(number)
             song.delete()
-            song.update(
-                {
-                    "\xa9ART": self._info.artist,
-                    "aART": self._info.artist,
-                    "soar": self._info.artist_sort_name,
-                    "soaa": self._info.artist_sort_name,
-                    "\xa9alb": self._info.album,
-                    "\xa9day": str(self._info.year),
-                    "\xa9gen": self._info.genre,
-                    "\xa9nam": track["title"],
-                    "trkn": ((int(track["number"]), len(self._info.tracks)),),
-                    "\xa9cmt": self._info.get_comment_string(),
-                }
-            )
-            if self._info.front_cover:
-                cover = mutagen.mp4.MP4Cover(self._info.front_cover)
+            tags = {
+                "----:com.apple.iTunes:ARTISTS": [bytes(x, "utf8") for x in track["artist_list"]],
+                "----:com.apple.iTunes:MusicBrainz Release Track Id": [bytes(track["id"], "utf8")],
+                "----:com.apple.iTunes:MusicBrainz Track Id": [
+                    bytes(track["recording_id"], "utf8")
+                ],
+                "----:com.apple.iTunes:ISRC": [bytes(x, "utf8") for x in track["isrc"]],
+                "----:com.apple.iTunes:MusicBrainz Artist Id": [
+                    bytes(x, "utf8") for x in track["artist_id"]
+                ],
+                "\xa9nam": [track["title"]],
+                "trkn": [(int(track["number"]), len(info.tracks))],
+                "\xa9ART": [track["artist"]],
+                "soar": [track["artist_sort_order"]],
+            }
+            for k, v in shared_tags.items():
+                song[k] = v
+            for k, v in tags.items():
+                song[k] = v
+            if info.front_cover:
+                cover = mutagen.mp4.MP4Cover(info.front_cover)
                 song["covr"] = [cover]
             song.save()
 
@@ -166,37 +243,64 @@ class AudioLibrarian:
             dst_file = os.path.join(self._mp3_dir, os.path.basename(f).replace(".wav", ".mp3"))
             commands.append(("lame", "--silent", "-h", "-b", "192", f, dst_file))
         self._parallel("Making mp3 files...", commands, self._mp3_dir)
-        mutagen.easyid3.EasyID3.RegisterTextKey("comment", "COMM")
-        mutagen.easyid3.EasyID3.RegisterTextKey("artistsort", "TSOP")
-        mutagen.easyid3.EasyID3.RegisterTextKey("albumartistsort", "TSO2")
+        info = self._info  # we use this a lot below
+        disc_x_of_y = f"{info.disc_number}/1"  # TODO - get number of discs
+        shared_tags = [
+            mutagen.id3.TALB(encoding=3, text=info.album),
+            mutagen.id3.TMED(encoding=3, text=info.media),
+            mutagen.id3.TPUB(encoding=3, text="/".join(info.organization)),
+            mutagen.id3.TPE2(encoding=3, text=info.artist),
+            mutagen.id3.TSO2(encoding=3, text=info.artist_sort_name),
+            mutagen.id3.TDRC(encoding=3, text=info.year),
+            mutagen.id3.TDOR(encoding=3, text=info.original_year),
+            mutagen.id3.TCON(encoding=3, text=info.genre),
+            mutagen.id3.COMM(encoding=3, text=info.get_comment_string()),
+            mutagen.id3.TPOS(encoding=3, text=disc_x_of_y),
+            TXXX(encoding=3, desc="SCRIPT", text="Latn"),
+            TXXX(encoding=3, desc="ASIN", text=info.asin),
+            TXXX(encoding=3, desc="originalyear", text=info.original_year),
+            TXXX(encoding=3, desc="BARCODE", text=info.barcode),
+            TXXX(encoding=3, desc="CATALOGNUMBER", text=info.catalog_number),
+            TXXX(encoding=3, desc="MusicBrainz Album Type", text="/".join(info.album_type)),
+            TXXX(encoding=3, desc="MusicBrainz Album Status", text=info.album_status),
+            TXXX(encoding=3, desc="MusicBrainz Album Release Country", text=info.country),
+            TXXX(encoding=3, desc="MusicBrainz Album Id", text=info.mb_release_id),
+            TXXX(encoding=3, desc="MusicBrainz Album Artist Id", text=info.mb_artist_id),
+            TXXX(encoding=3, desc="MusicBrainz Release Group Id", text=info.mb_release_group_id),
+        ]
         for mp3 in self._mp3_filenames:
-            number = os.path.basename(mp3).split("__")[0]
-            song = mutagen.mp3.EasyMP3(mp3)
-            track = self._info.get_track(number)
+            number = str(int(os.path.basename(mp3).split("__")[0]))
+            try:
+                song = mutagen.id3.ID3(mp3)
+            except mutagen.id3.ID3NoHeaderError:
+                s = mutagen.File(mp3, easy=False)
+                s.add_tags()
+                s.save()
+                song = mutagen.id3.ID3(mp3)
+            track = info.get_track(number)
             song.delete()
-            song.update(
-                {
-                    "artist": self._info.artist,
-                    "albumartist": self._info.artist,
-                    "artistsort": self._info.artist_sort_name,
-                    "albumartistsort": self._info.artist_sort_name,
-                    "album": self._info.album,
-                    "date": str(self._info.year),
-                    "genre": self._info.genre,
-                    "title": track["title"],
-                    "tracknumber": f"{track['number']}/{len(self._info.tracks)}",
-                    "comment": self._info.get_comment_string(),
-                }
-            )
-            song.save(mp3, v1=2)
-            song = mutagen.id3.ID3(mp3)
-            song["APIC"] = mutagen.id3.APIC(
-                encoding=3,
-                mime="image/jpeg",
-                type=3,
-                desc="front cover",
-                data=self._info.front_cover,
-            )
+            track_x_of_y = f"{track['number']}/{len(info.tracks)}"
+            tags = [
+                mutagen.id3.TPE1(encoding=3, text=track["artist"]),
+                mutagen.id3.TSOP(encoding=3, text=track["artist_sort_order"]),
+                mutagen.id3.TIT2(encoding=3, text=track["title"]),
+                mutagen.id3.TRCK(encoding=3, text=track_x_of_y),
+                mutagen.id3.TSRC(encoding=3, text="/".join(track["isrc"])),
+                UFID(owner="http://musicbrainz.org", data=bytes(track["recording_id"], "utf8")),
+                TXXX(encoding=3, desc="MusicBrainz Release Track Id", text=track["id"]),
+                TXXX(encoding=3, desc="MusicBrainz Artist Id", text="/".join(track["artist_id"])),
+                TXXX(encoding=3, desc="ARTISTS", text=track["artist_names"]),
+            ]
+            for tag in shared_tags + tags:
+                song.add(tag)
+            if info.front_cover:
+                song["APIC"] = mutagen.id3.APIC(
+                    encoding=3,
+                    mime="image/jpeg",
+                    type=3,
+                    desc="front cover",
+                    data=info.front_cover,
+                )
             song.save()
 
     def _make_wav(self):
@@ -208,7 +312,7 @@ class AudioLibrarian:
 
     def _move_files(self):
         artist_dir = text.get_filename(self._info.artist)
-        album_dir = text.get_filename(f"{self._info.year}__{self._info.album}")
+        album_dir = text.get_filename(f"{self._info.original_year}__{self._info.album}")
         flac_dir = f"library/flac/{artist_dir}/{album_dir}"
         m4a_dir = f"library/m4a/{artist_dir}/{album_dir}"
         mp3_dir = f"library/mp3/{artist_dir}/{album_dir}"
@@ -221,9 +325,11 @@ class AudioLibrarian:
         [os.rename(f, f"{mp3_dir}/{os.path.basename(f)}") for f in self._mp3_filenames]
 
     def _normalize(self):
+        print("Normalizing wav files...")
         command = ["wavegain", "--album", "--apply"]
         command.extend(glob.glob(self._wav_dir))
-        subprocess.run(command)
+        r = subprocess.run(command, stdout=subprocess.DEVNULL)
+        r.check_returncode()
 
     @staticmethod
     def _parallel(message, commands, touch=None):
@@ -240,7 +346,7 @@ class AudioLibrarian:
         for filename in self._wav_filenames:
             number += 1
             path, base = os.path.split(filename)
-            track = self._info.get_track(str(number).zfill(2))
+            track = self._info.get_track(str(number))
             new_name = os.path.join(path, f"{track['filename']}.wav")
             if new_name != filename:
                 print(f"{os.path.basename(filename)} --> {os.path.basename(new_name)}")

@@ -23,7 +23,7 @@ class MusicBrainsInfo(AudioInfo):
                     genre = genre_tag["name"].title()
                     break
         if genre is None:
-            genre = input("Unable to determine genre; enter the genre: ")
+            genre = input("Genre not found; enter the genre [Alternative]: ") or "Alternative"
         return genre
 
     def _get_release_group_ids(self, artist_id):
@@ -35,7 +35,7 @@ class MusicBrainsInfo(AudioInfo):
         return [
             rg["id"]
             for rg in release_group_list
-            if rg["primary-type"] == "Album" and fuzz.ratio(album_l, rg["title"]) > 80
+            if rg.get("primary-type") == "Album" and fuzz.ratio(album_l, rg["title"].lower()) > 80
         ]
 
     @staticmethod
@@ -65,30 +65,68 @@ class MusicBrainsInfo(AudioInfo):
         print("RELEASE_GROUPS:", release_group_ids)
         release_id = self._prompt_release_id(release_group_ids)
         release = musicbrainzngs.get_release_by_id(
-            release_id, includes=["recordings", "release-groups", "tags"]
+            release_id,
+            includes=["artist-credits", "isrcs", "labels", "recordings", "release-groups", "tags"],
         )["release"]
         release_group = release["release-group"]
-        medium = release["medium-list"][0]
+        medium = release["medium-list"][0]  # This is the disc number in a multi-disc release
         self._pprint("RELEASE", release)
 
         self.artist = artist["name"]
         self.artist_sort_name = artist["sort-name"]
-        self.album = release["title"]
-        self.genre = self._get_genre(
-            release_group.get("tag-list"),
-            # medium.get("track-list", [{}])[0].get("recording", {}).get("tag-list"),
-        )
+        self.album = release["title"].replace("’", "'")
+        self.genre = self._get_genre(release_group.get("tag-list"))
+        self.year = release["release-event-list"][0]["date"]
+        self.original_date = release_group.get("first-release-date", "")
+        self.original_year = self.original_date.split("-")[0] or self.year
 
-        release_group_year = release_group.get("first-release-date", "").split("-")[0]
-        release_year = release["release-event-list"][0]["date"]
-        self.year = release_group_year or release_year
-        if release_group_year and self.year != release_year:
-            self.comments.append(f"Year: {release_year}")
+        self.tracks = []
+        for t in medium["track-list"]:
+            r = t["recording"]
+            ac = t.get("artist-credit") or r["artist-credit"]
+            track = {
+                "number": t["position"],
+                "title": (t.get("title") or r["title"]).replace("’", "'"),
+                "id": t["id"],
+                "recording_id": r["id"],
+                "isrc": r.get("isrc-list", []),
+                "artist_names": "/".join([a["artist"]["name"] for a in ac if isinstance(a, dict)]),
+            }
+            artist_names = ""
+            artist_names_list = []
+            artist_sort_names = ""
+            artist_ids = []
+            for a in ac:
+                if isinstance(a, dict):
+                    artist_names += a["artist"]["name"]
+                    artist_names_list.append(a["artist"]["name"])
+                    artist_sort_names += a["artist"]["sort-name"]
+                    artist_ids.append(a["artist"]["id"])
+                else:
+                    artist_names += a
+                    artist_sort_names += a
+            track["artist"] = artist_names
+            track["artist_list"] = artist_names_list
+            track["artist_sort_order"] = artist_sort_names
+            track["artist_id"] = artist_ids
 
-        self.tracks = [
-            {"number": t["position"].zfill(2), "title": t["recording"]["title"]}
-            for t in medium["track-list"]
-        ]
+            self.tracks.append(track)
 
         if release["cover-art-archive"]["front"] == "true":
             self.front_cover = musicbrainzngs.get_image_front(release_id, size=500)
+
+        self.album_type = [release_group["primary-type"].lower()]
+        if release_group["type"].lower() != self.album_type[0]:
+            self.album_type.append(release_group["type"].lower())
+
+        self.disc_number = medium["position"]
+        self.media = medium["format"]
+        self.organization = [x["label"]["name"] for x in release["label-info-list"]]
+        self.barcode = release.get("barcode", "")
+        self.asin = release.get("asin", "")
+        self.album_status = release["status"].lower()
+        self.country = release.get("country", "")
+        self.catalog_number = release["label-info-list"][0].get("catalog-number", "")
+        self.mb_artist_id = artist_id
+        self.mb_release_group_id = release_group["id"]
+        self.mb_release_id = release_id
