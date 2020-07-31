@@ -304,11 +304,17 @@ class AudioLibrarian:
             song.save()
 
     def _make_wav(self):
+        tmp_dir = os.path.join(self._wav_dir, "tmp")
+        os.makedirs(tmp_dir)
         commands = [
-            ("flac", "--silent", "--decode", f"--output-prefix={self._wav_dir}/", f)
+            ("flac", "--silent", "--decode", f"--output-prefix={self._wav_dir}/tmp/", f)
             for f in self._args.files
         ]
         self._parallel("Making wav files...", commands, self._wav_dir)
+        for f in glob.glob(os.path.join(tmp_dir, "*.wav")):
+            r = subprocess.run(("sndfile-convert", "-pcm16", f, f.replace("/tmp/", "/")))
+            r.check_returncode()
+        shutil.rmtree(tmp_dir)
 
     def _move_files(self):
         artist_dir = text.get_filename(self._info.artist)
