@@ -25,7 +25,7 @@ def parse_args():
 
 def validate_args(args):
     if args.disc:
-        if not re.match(r"\d+/d+", args.disc):
+        if not re.match(r"\d+/\d+", args.disc):
             print("Invalid --disc specification; should be x/y")
             sys.exit(-1)
     return args
