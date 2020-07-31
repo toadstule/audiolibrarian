@@ -2,8 +2,8 @@ import string
 
 
 def get_filename(title):
-    allowed_chars = string.ascii_letters + string.digits + "_"
-    no_underscore_replace = ".,!'\""
+    allowed_chars = string.ascii_letters + string.digits + "_."
+    no_underscore_replace = ",!'\""
     result = []
     for ch in title:
         if ch in allowed_chars:
