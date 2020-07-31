@@ -1,3 +1,8 @@
+"""
+
+Useful stuff: https://help.mp3tag.de/main_tags.html
+"""
+
 import glob
 import os
 import pprint
@@ -29,12 +34,16 @@ class AudioLibrarian:
         self._mp3_dir = os.path.join(self._work_dir, "mp3")
         self._wav_dir = os.path.join(self._work_dir, "wav")
 
+        # if we're given a directory, grab all the flac files therein
+        if len(self._args.files) == 1 and os.path.isdir(self._args.files[0]):
+            self._args.files = sorted(glob.glob(os.path.join(self._args.files[0], "*.flac")))
+
         artist, album = self._get_artist_album()
-        if args.db == "mb":
-            self._info = MusicBrainsInfo(artist, album, args.verbose)
-        else:
-            self._info = DiscogsInfo(artist, album, args.verbose)
         pprint.pp([os.path.basename(f) for f in self._args.files])
+        if args.db == "discogs":
+            self._info = DiscogsInfo(artist, album, args.verbose)
+        else:
+            self._info = MusicBrainsInfo(artist, album, args.verbose)
         pprint.pp(self._info)
         if len(self._args.files) != len(self._info.tracks):
             print("\n*** Track count does not match file count ***\n")
@@ -79,15 +88,15 @@ class AudioLibrarian:
         for filename in self._args.files:
             album, artist = None, None
             song = mutagen.File(filename)
-            print(song.tags)
+            pprint.pp(song.tags)
             artist = (
                 artist
                 or song.tags.get("ALBUMARTIST", [None])[0]
                 or song.tags.get("ARTIST", [None])[0]
             )
-            print(artist)
             album = album or song.tags.get("ALBUM", [None])[0]
-            print(album)
+            print("Artist from tags:", artist)
+            print("Album from tags:", album)
             if artist and album:
                 return artist, album
         return None, None
@@ -316,9 +325,11 @@ class AudioLibrarian:
         [os.rename(f, f"{mp3_dir}/{os.path.basename(f)}") for f in self._mp3_filenames]
 
     def _normalize(self):
+        print("Normalizing wav files...")
         command = ["wavegain", "--album", "--apply"]
         command.extend(glob.glob(self._wav_dir))
-        subprocess.run(command)
+        r = subprocess.run(command, stdout=subprocess.DEVNULL)
+        r.check_returncode()
 
     @staticmethod
     def _parallel(message, commands, touch=None):
