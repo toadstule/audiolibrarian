@@ -69,7 +69,7 @@ class MusicBrainsInfo(AudioInfo):
             includes=["artist-credits", "isrcs", "labels", "recordings", "release-groups", "tags"],
         )["release"]
         release_group = release["release-group"]
-        medium = release["medium-list"][0]
+        medium = release["medium-list"][0]  # This is the disc number in a multi-disc release
         self._pprint("RELEASE", release)
 
         self.artist = artist["name"]
