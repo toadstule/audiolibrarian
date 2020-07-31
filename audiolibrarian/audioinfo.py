@@ -14,6 +14,7 @@ class AudioInfo(abc.ABC):
         self.artist_sort_name = ""
         self.album = ""
         self.year = ""
+        self.original_date = ""
         self.original_year = ""
         self.genre = ""
         self.front_cover = ""

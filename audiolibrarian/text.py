@@ -8,8 +8,8 @@ def get_filename(title):
     for ch in title:
         if ch in allowed_chars:
             result.append(ch)
+        elif ch == "&":
+            result.extend("and")
         elif ch not in no_underscore_replace:
             result.append("_")
-        elif ch == "&":
-            result.extent(" and ")
     return "".join(result).rstrip("_")
