@@ -23,7 +23,6 @@ UFID = mutagen.id3.UFID
 class AudioLibrarian:
     def __init__(self, args):
         self._args = args
-        print(self._args)
         self._work_dir = "workdir"
         self._flac_dir = os.path.join(self._work_dir, "flac")
         self._m4a_dir = os.path.join(self._work_dir, "m4a")
@@ -45,10 +44,10 @@ class AudioLibrarian:
         self._make_clean_workdirs()
         self._make_wav()
         self._rename_wav()
-        # self._normalize()
-        self._make_flac()  # TODO
-        # self._make_m4a()
-        # self._make_mp3()
+        self._normalize()
+        self._make_flac()
+        self._make_m4a()
+        self._make_mp3()
         self._move_files()
 
     @property
