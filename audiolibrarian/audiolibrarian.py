@@ -8,6 +8,8 @@ import os
 import pprint
 import shutil
 import subprocess
+import sys
+import time
 
 import mutagen
 import mutagen.easyid3
@@ -33,6 +35,7 @@ class AudioLibrarian:
         self._m4a_dir = os.path.join(self._work_dir, "m4a")
         self._mp3_dir = os.path.join(self._work_dir, "mp3")
         self._wav_dir = os.path.join(self._work_dir, "wav")
+        self._lock_file = "workdir.lock"
 
         # if we're given a directory, grab all the flac files therein
         if len(self._args.files) == 1 and os.path.isdir(self._args.files[0]):
@@ -50,14 +53,18 @@ class AudioLibrarian:
         if input("Confirm [Y,n]: ").lower() == "n":
             return
 
-        self._make_clean_workdirs()
-        self._make_wav()
-        self._rename_wav()
-        self._normalize()
-        self._make_flac()
-        self._make_m4a()
-        self._make_mp3()
-        self._move_files()
+        self._acquire_lock()
+        try:
+            self._make_clean_workdirs()
+            self._make_wav()
+            self._rename_wav()
+            self._normalize()
+            self._make_flac()
+            self._make_m4a()
+            self._make_mp3()
+            self._move_files()
+        finally:
+            self._release_lock()
 
     @property
     def _flac_filenames(self):
@@ -74,6 +81,17 @@ class AudioLibrarian:
     @property
     def _wav_filenames(self):
         return sorted(glob.glob(os.path.join(self._wav_dir, "*.wav")))
+
+    def _acquire_lock(self):
+        try:
+            while os.path.exists(self._lock_file):
+                print("Waiting for lock...")
+                time.sleep(5)
+        except KeyboardInterrupt:
+            if input("Lock not acquired; continue anyway? [N,y] ").lower() != "y":
+                sys.exit()
+        with open(self._lock_file, "w") as lock_file:
+            lock_file.write(str(os.getpid()))
 
     def _get_artist_album(self):
         if self._args.artist and self._args.album:
@@ -346,6 +364,10 @@ class AudioLibrarian:
                 p.wait()
         for fn in sorted(glob.glob(os.path.join(touch, "*"))):
             subprocess.run(("touch", fn))
+
+    def _release_lock(self):
+        if os.path.exists(self._lock_file):
+            os.remove(self._lock_file)
 
     def _rename_wav(self):
         number = 0
