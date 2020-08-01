@@ -27,24 +27,34 @@ def check_deps():
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Audio Librarian")
-    parser.add_argument("--artist", "-a", help="provide artist")
-    parser.add_argument("--album", "-m", help="provide album")
+    subparsers = parser.add_subparsers(title="source", dest="source")
+
     parser.add_argument("--db", default="mb", choices=("discogs", "mb"), help="database")
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
-    parser.add_argument("files", nargs="+", help="audio files")
 
-    return validate_args(parser.parse_args())
+    from_files = subparsers.add_parser("files")
+    from_files.add_argument("--artist", "-a", help="provide artist (ignore tags)")
+    from_files.add_argument("--album", "-m", help="provide album (ignore tags)")
+    from_files.add_argument("filenames", nargs="+", help="audio files")
+
+    from_cd = subparsers.add_parser("cd")
+    from_cd.add_argument("--artist", "-a", required=True, help="provide artist")
+    from_cd.add_argument("--album", "-m", required=True, help="provide album")
+
+    return _validate_args(parser.parse_args())
 
 
-def validate_args(args):
-    if args.disc:
-        if not re.match(r"\d+/\d+", args.disc):
+def _validate_args(a):
+    if a.disc:
+        if not re.match(r"\d+/\d+", a.disc):
             print("Invalid --disc specification; should be x/y")
             sys.exit(-1)
-    return args
+    return a
 
 
 if __name__ == "__main__":
+    args = parse_args()
+    print(args)
     check_deps()
-    AudioLibrarian(parse_args())
+    AudioLibrarian(args)

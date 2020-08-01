@@ -30,6 +30,7 @@ UFID = mutagen.id3.UFID
 class AudioLibrarian:
     def __init__(self, args):
         self._args = args
+        self._source = self._args.source
         self._work_dir = "workdir"
         self._flac_dir = os.path.join(self._work_dir, "flac")
         self._m4a_dir = os.path.join(self._work_dir, "m4a")
@@ -40,17 +41,23 @@ class AudioLibrarian:
         self._disc_number, self._disc_count = d.split("/") if d else ("1", "1")
 
         # if we're given a directory, grab all the flac files therein
-        if len(self._args.files) == 1 and os.path.isdir(self._args.files[0]):
-            self._args.files = sorted(glob.glob(os.path.join(self._args.files[0], "*.flac")))
+        if (
+            self._source == "files"
+            and len(self._args.filenames) == 1
+            and os.path.isdir(self._args.filenames[0])
+        ):
+            self._args.filenames = sorted(
+                glob.glob(os.path.join(self._args.filenames[0], "*.flac"))
+            )
 
         artist, album = self._get_artist_album()
-        pprint.pp([os.path.basename(f) for f in self._args.files])
+        pprint.pp([os.path.basename(f) for f in self._args.filenames])
         if args.db == "discogs":
             self._info = DiscogsInfo(artist, album, self._disc_number, args.verbose)
         else:
             self._info = MusicBrainsInfo(artist, album, self._disc_number, args.verbose)
         pprint.pp(self._info)
-        if len(self._args.files) != len(self._info.tracks):
+        if len(self._args.filenames) != len(self._info.tracks):
             print("\n*** Track count does not match file count ***\n")
         if input("Confirm [Y,n]: ").lower() == "n":
             return
@@ -100,12 +107,12 @@ class AudioLibrarian:
             artist, album = None, None
         else:
             artist, album = self._get_artist_album_from_tags()
-        artist = self._args.album or artist
+        artist = self._args.artist or artist
         album = self._args.album or album
         return artist, album
 
     def _get_artist_album_from_tags(self):
-        for filename in self._args.files:
+        for filename in self._args.filenames:
             album, artist = None, None
             song = mutagen.File(filename)
             pprint.pp(song.tags)
@@ -328,7 +335,7 @@ class AudioLibrarian:
         os.makedirs(tmp_dir)
         commands = [
             ("flac", "--silent", "--decode", f"--output-prefix={self._wav_dir}/tmp/", f)
-            for f in self._args.files
+            for f in self._args.filenames
         ]
         self._parallel("Making wav files...", commands, self._wav_dir)
         for f in glob.glob(os.path.join(tmp_dir, "*.wav")):
