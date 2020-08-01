@@ -15,6 +15,12 @@ secret = "NlcgnWwAiTrNAiZYHUtWXiicxUxHRFOj"
 
 class DiscogsInfo(AudioInfo):
     def __init__(self, artist, album, disc_number, verbose=False):
+
+        # Deprecated (and maybe will stay that way forever?)
+        _, _, _, _ = artist, album, disc_number, verbose
+        raise DeprecationWarning("Discogs is not currently supported")
+
+        # noinspection PyUnreachableCode
         self._session = requests.Session()
         self._session.headers.update(
             {
@@ -140,20 +146,3 @@ class DiscogsInfo(AudioInfo):
         for chunk in r:
             image_data += chunk
         return image_data
-
-
-if __name__ == "__main__":
-    pass
-    # print(DiscogsInfo("Cruel Story of Youth", "Cruel Story of Youth"))
-    # print(DiscogsInfo("Tom Petty and the Heartbreakers", "Greatest Hits"))
-    # print(DiscogsInfo("Electronic", "Electronic"))
-    # print(DiscogsInfo("The Alan Parsons Project", "Eye in the Sky"))
-    # print(DiscogsInfo("A-ha", "Hunting High and Low"))
-    # print(DiscogsInfo("Ligabue", "Ligabue"))
-    # print(DiscogsInfo("Litfiba", "Pirata"))
-
-# Get Master IDs
-# Print URL: https://www.discogs.com/The-Alan-Parsons-Project-Eye-In-The-Sky/master/4424
-# prompt for release ID or release URL
-# get info from release
-# get year from master (use masterID from release)
