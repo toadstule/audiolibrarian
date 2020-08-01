@@ -3,7 +3,7 @@
 ## Installation ##
 
 ```bash
-sudo pip install git+https://bitbucket.org/toadstule/audiolibrarian
+sudo pip install git+https://toadstule@bitbucket.org/toadstule/audiolibrarian
 ```
 
 ## Usage ##
