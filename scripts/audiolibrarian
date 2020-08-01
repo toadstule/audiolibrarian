@@ -6,9 +6,23 @@ PYTHONPATH=$(pwd) scripts/audiolibrarian /media/BlackBox/Music/flac/some_file
 """
 import argparse
 import re
+import subprocess
 import sys
 
 from audiolibrarian.audiolibrarian import AudioLibrarian
+
+REQUIRED_EXE = ("fdkaac", "flac", "lame", "sndfile-convert", "wavegain")
+
+
+def check_deps():
+    missing = []
+    for exe in REQUIRED_EXE:
+        r = subprocess.run(("which", exe), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if r.returncode:
+            missing.append(exe)
+    if missing:
+        print(f"\nMissing required executable(s): {', '.join(missing)}\n")
+        sys.exit(1)
 
 
 def parse_args():
@@ -32,4 +46,5 @@ def validate_args(args):
 
 
 if __name__ == "__main__":
+    check_deps()
     AudioLibrarian(parse_args())
