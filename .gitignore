@@ -3,3 +3,4 @@ venv/
 *.jpg
 library/
 workdir/
+new_library/
