@@ -1,3 +1,5 @@
+dist/
+MANIFEST
 venv/
 *.flac
 *.jpg

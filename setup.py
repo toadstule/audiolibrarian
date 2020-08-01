@@ -15,5 +15,6 @@ setup(
     author='Steve Jibson',
     author_email='steve@jibson.com',
     description='Audio library utilities',
-    scripts=SCRIPTS
+    scripts=SCRIPTS,
+    install_requires=[line.strip() for line in open("requirements_base.txt")]
 )
