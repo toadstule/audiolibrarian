@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/jib-audio.iml" filepath="$PROJECT_DIR$/.idea/jib-audio.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/audiolibrarian.iml" filepath="$PROJECT_DIR$/.idea/audiolibrarian.iml" />
     </modules>
   </component>
 </project>

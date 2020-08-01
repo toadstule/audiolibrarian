@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument("--db", default="mb", choices=("discogs", "mb"), help="database")
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
-    parser.add_argument("files", nargs="*", help="audio files")
+    parser.add_argument("files", nargs="+", help="audio files")
 
     return validate_args(parser.parse_args())
 
