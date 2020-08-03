@@ -14,10 +14,10 @@ secret = "NlcgnWwAiTrNAiZYHUtWXiicxUxHRFOj"
 
 
 class DiscogsInfo(AudioInfo):
-    def __init__(self, artist, album, disc_number, verbose=False):
+    def __init__(self, search_data, verbose=False):
 
         # Deprecated (and maybe will stay that way forever?)
-        _, _, _, _ = artist, album, disc_number, verbose
+        _, __ = search_data, verbose
         raise DeprecationWarning("Discogs is not currently supported")
 
         # noinspection PyUnreachableCode
@@ -28,7 +28,7 @@ class DiscogsInfo(AudioInfo):
                 "Authorization": f"Discogs key={key}, secret={secret}",
             }
         )
-        super().__init__(artist, album, disc_number, verbose)
+        super().__init__(search_data, verbose)
 
     def _get(self, path, params=None):
         path = path.lstrip("/")
@@ -38,8 +38,8 @@ class DiscogsInfo(AudioInfo):
         return r.json()
 
     def _get_artist_id(self):
-        artist = self._input_artist
-        album = self._input_album
+        artist = self._search_data.artist
+        album = self._search_data.album
         url = f"database/search"
         params = {"q": artist, "type": "artist", "title": album, "per_page": 100}
         j = self._get(url, params)
@@ -53,7 +53,7 @@ class DiscogsInfo(AudioInfo):
 
     def _get_release_ids(self, artist_id):
         all_releases = []
-        album_l = self._input_album.lower()
+        album_l = self._search_data.album.lower()
         page = 0
         with Dots("Getting releases") as dots:
             while True:

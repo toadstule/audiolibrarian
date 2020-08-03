@@ -1,14 +1,24 @@
 import abc
 import pprint
+from dataclasses import dataclass
 
 from audiolibrarian import text
 
 
+@dataclass
+class SearchData:
+    artist: str = ""
+    album: str = ""
+    disc_id: str = ""
+    disc_mcn: str = ""
+    disc_number: str = "1"
+    mb_artist_id: str = ""
+    mb_release_id: str = ""
+
+
 class AudioInfo(abc.ABC):
-    def __init__(self, artist, album, disc_number, verbose=True):
-        self._input_artist = artist
-        self._input_album = album
-        self._disc_number = disc_number
+    def __init__(self, search_data, verbose=True):
+        self._search_data = search_data
         self._verbose = verbose
 
         self.artist = ""
@@ -22,7 +32,7 @@ class AudioInfo(abc.ABC):
         self.comments = []
         self.tracks = []
 
-        self.disc_number = disc_number
+        self.disc_number = self._search_data.disc_number
         self.media = ""
         self.organization = ""
         self.barcode = ""

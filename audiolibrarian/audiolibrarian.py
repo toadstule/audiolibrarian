@@ -18,10 +18,9 @@ import mutagen.id3
 import mutagen.mp3
 import mutagen.mp4
 
-from audiolibrarian import text
+from audiolibrarian import text, audiosource, cmd
 from audiolibrarian.discogs import DiscogsInfo
 from audiolibrarian.musicbrains import MusicBrainsInfo
-from audiolibrarian.output import Dots
 
 TXXX = mutagen.id3.TXXX
 UFID = mutagen.id3.UFID
@@ -30,42 +29,45 @@ UFID = mutagen.id3.UFID
 class AudioLibrarian:
     def __init__(self, args):
         self._args = args
-        self._source = self._args.source
+
+        # directories
         self._work_dir = "workdir"
         self._flac_dir = os.path.join(self._work_dir, "flac")
         self._m4a_dir = os.path.join(self._work_dir, "m4a")
         self._mp3_dir = os.path.join(self._work_dir, "mp3")
         self._wav_dir = os.path.join(self._work_dir, "wav")
         self._lock_file = "workdir.lock"
+
         d = self._args.disc
         self._disc_number, self._disc_count = d.split("/") if d else ("1", "1")
 
-        # if we're given a directory, grab all the flac files therein
-        if (
-            self._source == "files"
-            and len(self._args.filenames) == 1
-            and os.path.isdir(self._args.filenames[0])
-        ):
-            self._args.filenames = sorted(
-                glob.glob(os.path.join(self._args.filenames[0], "*.flac"))
-            )
-
-        artist, album = self._get_artist_album()
-        pprint.pp([os.path.basename(f) for f in self._args.filenames])
-        if args.db == "discogs":
-            self._info = DiscogsInfo(artist, album, self._disc_number, args.verbose)
+        if self._args.source == "cd":
+            audio_source = audiosource.CDAudioSource()
         else:
-            self._info = MusicBrainsInfo(artist, album, self._disc_number, args.verbose)
+            audio_source = audiosource.FilesAudioSource(self._args.filenames)
+
+        search_data = audio_source.get_search_data()
+        if self._args.artist:
+            search_data.artist = self._args.artist
+        if self._args.album:
+            search_data.album = self._args.album
+        print("DATA:", search_data)
+        pprint.pp([os.path.basename(f) for f in audio_source.get_source_filenames()])
+        if args.db == "discogs":
+            self._info = DiscogsInfo(search_data, args.verbose)
+        else:
+            self._info = MusicBrainsInfo(search_data, args.verbose)
         pprint.pp(self._info)
-        if len(self._args.filenames) != len(self._info.tracks):
+        source_filenames = audio_source.get_source_filenames()
+        if len(source_filenames) != len(self._info.tracks):
             print("\n*** Track count does not match file count ***\n")
         if input("Confirm [Y,n]: ").lower() == "n":
             return
-
+        audio_source.prepare_source()
         self._acquire_lock()
         try:
             self._make_clean_workdirs()
-            self._make_wav()
+            audio_source.copy_wavs(self._wav_dir)
             self._rename_wav()
             self._normalize()
             self._make_flac()
@@ -139,7 +141,7 @@ class AudioLibrarian:
             ("flac", "--silent", f"--output-prefix={self._flac_dir}/", f)
             for f in self._wav_filenames
         ]
-        self._parallel("Making flac files...", commands, self._flac_dir)
+        cmd.parallel("Making flac files...", commands, self._flac_dir)
         info = self._info
         shared_tags = {
             "album": [info.album],
@@ -201,7 +203,7 @@ class AudioLibrarian:
         for f in self._wav_filenames:
             dst_file = os.path.join(self._m4a_dir, os.path.basename(f).replace(".wav", ".m4a"))
             commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", dst_file, f))
-        self._parallel("Making m4a files...", commands, self._m4a_dir)
+        cmd.parallel("Making m4a files...", commands, self._m4a_dir)
         info = self._info  # we use this a lot below
         disc_x_of_y = (int(info.disc_number), int(self._disc_count))
         shared_tags = {
@@ -269,7 +271,7 @@ class AudioLibrarian:
         for f in self._wav_filenames:
             dst_file = os.path.join(self._mp3_dir, os.path.basename(f).replace(".wav", ".mp3"))
             commands.append(("lame", "--silent", "-h", "-b", "192", f, dst_file))
-        self._parallel("Making mp3 files...", commands, self._mp3_dir)
+        cmd.parallel("Making mp3 files...", commands, self._mp3_dir)
         info = self._info  # we use this a lot below
         disc_x_of_y = f"{info.disc_number}/{self._disc_count}"
         shared_tags = [
@@ -330,19 +332,6 @@ class AudioLibrarian:
                 )
             song.save()
 
-    def _make_wav(self):
-        tmp_dir = os.path.join(self._wav_dir, "tmp")
-        os.makedirs(tmp_dir)
-        commands = [
-            ("flac", "--silent", "--decode", f"--output-prefix={self._wav_dir}/tmp/", f)
-            for f in self._args.filenames
-        ]
-        self._parallel("Making wav files...", commands, self._wav_dir)
-        for f in glob.glob(os.path.join(tmp_dir, "*.wav")):
-            r = subprocess.run(("sndfile-convert", "-pcm16", f, f.replace("/tmp/", "/")))
-            r.check_returncode()
-        shutil.rmtree(tmp_dir)
-
     def _move_files(self):
         artist_dir = text.get_filename(self._info.artist)
         album_dir = text.get_filename(f"{self._info.original_year}__{self._info.album}")
@@ -367,16 +356,6 @@ class AudioLibrarian:
         command.extend(glob.glob(self._wav_dir))
         r = subprocess.run(command, stdout=subprocess.DEVNULL)
         r.check_returncode()
-
-    @staticmethod
-    def _parallel(message, commands, touch=None):
-        touch = touch or []
-        with Dots(message) as d:
-            for p in [subprocess.Popen(c) for c in commands]:
-                d.dot()
-                p.wait()
-        for fn in sorted(glob.glob(os.path.join(touch, "*"))):
-            subprocess.run(("touch", fn))
 
     def _release_lock(self):
         if os.path.exists(self._lock_file):
