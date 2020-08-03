@@ -14,7 +14,13 @@ secret = "NlcgnWwAiTrNAiZYHUtWXiicxUxHRFOj"
 
 
 class DiscogsInfo(AudioInfo):
-    def __init__(self, artist, album, disc_number, verbose=False):
+    def __init__(self, search_data, verbose=False):
+
+        # Deprecated (and maybe will stay that way forever?)
+        _, __ = search_data, verbose
+        raise DeprecationWarning("Discogs is not currently supported")
+
+        # noinspection PyUnreachableCode
         self._session = requests.Session()
         self._session.headers.update(
             {
@@ -22,7 +28,7 @@ class DiscogsInfo(AudioInfo):
                 "Authorization": f"Discogs key={key}, secret={secret}",
             }
         )
-        super().__init__(artist, album, disc_number, verbose)
+        super().__init__(search_data, verbose)
 
     def _get(self, path, params=None):
         path = path.lstrip("/")
@@ -32,8 +38,8 @@ class DiscogsInfo(AudioInfo):
         return r.json()
 
     def _get_artist_id(self):
-        artist = self._input_artist
-        album = self._input_album
+        artist = self._search_data.artist
+        album = self._search_data.album
         url = f"database/search"
         params = {"q": artist, "type": "artist", "title": album, "per_page": 100}
         j = self._get(url, params)
@@ -47,7 +53,7 @@ class DiscogsInfo(AudioInfo):
 
     def _get_release_ids(self, artist_id):
         all_releases = []
-        album_l = self._input_album.lower()
+        album_l = self._search_data.album.lower()
         page = 0
         with Dots("Getting releases") as dots:
             while True:
@@ -140,20 +146,3 @@ class DiscogsInfo(AudioInfo):
         for chunk in r:
             image_data += chunk
         return image_data
-
-
-if __name__ == "__main__":
-    pass
-    # print(DiscogsInfo("Cruel Story of Youth", "Cruel Story of Youth"))
-    # print(DiscogsInfo("Tom Petty and the Heartbreakers", "Greatest Hits"))
-    # print(DiscogsInfo("Electronic", "Electronic"))
-    # print(DiscogsInfo("The Alan Parsons Project", "Eye in the Sky"))
-    # print(DiscogsInfo("A-ha", "Hunting High and Low"))
-    # print(DiscogsInfo("Ligabue", "Ligabue"))
-    # print(DiscogsInfo("Litfiba", "Pirata"))
-
-# Get Master IDs
-# Print URL: https://www.discogs.com/The-Alan-Parsons-Project-Eye-In-The-Sky/master/4424
-# prompt for release ID or release URL
-# get info from release
-# get year from master (use masterID from release)
