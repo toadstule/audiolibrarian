@@ -55,6 +55,10 @@ class AudioLibrarian:
             search_data.artist = self._args.artist
         if self._args.album:
             search_data.album = self._args.album
+        if self._args.mb_artist_id:
+            search_data.mb_artist_id = self._args.mb_artist_id
+        if self._args.mb_release_id:
+            search_data.mb_release_id = self._args.mb_release_id
         print("DATA:", search_data)
         pprint.pp([os.path.basename(f) for f in audio_source.get_source_filenames()])
         if args.db == "discogs":

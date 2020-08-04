@@ -44,6 +44,8 @@ def parse_args():
     _rip = subparsers.add_parser("rip", help="rip music from a CD")
     _rip.add_argument("--artist", "-a", help="provide artist")
     _rip.add_argument("--album", "-m", help="provide album")
+    _rip.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
+    _rip.add_argument("--mb-release-id", help="Musicbrainz release ID")
     _rip.add_argument("--disc", "-d", default="1/1", help="x/y: disc x of y; multi-disc release")
 
     # genre management
@@ -57,11 +59,18 @@ def parse_args():
 
 
 def _validate_args(a):
-    print(a)
     if "disc" in a and a.disc:
         if not re.match(r"\d+/\d+", a.disc):
             print("Invalid --disc specification; should be x/y")
-            sys.exit(-1)
+            sys.exit(1)
+    if "mb_artist_id" in a and a.mb_artist_id:
+        if not ("mb_release_id" in a and a.mb_release_id):
+            print("If --mb-artist-id is specified, --mb-release-id is also required")
+            sys.exit(1)
+    if "mb_release_id" in a and a.mb_release_id:
+        if not ("mb_artist_id" in a and a.mb_artist_id):
+            print("If --mb-release-id is specified, --mb-artist-id is also required")
+            sys.exit(1)
     return a
 
 

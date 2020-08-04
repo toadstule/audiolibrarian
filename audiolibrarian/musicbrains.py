@@ -197,7 +197,7 @@ class MusicBrainsInfo(AudioInfo):
         self.asin = release.get("asin", "")
         self.album_status = release.get("status", "").lower()
         self.country = release.get("country", "")
-        self.catalog_number = release["label-info-list"][0].get("catalog-number", "")
+        self.catalog_number = release.get("label-info-list", [{}])[0].get("catalog-number", "")
         self.mb_artist_id = artist_id
         self.mb_release_group_id = release_group["id"]
         self.mb_release_id = release_id
