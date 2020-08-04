@@ -20,7 +20,7 @@ import mutagen.mp4
 
 from audiolibrarian import text, audiosource, cmd
 from audiolibrarian.discogs import DiscogsInfo
-from audiolibrarian.musicbrains import MusicBrainsInfo
+from audiolibrarian.musicbrains import MusicBrainsInfo, MusicBrainsSession
 
 TXXX = mutagen.id3.TXXX
 UFID = mutagen.id3.UFID
@@ -373,3 +373,77 @@ class AudioLibrarian:
             if new_name != filename:
                 print(f"{os.path.basename(filename)} --> {os.path.basename(new_name)}")
                 os.rename(filename, new_name)
+
+
+class GenreTagger:
+    # Genre
+    # - have confirmation -- so I can manually update stuff in MB if I want.
+    # - go through all files and create a dict of release group IDs
+    #     and artist IDs that map to filenames
+    # - go through keys and find genres for each release group and artist
+    # - tag files -- prompt if there isn't a user-genre
+    # All I care about is genre by artist
+    # I should tag all the artists I have in MB
+    # Maybe this guy could do that for me
+    def __init__(self, args):
+        self._args = args
+        self._mb = MusicBrainsSession()
+        self._filenames = self._get_all_filenames()
+        self._fns_by_artist, self._fns_by_release_groups = self._get_maps()
+        self._genre_by_artist = self._get_genre_by_artist()
+        # pprint.pp(self._genre_by_artist)
+        self._genre_by_release_group = self._get_genre_by_release_group()
+        pprint.pp(self._genre_by_release_group)
+
+    def _get_all_filenames(self):
+        filenames = []
+        for directory in self._args.directory:
+            for root, _, files in os.walk(directory):
+                filenames.extend([os.path.join(root, f) for f in files])
+        return filenames
+
+    def _get_genre_by_artist(self):
+        artists = {}
+        for artist_id in self._fns_by_artist:
+            at = self._mb.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
+            if at["user-genres"]:
+                artists[artist_id] = {"genre": at["user-genres"][0]["name"], "type": "user"}
+            elif at["genres"]:
+                g = [x["name"] for x in reversed(sorted(at["genres"], key=lambda y: y["count"]))]
+                artists[artist_id] = {"genre": g[0], "type": "community"}
+        return artists
+
+    def _get_genre_by_release_group(self):
+        release_groups = {}
+        for release_group_id in self._fns_by_release_groups:
+            rg = self._mb.get_release_group_by_id(
+                release_group_id, includes=["genres", "user-genres"]
+            )
+            if rg["user-genres"]:
+                release_groups[release_group_id] = {
+                    "genre": rg["user-genres"][0]["name"],
+                    "type": "user",
+                }
+            elif rg["genres"]:
+                g = [x["name"] for x in reversed(sorted(rg["genres"], key=lambda y: y["count"]))]
+                release_groups[release_group_id] = {"genre": g[0], "type": "community"}
+        return release_groups
+
+    def _get_maps(self):
+        artists = {}
+        release_groups = {}
+        for filename in self._filenames:
+            song = mutagen.File(filename)
+            artist_id = (
+                song.tags.get("MUSICBRAINZ_ALBUMARTISTID", [""])[0]
+                or song.tags.get("MUSICBRAINZ_ARTISTID", [""])[0]
+            )
+            if artist_id not in artists:
+                artists[artist_id] = []
+            artists[artist_id].append(filename)
+
+            release_group_id = song.tags.get("MUSICBRAINZ_RELEASEGROUPID", [""])[0]
+            if release_group_id not in release_groups:
+                release_groups[release_group_id] = []
+            release_groups[release_group_id].append(filename)
+        return artists, release_groups

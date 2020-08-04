@@ -9,7 +9,7 @@ import re
 import subprocess
 import sys
 
-from audiolibrarian.audiolibrarian import AudioLibrarian
+from audiolibrarian.audiolibrarian import AudioLibrarian, GenreTagger
 
 REQUIRED_EXE = ("cd-paranoia", "fdkaac", "flac", "lame", "sndfile-convert", "wavegain")
 
@@ -54,7 +54,7 @@ def parse_args():
 
 
 def _validate_args(a):
-    if a.disc:
+    if "disc" in a:
         if not re.match(r"\d+/\d+", a.disc):
             print("Invalid --disc specification; should be x/y")
             sys.exit(-1)
@@ -66,4 +66,8 @@ if __name__ == "__main__":
     if args.verbose:
         print(args)
     check_deps()
-    AudioLibrarian(args)
+    print(args)
+    if args.command == "genre":
+        GenreTagger(args)
+    else:
+        AudioLibrarian(args)
