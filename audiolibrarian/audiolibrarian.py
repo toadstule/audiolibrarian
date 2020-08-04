@@ -51,6 +51,7 @@ class AudioLibrarian:
             raise Exception(f"Invalid command: {self._args.command}")
 
         search_data = audio_source.get_search_data()
+        search_data.disc_number = self._disc_number
         if self._args.artist:
             search_data.artist = self._args.artist
         if self._args.album:
