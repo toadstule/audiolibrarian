@@ -2,14 +2,16 @@
 
 Useful stuff: https://help.mp3tag.de/main_tags.html
 """
-
 import glob
 import os
+import pickle
 import pprint
 import shutil
 import subprocess
 import sys
 import time
+import webbrowser
+from pathlib import Path
 
 import mutagen
 import mutagen.easyid3
@@ -375,75 +377,113 @@ class AudioLibrarian:
                 os.rename(filename, new_name)
 
 
-class GenreTagger:
-    # Genre
-    # - have confirmation -- so I can manually update stuff in MB if I want.
-    # - go through all files and create a dict of release group IDs
-    #     and artist IDs that map to filenames
-    # - go through keys and find genres for each release group and artist
-    # - tag files -- prompt if there isn't a user-genre
-    # All I care about is genre by artist
-    # I should tag all the artists I have in MB
-    # Maybe this guy could do that for me
+class GenreManager:
     def __init__(self, args):
         self._args = args
         self._mb = MusicBrainsSession()
-        self._filenames = self._get_all_filenames()
-        self._fns_by_artist, self._fns_by_release_groups = self._get_maps()
-        self._genre_by_artist = self._get_genre_by_artist()
-        # pprint.pp(self._genre_by_artist)
-        self._genre_by_release_group = self._get_genre_by_release_group()
-        pprint.pp(self._genre_by_release_group)
+        self._paths = self._get_all_paths()
+        self._paths_by_artist = self._get_paths_by_artist()
+        _u, _c = self._get_genres_by_artist()
+        self._user_genres_by_artist, self._community_genres_by_artist = _u, _c
+        if self._args.update:
+            self._update_community_artists()
+        elif self._args.tag:
+            self._update_tags()
 
-    def _get_all_filenames(self):
-        filenames = []
+    def _update_tags(self):
+        for artist_id, paths in self._paths_by_artist.items():
+            genre = self._user_genres_by_artist.get(artist_id)
+            if not genre:
+                continue
+            for path in paths:
+                if path.suffix == ".flac":
+                    song = mutagen.flac.FLAC(str(path))
+                    current_genre = song.tags["genre"][0]
+                    if current_genre != genre:
+                        song.tags["genre"] = genre
+                        song.save()
+                        print(f"{path}: {current_genre} --> {genre}")
+                elif path.suffix == ".m4a":
+                    song = mutagen.mp4.MP4(str(path))
+                    current_genre = song.tags["\xa9gen"][0]
+                    if current_genre != genre:
+                        song.tags["\xa9gen"] = genre
+                        song.save()
+                        print(f"{path}: {current_genre} --> {genre}")
+                elif path.suffix == ".mp3":
+                    song = mutagen.File(str(path))
+                    current_genre = str(song.tags["TCON"])
+                    if current_genre != genre:
+                        id3 = mutagen.id3.ID3(str(path))
+                        id3.add(mutagen.id3.TCON(encoding=3, text=genre))
+                        id3.save()
+                        print(f"{path}: {current_genre} --> {genre}")
+
+    def _update_community_artists(self):
+        for artist_id, artist in sorted(
+            self._community_genres_by_artist.items(), key=lambda x: x[1]["name"]
+        ):
+            i = input(f"Continue with {artist['name']} [Y, n, s]: ").lower().strip()
+            if i == "n":
+                break
+            if i != "s":
+                webbrowser.open(f"https://musicbrainz.org/artist/{artist_id}/tags")
+
+    def _get_all_paths(self):
+        paths = []
         for directory in self._args.directory:
-            for root, _, files in os.walk(directory):
-                filenames.extend([os.path.join(root, f) for f in files])
-        return filenames
+            paths.extend([p for p in list(Path(directory).glob("**/*")) if p.is_file()])
+        return paths
 
-    def _get_genre_by_artist(self):
+    def _get_paths_by_artist(self):
         artists = {}
-        for artist_id in self._fns_by_artist:
-            at = self._mb.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
-            if at["user-genres"]:
-                artists[artist_id] = {"genre": at["user-genres"][0]["name"], "type": "user"}
-            elif at["genres"]:
-                g = [x["name"] for x in reversed(sorted(at["genres"], key=lambda y: y["count"]))]
-                artists[artist_id] = {"genre": g[0], "type": "community"}
+        for path in self._paths:
+            artist_id = None
+            song = mutagen.File(str(path))
+            if path.suffix == ".flac":
+                artist_id = str(
+                    song.tags.get("musicbrainz_albumartistid", [""])[0]
+                    or song.tags.get("musicbrainz_artistid", [""])[0]
+                )
+            elif path.suffix == ".m4a":
+                artist_id = (
+                    song.tags.get("----:com.apple.iTunes:MusicBrainz Album Artist Id", [""])[0]
+                    or song.tags.get("----:com.apple.iTunes:MusicBrainz Artist Id", [""])[0]
+                ).decode("utf8")
+            elif path.suffix == ".mp3":
+                artist_id = str(
+                    song.tags.get("TXXX:MusicBrainz Album Artist Id", [""])[0]
+                    or song.tags.get("TXXX:MusicBrainz Artist Id", [""])[0]
+                )
+            if artist_id:
+                if artist_id not in artists:
+                    artists[artist_id] = []
+                artists[artist_id].append(path)
         return artists
 
-    def _get_genre_by_release_group(self):
-        release_groups = {}
-        for release_group_id in self._fns_by_release_groups:
-            rg = self._mb.get_release_group_by_id(
-                release_group_id, includes=["genres", "user-genres"]
-            )
-            if rg["user-genres"]:
-                release_groups[release_group_id] = {
-                    "genre": rg["user-genres"][0]["name"],
-                    "type": "user",
+    def _get_genres_by_artist(self):
+        user, community = {}, {}
+        user_modified = False
+        cache_file = Path.home() / ".cache" / "audiolibrarian" / "user-genres.pickle"
+        if cache_file.exists():
+            with cache_file.open(mode="rb") as cf:
+                user = pickle.load(cf)
+        for artist_id in self._paths_by_artist:
+            if artist_id in user:
+                # print("Cache hit:", artist_id, user[artist_id])
+                continue  # already in the cache
+            artist = self._mb.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
+            if artist["user-genres"]:
+                genre = artist["user-genres"][0]["name"].title()
+                user[artist_id] = genre
+                user_modified = True
+            elif artist["genres"]:
+                community[artist_id] = {
+                    "name": artist["name"],
+                    "genres": [{"name": x["name"], "count": x["count"]} for x in artist["genres"]],
                 }
-            elif rg["genres"]:
-                g = [x["name"] for x in reversed(sorted(rg["genres"], key=lambda y: y["count"]))]
-                release_groups[release_group_id] = {"genre": g[0], "type": "community"}
-        return release_groups
-
-    def _get_maps(self):
-        artists = {}
-        release_groups = {}
-        for filename in self._filenames:
-            song = mutagen.File(filename)
-            artist_id = (
-                song.tags.get("MUSICBRAINZ_ALBUMARTISTID", [""])[0]
-                or song.tags.get("MUSICBRAINZ_ARTISTID", [""])[0]
-            )
-            if artist_id not in artists:
-                artists[artist_id] = []
-            artists[artist_id].append(filename)
-
-            release_group_id = song.tags.get("MUSICBRAINZ_RELEASEGROUPID", [""])[0]
-            if release_group_id not in release_groups:
-                release_groups[release_group_id] = []
-            release_groups[release_group_id].append(filename)
-        return artists, release_groups
+        if user_modified:
+            cache_file.parent.mkdir(exist_ok=True)
+            with cache_file.open(mode="wb") as cf:
+                pickle.dump(user, cf)
+        return user, community

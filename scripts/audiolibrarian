@@ -9,9 +9,9 @@ import re
 import subprocess
 import sys
 
-from audiolibrarian.audiolibrarian import AudioLibrarian, GenreTagger
+from audiolibrarian.audiolibrarian import AudioLibrarian, GenreManager
 
-REQUIRED_EXE = ("cd-paranoia", "fdkaac", "flac", "lame", "sndfile-convert", "wavegain")
+REQUIRED_EXE = ("cd-paranoia", "eject", "fdkaac", "flac", "lame", "sndfile-convert", "wavegain")
 
 
 def check_deps():
@@ -44,17 +44,21 @@ def parse_args():
     _rip = subparsers.add_parser("rip", help="rip music from a CD")
     _rip.add_argument("--artist", "-a", help="provide artist")
     _rip.add_argument("--album", "-m", help="provide album")
-    _rip.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
+    _rip.add_argument("--disc", "-d", default="1/1", help="x/y: disc x of y; multi-disc release")
 
-    # genre tagging
-    _genre = subparsers.add_parser("genre", help="update genre tags")
+    # genre management
+    _genre = subparsers.add_parser("genre", help="manager MB genre")
     _genre.add_argument("directory", nargs="+", help="root of directory tree to process")
+    _genre_action = _genre.add_mutually_exclusive_group()
+    _genre_action.add_argument("--tag", action="store_true", help="update tags")
+    _genre_action.add_argument("--update", action="store_true", help="update Musicbrainz")
 
     return _validate_args(parser.parse_args())
 
 
 def _validate_args(a):
-    if "disc" in a:
+    print(a)
+    if "disc" in a and a.disc:
         if not re.match(r"\d+/\d+", a.disc):
             print("Invalid --disc specification; should be x/y")
             sys.exit(-1)
@@ -66,8 +70,7 @@ if __name__ == "__main__":
     if args.verbose:
         print(args)
     check_deps()
-    print(args)
     if args.command == "genre":
-        GenreTagger(args)
+        GenreManager(args)
     else:
         AudioLibrarian(args)

@@ -1,3 +1,5 @@
+import time
+
 import musicbrainzngs
 import requests
 from fuzzywuzzy import fuzz
@@ -20,6 +22,10 @@ class MusicBrainsSession:
         url = f"https://musicbrainz.org/ws/2/{path}"
         params["fmt"] = "json"
         r = self._session.get(url, params=params)
+        while r.status_code == 503:
+            print("Waiting due to throttling...")
+            time.sleep(30)
+            r = self._session.get(url, params=params)
         assert r.status_code == 200, f"{r.status_code} - {url}"
         return r.json()
 

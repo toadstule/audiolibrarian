@@ -67,6 +67,7 @@ class CDAudioSource(AudioSource):
             r.check_returncode()
         finally:
             os.chdir(cwd)
+        subprocess.run(("eject",))
 
 
 class FilesAudioSource(AudioSource):
