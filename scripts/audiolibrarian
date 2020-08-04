@@ -46,7 +46,7 @@ def parse_args():
     _rip.add_argument("--album", "-m", help="provide album")
     _rip.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
     _rip.add_argument("--mb-release-id", help="Musicbrainz release ID")
-    _rip.add_argument("--disc", "-d", default="1/1", help="x/y: disc x of y; multi-disc release")
+    _rip.add_argument("--disc", "-d", help="x/y: disc x of y; multi-disc release")
 
     # genre management
     _genre = subparsers.add_parser("genre", help="manager MB genre")
