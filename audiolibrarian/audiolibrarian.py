@@ -41,10 +41,12 @@ class AudioLibrarian:
         d = self._args.disc
         self._disc_number, self._disc_count = d.split("/") if d else ("1", "1")
 
-        if self._args.source == "cd":
+        if self._args.command == "rip":
             audio_source = audiosource.CDAudioSource()
+        elif self._args.command == "convert":
+            audio_source = audiosource.FilesAudioSource(self._args.filename)
         else:
-            audio_source = audiosource.FilesAudioSource(self._args.filenames)
+            raise Exception(f"Invalid command: {self._args.command}")
 
         search_data = audio_source.get_search_data()
         if self._args.artist:
@@ -114,7 +116,7 @@ class AudioLibrarian:
         return artist, album
 
     def _get_artist_album_from_tags(self):
-        for filename in self._args.filenames:
+        for filename in self._args.filename:
             album, artist = None, None
             song = mutagen.File(filename)
             pprint.pp(song.tags)
