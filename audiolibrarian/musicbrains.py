@@ -1,3 +1,5 @@
+import time
+
 import musicbrainzngs
 import requests
 from fuzzywuzzy import fuzz
@@ -8,12 +10,11 @@ from audiolibrarian.audioinfo import AudioInfo
 musicbrainzngs.set_useragent("audiolibrarian", "0.1", "steve@jibson.com")
 
 
-class MusicBrainsInfo(AudioInfo):
-    def __init__(self, search_data, verbose=False):
+class MusicBrainsSession:
+    def __init__(self):
         self._session = requests.Session()
         self._session.auth = HTTPDigestAuth("toadstule", "***REMOVED***")
         self._session.headers.update({"User-Agent": "audiolibrarian/0.1/steve@jibson.com"})
-        super().__init__(search_data, verbose)
 
     def _get(self, path, params=None):
         # Used for direct API calls; those not supported by the python library
@@ -21,8 +22,30 @@ class MusicBrainsInfo(AudioInfo):
         url = f"https://musicbrainz.org/ws/2/{path}"
         params["fmt"] = "json"
         r = self._session.get(url, params=params)
+        while r.status_code == 503:
+            print("Waiting due to throttling...")
+            time.sleep(30)
+            r = self._session.get(url, params=params)
         assert r.status_code == 200, f"{r.status_code} - {url}"
         return r.json()
+
+    def get_artist_by_id(self, artist_id, includes=None):
+        params = {}
+        if includes is not None:
+            params["inc"] = "+".join(includes)
+        return self._get(f"artist/{artist_id}", params=params)
+
+    def get_release_group_by_id(self, release_group_id, includes=None):
+        params = {}
+        if includes is not None:
+            params["inc"] = "+".join(includes)
+        return self._get(f"release-group/{release_group_id}", params=params)
+
+
+class MusicBrainsInfo(AudioInfo):
+    def __init__(self, search_data, verbose=False):
+        self._session = MusicBrainsSession()
+        super().__init__(search_data, verbose)
 
     def _get_artist_id(self):
         artist = self._search_data.artist
@@ -39,9 +62,11 @@ class MusicBrainsInfo(AudioInfo):
         # - user input
 
         # user-genres and genres are not supported with the python library
-        rg = self._get(f"release-group/{release_group_id}", params={"inc": "genres+user-genres"})
+        rg = self._session.get_release_group_by_id(
+            release_group_id, includes=["genres", "user-genres"]
+        )
         self._pprint("RELEASE_GROUP_GENRES", rg)
-        at = self._get(f"artist/{artist_id}", params={"inc": "genres+user-genres"})
+        at = self._session.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
         self._pprint("ARTIST_GENRES", at)
         if rg["user-genres"]:
             return rg["user-genres"][0]["name"]

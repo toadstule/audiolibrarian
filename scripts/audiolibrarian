@@ -9,9 +9,9 @@ import re
 import subprocess
 import sys
 
-from audiolibrarian.audiolibrarian import AudioLibrarian
+from audiolibrarian.audiolibrarian import AudioLibrarian, GenreManager
 
-REQUIRED_EXE = ("cd-paranoia", "fdkaac", "flac", "lame", "sndfile-convert", "wavegain")
+REQUIRED_EXE = ("cd-paranoia", "eject", "fdkaac", "flac", "lame", "sndfile-convert", "wavegain")
 
 
 def check_deps():
@@ -27,24 +27,38 @@ def check_deps():
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Audio Librarian")
-    subparsers = parser.add_subparsers(title="source", dest="source")
+    subparsers = parser.add_subparsers(title="command", dest="command")
 
-    parser.add_argument("--artist", "-a", help="provide artist (ignore tags)")
-    parser.add_argument("--album", "-m", help="provide album (ignore tags)")
+    # global options
     parser.add_argument("--db", default="mb", choices=("discogs", "mb"), help="database")
-    parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
 
-    from_files = subparsers.add_parser("files")
-    from_files.add_argument("filenames", nargs="+", help="audio files")
+    # convert from files
+    _convert = subparsers.add_parser("convert", help="convert music from files")
+    _convert.add_argument("--artist", "-a", help="provide artist (ignore tags)")
+    _convert.add_argument("--album", "-m", help="provide album (ignore tags)")
+    _convert.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
+    _convert.add_argument("filename", nargs="+", help="directory name or audio file name")
 
-    subparsers.add_parser("cd")
+    # rip from CD
+    _rip = subparsers.add_parser("rip", help="rip music from a CD")
+    _rip.add_argument("--artist", "-a", help="provide artist")
+    _rip.add_argument("--album", "-m", help="provide album")
+    _rip.add_argument("--disc", "-d", default="1/1", help="x/y: disc x of y; multi-disc release")
+
+    # genre management
+    _genre = subparsers.add_parser("genre", help="manager MB genre")
+    _genre.add_argument("directory", nargs="+", help="root of directory tree to process")
+    _genre_action = _genre.add_mutually_exclusive_group()
+    _genre_action.add_argument("--tag", action="store_true", help="update tags")
+    _genre_action.add_argument("--update", action="store_true", help="update Musicbrainz")
 
     return _validate_args(parser.parse_args())
 
 
 def _validate_args(a):
-    if a.disc:
+    print(a)
+    if "disc" in a and a.disc:
         if not re.match(r"\d+/\d+", a.disc):
             print("Invalid --disc specification; should be x/y")
             sys.exit(-1)
@@ -56,4 +70,7 @@ if __name__ == "__main__":
     if args.verbose:
         print(args)
     check_deps()
-    AudioLibrarian(args)
+    if args.command == "genre":
+        GenreManager(args)
+    else:
+        AudioLibrarian(args)
