@@ -73,9 +73,9 @@ class MusicBrainsInfo(AudioInfo):
         if at["user-genres"]:
             return at["user-genres"][0]["name"]
         if rg["genres"]:
-            return [g["name"] for g in reversed(sorted(rg["genres"], key=lambda x: x["count"]))]
+            return [g["name"] for g in reversed(sorted(rg["genres"], key=lambda x: x["count"]))][0]
         if at["genres"]:
-            return [g["name"] for g in reversed(sorted(at["genres"], key=lambda x: x["count"]))]
+            return [g["name"] for g in reversed(sorted(at["genres"], key=lambda x: x["count"]))][0]
         return input("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
     def _get_release_group_ids(self, artist_id):
