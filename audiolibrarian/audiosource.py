@@ -44,8 +44,8 @@ class AudioSource(abc.ABC):
 
 class CDAudioSource(AudioSource):
     def __init__(self):
-        self._cd = discid.read(features=["mcn"])
         super().__init__()
+        self._cd = discid.read(features=["mcn"])
 
     def get_search_data(self):
         return SearchData(disc_id=self._cd.id, disc_mcn=self._cd.mcn)
