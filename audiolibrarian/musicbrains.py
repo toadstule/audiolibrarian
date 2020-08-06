@@ -190,6 +190,10 @@ class MusicBrainsInfo(AudioInfo):
         if release_group["type"].lower() != self.album_type[0]:
             self.album_type.append(release_group["type"].lower())
 
+        lil = release.get("label-info-list")
+        if lil:
+            self.catalog_number = lil[0].get("catalog-number", "")
+
         self.disc_number = medium["position"]
         self.media = medium.get("format", "")
         self.organization = [x["label"]["name"] for x in release["label-info-list"]]
@@ -197,7 +201,6 @@ class MusicBrainsInfo(AudioInfo):
         self.asin = release.get("asin", "")
         self.album_status = release.get("status", "").lower()
         self.country = release.get("country", "")
-        self.catalog_number = release.get("label-info-list", [{}])[0].get("catalog-number", "")
         self.mb_artist_id = artist_id
         self.mb_release_group_id = release_group["id"]
         self.mb_release_id = release_id
