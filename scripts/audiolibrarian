@@ -37,6 +37,8 @@ def parse_args():
     _convert = subparsers.add_parser("convert", help="convert music from files")
     _convert.add_argument("--artist", "-a", help="provide artist (ignore tags)")
     _convert.add_argument("--album", "-m", help="provide album (ignore tags)")
+    _convert.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
+    _convert.add_argument("--mb-release-id", help="Musicbrainz release ID")
     _convert.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     _convert.add_argument("filename", nargs="+", help="directory name or audio file name")
 
