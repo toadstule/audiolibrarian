@@ -81,6 +81,7 @@ class FilesAudioSource(AudioSource):
                 if fns:
                     self._filenames = fns
                     break
+        self._file_type = os.path.splitext(self._filenames[0])[-1].lstrip(".")
 
     def get_search_data(self):
         artist, album, mb_artist_id, mb_release_id = "", "", "", ""
@@ -88,15 +89,35 @@ class FilesAudioSource(AudioSource):
             song = mutagen.File(filename)
             pprint.pp(song.tags)
             artist = (
-                artist or song.tags.get("ALBUMARTIST", [""])[0] or song.tags.get("ARTIST", [""])[0]
+                artist
+                or song.tags.get("ALBUMARTIST", [""])[0]
+                or song.tags.get("ARTIST", [""])[0]
+                or song.tags.get("aART", [""])[0]
+                or song.tags.get("\xa9ART", [""])[0]
+                or song.tags.get("TPE2", [""])[0]
+                or song.tags.get("TPE1", [""])[0]
             )
-            album = album or song.tags.get("ALBUM", [""])[0]
+            album = (
+                album
+                or song.tags.get("ALBUM", [""])[0]
+                or song.tags.get("\xa9alb", [""])[0]
+                or song.tags.get("TALB", [""])[0]
+            )
             mb_artist_id = (
                 mb_release_id
                 or song.tags.get("MUSICBRAINZ_ALBUMARTISTID", [""])[0]
                 or song.tags.get("MUSICBRAINZ_ARTISTID", [""])[0]
+                or song.tags.get("----:com.apple.iTunes:MusicBrainz Album Artist Id", [""])[0]
+                or song.tags.get("----:com.apple.iTunes:MusicBrainz Artist Id", [""])[0]
+                or song.tags.get("TXXX:MusicBrainz Album Artist Id", [""])[0]
+                or song.tags.get("TXXX:MusicBrainz Artist Id", [""])[0]
             )
-            mb_release_id = mb_release_id or song.tags.get("MUSICBRAINZ_ALBUMID", [""])[0]
+            mb_release_id = (
+                mb_release_id
+                or song.tags.get("MUSICBRAINZ_ALBUMID", [""])[0]
+                or song.tags.get("----:com.apple.iTunes:MusicBrainz Album Id", [""])[0]
+                or song.tags.get("TXXX:MusicBrainz Album Id", [""])[0]
+            )
             print("Artist from tags:", artist)
             print("Album from tags:", album)
             print("MB Artist ID from tags:", mb_artist_id)
@@ -116,10 +137,29 @@ class FilesAudioSource(AudioSource):
     def prepare_source(self):
         tmp_dir = os.path.join(self._temp_dir, "__tmp__")
         os.makedirs(tmp_dir)
-        commands = [
-            ("flac", "--silent", "--decode", f"--output-prefix={tmp_dir}/", f)
-            for f in self.get_source_filenames()
-        ]
+        if self._file_type == "flac":
+            commands = [
+                ("flac", "--silent", "--decode", f"--output-prefix={tmp_dir}/", f)
+                for f in self.get_source_filenames()
+            ]
+        elif self._file_type == "m4a":
+            commands = [
+                ("faad", "-o", f"{tmp_dir}/{os.path.basename(f).replace('.m4a', '.wav')}", f)
+                for f in self.get_source_filenames()
+            ]
+        elif self._file_type == "mp3":
+            commands = [
+                (
+                    "mpg123",
+                    "-q",
+                    "-w",
+                    f"{tmp_dir}/{os.path.basename(f).replace('.mp3', '.wav')}",
+                    f,
+                )
+                for f in self.get_source_filenames()
+            ]
+        else:
+            raise Exception(f"Unsupported source file type: {self._file_type}")
         cmd.parallel("Making wav files...", commands, tmp_dir)
         for f in glob.glob(os.path.join(tmp_dir, "*.wav")):
             r = subprocess.run(("sndfile-convert", "-pcm16", f, f.replace("/__tmp__/", "/")))
