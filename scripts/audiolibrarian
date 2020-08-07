@@ -11,7 +11,17 @@ import sys
 
 from audiolibrarian.audiolibrarian import AudioLibrarian, GenreManager
 
-REQUIRED_EXE = ("cd-paranoia", "eject", "fdkaac", "flac", "lame", "sndfile-convert", "wavegain")
+REQUIRED_EXE = (
+    "cd-paranoia",
+    "eject",
+    "faad",
+    "fdkaac",
+    "flac",
+    "lame",
+    "mpg123",
+    "sndfile-convert",
+    "wavegain",
+)
 
 
 def check_deps():
