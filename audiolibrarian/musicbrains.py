@@ -147,7 +147,7 @@ class MusicBrainsInfo(AudioInfo):
         self.artist_sort_name = artist["sort-name"]
         self.album = release["title"].replace("’", "'")
         self.genre = self._get_genre(release_group["id"], artist_id).title()
-        self.year = release["release-event-list"][0]["date"]
+        self.year = release["release-event-list"][0].get("date") or input("Release year: ")
         self.original_date = release_group.get("first-release-date", "")
         self.original_year = self.original_date.split("-")[0] or self.year
 
