@@ -374,7 +374,8 @@ class AudioLibrarian:
 
     def _normalize(self):
         print("Normalizing wav files...")
-        command = ["wavegain", "--album", "--apply"]
+        # command = ["wavegain", "--album", "--apply"]
+        command = ["wavegain", "--radio", "--gain=5", "--apply"]
         command.extend(glob.glob(self._wav_dir))
         r = subprocess.run(command, stdout=subprocess.DEVNULL)
         r.check_returncode()
