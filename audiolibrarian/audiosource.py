@@ -88,36 +88,39 @@ class FilesAudioSource(AudioSource):
         for filename in self._filenames:
             song = mutagen.File(filename)
             pprint.pp(song.tags)
-            artist = (
-                artist
-                or song.tags.get("ALBUMARTIST", [""])[0]
-                or song.tags.get("ARTIST", [""])[0]
-                or song.tags.get("aART", [""])[0]
-                or song.tags.get("\xa9ART", [""])[0]
-                or song.tags.get("TPE2", [""])[0]
-                or song.tags.get("TPE1", [""])[0]
-            )
-            album = (
-                album
-                or song.tags.get("ALBUM", [""])[0]
-                or song.tags.get("\xa9alb", [""])[0]
-                or song.tags.get("TALB", [""])[0]
-            )
-            mb_artist_id = (
-                mb_release_id
-                or song.tags.get("MUSICBRAINZ_ALBUMARTISTID", [""])[0]
-                or song.tags.get("MUSICBRAINZ_ARTISTID", [""])[0]
-                or song.tags.get("----:com.apple.iTunes:MusicBrainz Album Artist Id", [""])[0]
-                or song.tags.get("----:com.apple.iTunes:MusicBrainz Artist Id", [""])[0]
-                or song.tags.get("TXXX:MusicBrainz Album Artist Id", [""])[0]
-                or song.tags.get("TXXX:MusicBrainz Artist Id", [""])[0]
-            )
-            mb_release_id = (
-                mb_release_id
-                or song.tags.get("MUSICBRAINZ_ALBUMID", [""])[0]
-                or song.tags.get("----:com.apple.iTunes:MusicBrainz Album Id", [""])[0]
-                or song.tags.get("TXXX:MusicBrainz Album Id", [""])[0]
-            )
+            try:
+                artist = (
+                    artist
+                    or song.tags.get("ALBUMARTIST", [""])[0]
+                    or song.tags.get("ARTIST", [""])[0]
+                    or song.tags.get("aART", [""])[0]
+                    or song.tags.get("\xa9ART", [""])[0]
+                    or song.tags.get("TPE2", [""])[0]
+                    or song.tags.get("TPE1", [""])[0]
+                )
+                album = (
+                    album
+                    or song.tags.get("ALBUM", [""])[0]
+                    or song.tags.get("\xa9alb", [""])[0]
+                    or song.tags.get("TALB", [""])[0]
+                )
+                mb_artist_id = (
+                    mb_release_id
+                    or song.tags.get("MUSICBRAINZ_ALBUMARTISTID", [""])[0]
+                    or song.tags.get("MUSICBRAINZ_ARTISTID", [""])[0]
+                    or song.tags.get("----:com.apple.iTunes:MusicBrainz Album Artist Id", [""])[0]
+                    or song.tags.get("----:com.apple.iTunes:MusicBrainz Artist Id", [""])[0]
+                    or song.tags.get("TXXX:MusicBrainz Album Artist Id", [""])[0]
+                    or song.tags.get("TXXX:MusicBrainz Artist Id", [""])[0]
+                )
+                mb_release_id = (
+                    mb_release_id
+                    or song.tags.get("MUSICBRAINZ_ALBUMID", [""])[0]
+                    or song.tags.get("----:com.apple.iTunes:MusicBrainz Album Id", [""])[0]
+                    or song.tags.get("TXXX:MusicBrainz Album Id", [""])[0]
+                )
+            except ValueError:
+                continue
             print("Artist from tags:", artist)
             print("Album from tags:", album)
             print("MB Artist ID from tags:", mb_artist_id)
