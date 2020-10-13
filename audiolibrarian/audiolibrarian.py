@@ -37,6 +37,7 @@ class AudioLibrarian:
         self._flac_dir = os.path.join(self._work_dir, "flac")
         self._m4a_dir = os.path.join(self._work_dir, "m4a")
         self._mp3_dir = os.path.join(self._work_dir, "mp3")
+        self._source_dir = os.path.join(self._work_dir, "source")
         self._wav_dir = os.path.join(self._work_dir, "wav")
         self._lock_file = "workdir.lock"
 
@@ -78,6 +79,7 @@ class AudioLibrarian:
             self._make_clean_workdirs()
             audio_source.copy_wavs(self._wav_dir)
             self._rename_wav()
+            self._make_source()
             self._normalize()
             self._make_flac()
             self._make_m4a()
@@ -97,6 +99,10 @@ class AudioLibrarian:
     @property
     def _mp3_filenames(self):
         return sorted(glob.glob(os.path.join(self._mp3_dir, "*.mp3")))
+
+    @property
+    def _source_filenames(self):
+        return sorted(glob.glob(os.path.join(self._source_dir, "*.flac")))
 
     @property
     def _wav_filenames(self):
@@ -142,15 +148,16 @@ class AudioLibrarian:
     def _make_clean_workdirs(self):
         if os.path.isdir(self._work_dir):
             shutil.rmtree(self._work_dir)
-        for d in self._flac_dir, self._m4a_dir, self._mp3_dir, self._wav_dir:
+        for d in self._flac_dir, self._m4a_dir, self._mp3_dir, self._source_dir, self._wav_dir:
             os.makedirs(d)
 
-    def _make_flac(self):
+    def _make_flac(self, source=False):
+        out_dir = self._source_dir if source else self._flac_dir
         commands = [
-            ("flac", "--silent", f"--output-prefix={self._flac_dir}/", f)
+            ("flac", "--silent", f"--output-prefix={out_dir}/", f)
             for f in self._wav_filenames
         ]
-        cmd.parallel("Making flac files...", commands, self._flac_dir)
+        cmd.parallel("Making flac files...", commands, out_dir)
         info = self._info
         shared_tags = {
             "album": [info.album],
@@ -177,7 +184,7 @@ class AudioLibrarian:
             "musicbrainz_albumartistid": [info.mb_artist_id],
             "musicbrainz_releasegroupid": [info.mb_release_group_id],
         }
-        for flac in self._flac_filenames:
+        for flac in self._source_filenames if source else self._flac_filenames:
             number = str(int(os.path.basename(flac).split("__")[0]))
             song = mutagen.flac.FLAC(flac)
             track = info.get_track(number)
@@ -341,23 +348,29 @@ class AudioLibrarian:
                 )
             song.save()
 
+    def _make_source(self):
+        self._make_flac(source=True)
+
     def _move_files(self):
         artist_dir = text.get_filename(self._info.artist)
         album_dir = text.get_filename(f"{self._info.original_year}__{self._info.album}")
         flac_dir = f"library/flac/{artist_dir}/{album_dir}"
         m4a_dir = f"library/m4a/{artist_dir}/{album_dir}"
         mp3_dir = f"library/mp3/{artist_dir}/{album_dir}"
+        source_dir = f"library/source/{artist_dir}/{album_dir}"
         if self._args.disc:
             flac_dir += f"/disc{self._disc_number}"
             m4a_dir += f"/disc{self._disc_number}"
             mp3_dir += f"/disc{self._disc_number}"
-        for d in (flac_dir, m4a_dir, mp3_dir):
+            source_dir += f"/disc{self._disc_number}"
+        for d in (flac_dir, m4a_dir, mp3_dir, source_dir):
             if os.path.isdir(d):
                 shutil.rmtree(d)
             os.makedirs(d)
         [os.rename(f, f"{flac_dir}/{os.path.basename(f)}") for f in self._flac_filenames]
         [os.rename(f, f"{m4a_dir}/{os.path.basename(f)}") for f in self._m4a_filenames]
         [os.rename(f, f"{mp3_dir}/{os.path.basename(f)}") for f in self._mp3_filenames]
+        [os.rename(f, f"{source_dir}/{os.path.basename(f)}") for f in self._source_filenames]
 
     def _normalize(self):
         print("Normalizing wav files...")
