@@ -33,7 +33,7 @@ class AudioLibrarian:
         self._args = args
 
         # directories
-        self._work_dir = "/tmp/audiolibrarian"
+        self._work_dir = "/var/tmp/audiolibrarian"
         self._flac_dir = os.path.join(self._work_dir, "flac")
         self._m4a_dir = os.path.join(self._work_dir, "m4a")
         self._mp3_dir = os.path.join(self._work_dir, "mp3")
