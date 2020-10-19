@@ -124,17 +124,21 @@ class MusicBrainsInfo(AudioInfo):
                 release_id = result["disc"]["release-list"][0]["id"]
             elif result.get("cdstub"):
                 print("A CD Stub exists for this disc, but no disc.")
-        if not artist_id:
+        if not artist_id and self._search_data.artist:
             artist_id = self._get_artist_id()
+        if not artist_id:
+            artist_id = input("Musicbrainz Artist ID: ")
         print("ARTIST_ID:", artist_id)
         artist = musicbrainzngs.get_artist_by_id(artist_id)["artist"]
         self._pprint("ARTIST", artist)
         if release_id:
             print(f"https://musicbrainz.org/release/{release_id}")
-        else:
+        elif self._search_data.album:
             release_group_ids = self._get_release_group_ids(artist_id)
             print("RELEASE_GROUPS:", release_group_ids)
             release_id = self._prompt_release_id(release_group_ids)
+        else:
+            release_id = input("Musicbrainz Release ID: ")
         release = musicbrainzngs.get_release_by_id(
             release_id,
             includes=["artist-credits", "isrcs", "labels", "recordings", "release-groups", "tags"],
