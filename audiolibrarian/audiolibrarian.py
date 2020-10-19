@@ -39,7 +39,7 @@ class AudioLibrarian:
         self._mp3_dir = os.path.join(self._work_dir, "mp3")
         self._source_dir = os.path.join(self._work_dir, "source")
         self._wav_dir = os.path.join(self._work_dir, "wav")
-        self._lock_file = os.path.join(self._work_dir, "workdir.lock")
+        self._lock_file = f"{self._work_dir}.lock"
 
         d = self._args.disc
         self._disc_number, self._disc_count = d.split("/") if d else ("1", "1")
