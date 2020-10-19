@@ -109,12 +109,10 @@ class MusicBrainsInfo(AudioInfo):
                 return release_id
 
     def _update(self):
-        artist_id = None
-        release_id = None
-        if self._search_data.mb_artist_id and self._search_data.mb_release_id:
-            artist_id = self._search_data.mb_artist_id
-            release_id = self._search_data.mb_release_id
-        elif self._search_data.disc_id:
+        artist_id = self._search_data.mb_artist_id
+        release_id = self._search_data.mb_release_id
+
+        if not artist_id and not release_id and self._search_data.disc_id:
             result = musicbrainzngs.get_releases_by_discid(
                 self._search_data.disc_id, includes=["artists"]
             )
@@ -124,6 +122,7 @@ class MusicBrainsInfo(AudioInfo):
                 release_id = result["disc"]["release-list"][0]["id"]
             elif result.get("cdstub"):
                 print("A CD Stub exists for this disc, but no disc.")
+
         if not artist_id and self._search_data.artist:
             artist_id = self._get_artist_id()
         if not artist_id:
@@ -131,6 +130,7 @@ class MusicBrainsInfo(AudioInfo):
         print("ARTIST_ID:", artist_id)
         artist = musicbrainzngs.get_artist_by_id(artist_id)["artist"]
         self._pprint("ARTIST", artist)
+
         if release_id:
             print(f"https://musicbrainz.org/release/{release_id}")
         elif self._search_data.album:

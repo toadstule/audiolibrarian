@@ -75,14 +75,6 @@ def _validate_args(a):
         if not re.match(r"\d+/\d+", a.disc):
             print("Invalid --disc specification; should be x/y")
             sys.exit(1)
-    if "mb_artist_id" in a and a.mb_artist_id:
-        if not ("mb_release_id" in a and a.mb_release_id):
-            print("If --mb-artist-id is specified, --mb-release-id is also required")
-            sys.exit(1)
-    if "mb_release_id" in a and a.mb_release_id:
-        if not ("mb_artist_id" in a and a.mb_artist_id):
-            print("If --mb-release-id is specified, --mb-artist-id is also required")
-            sys.exit(1)
     return a
 
 
