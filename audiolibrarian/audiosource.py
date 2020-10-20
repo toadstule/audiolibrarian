@@ -162,7 +162,7 @@ class FilesAudioSource(AudioSource):
                     bitrate = song.info.bitrate // 1000
                     bitrate_mode = "CBR"
                 else:
-                    bitrate = (os.stat(filename).st_size * 8 / song.info.length) // 1000
+                    bitrate = int(os.stat(filename).st_size * 8 / song.info.length) // 1000
                     bitrate_mode = "VBR"
                 return f"AAC_{bitrate_mode}_{bitrate}"
             elif ext == ".mp3":
