@@ -3,4 +3,5 @@ fuzzywuzzy
 musicbrainzngs
 mutagen
 python-Levenshtein
+PyYAML
 requests

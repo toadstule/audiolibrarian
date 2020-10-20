@@ -19,6 +19,7 @@ import mutagen.flac
 import mutagen.id3
 import mutagen.mp3
 import mutagen.mp4
+import yaml
 
 from audiolibrarian import text, audiosource, cmd
 from audiolibrarian.discogs import DiscogsInfo
@@ -50,7 +51,7 @@ class AudioLibrarian:
             audio_source = audiosource.FilesAudioSource(self._args.filename)
         else:
             raise Exception(f"Invalid command: {self._args.command}")
-        self._source_type = audio_source.get_source_type()
+        self._source_info = audio_source.get_source_info()
         search_data = audio_source.get_search_data()
         search_data.disc_number = self._disc_number
         if self._args.artist:
@@ -84,6 +85,7 @@ class AudioLibrarian:
             self._make_flac()
             self._make_m4a()
             self._make_mp3()
+            self._update_manifest()
             self._move_files()
         finally:
             self._release_lock()
@@ -370,8 +372,6 @@ class AudioLibrarian:
         [os.rename(f, f"{m4a_dir}/{os.path.basename(f)}") for f in self._m4a_filenames]
         [os.rename(f, f"{mp3_dir}/{os.path.basename(f)}") for f in self._mp3_filenames]
         [os.rename(f, f"{source_dir}/{os.path.basename(f)}") for f in self._source_filenames]
-        with open(os.path.join(source_dir, f"__{self._source_type}__"), "w") as source_type_file:
-            source_type_file.write("")
 
     def _normalize(self):
         print("Normalizing wav files...")
@@ -395,6 +395,36 @@ class AudioLibrarian:
             if new_name != filename:
                 print(f"{os.path.basename(filename)} --> {os.path.basename(new_name)}")
                 os.rename(filename, new_name)
+
+    def _update_manifest(self):
+        info = self._info  # we use this a lot below
+        filename = os.path.join(self._source_dir, "Manifest.yaml")
+        if os.path.exists(filename):
+            with open(filename) as manifest_file:
+                manifest = yaml.safe_load(manifest_file)
+        else:
+            manifest = {}
+        manifest.update(
+            {
+                "album": info.album,
+                "artist": info.artist,
+                "artist_sort_name": info.artist_sort_name,
+                "media": info.media,
+                "genre": info.genre,
+                "disc_number": info.disc_number,
+                "disc_total": self._disc_count,
+                "original_year": info.original_year,
+                "year": info.year,
+                "musicbrainz_albumid": info.mb_release_id,
+                "musicbrainz_albumartistid": info.mb_artist_id,
+                "musicbrainz_releasegroupid": info.mb_release_group_id,
+                "source_type": self._source_info["type"],
+                "source_bitrate_mode": self._source_info["bitrate_mode"],
+                "source_bitrate": self._source_info["bitrate"],
+            }
+        )
+        with open(filename, "wb") as manifest_file:
+            yaml.safe_dump(manifest, manifest_file, default_flow_style=False)
 
 
 class GenreManager:
