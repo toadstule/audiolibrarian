@@ -91,6 +91,12 @@ class FilesAudioSource(AudioSource):
         self._file_type = os.path.splitext(self._filenames[0])[-1].lstrip(".")
 
     def get_search_data(self):
+        def to_str(s):
+            try:
+                return s.decode()
+            except AttributeError:
+                return s
+
         artist, album, mb_artist_id, mb_release_id = "", "", "", ""
         for filename in self._filenames:
             song = mutagen.File(filename)
@@ -133,7 +139,9 @@ class FilesAudioSource(AudioSource):
             print("MB Artist ID from tags:", mb_artist_id)
             print("MB Release ID from tags:", mb_release_id)
             if mb_artist_id and mb_release_id:
-                return SearchData(mb_artist_id=mb_artist_id, mb_release_id=mb_release_id)
+                return SearchData(
+                    mb_artist_id=to_str(mb_artist_id), mb_release_id=to_str(mb_release_id)
+                )
             if artist and album:
                 return SearchData(artist=artist, album=album)
         return SearchData()
