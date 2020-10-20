@@ -2,7 +2,7 @@ import glob
 import os
 from distutils.core import setup
 
-VERSION = '0.3.6'
+VERSION = '0.4.0'
 
 SCRIPTS = glob.glob(os.path.join('scripts', '*'))
 
