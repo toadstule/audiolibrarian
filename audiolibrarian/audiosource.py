@@ -34,6 +34,10 @@ class AudioSource(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def get_source_type(self):
+        pass
+
+    @abc.abstractmethod
     def get_wav_filenames(self):
         pass
 
@@ -55,6 +59,9 @@ class CDAudioSource(AudioSource):
             os.path.join(self._temp_dir, f"track{str(n + 1).zfill(2)}.cdda.wav")
             for n in range(self._cd.last_track_num)
         ]
+
+    def get_source_type(self):
+        return "CD"
 
     def get_wav_filenames(self):
         return self.get_source_filenames()
@@ -133,6 +140,29 @@ class FilesAudioSource(AudioSource):
 
     def get_source_filenames(self):
         return self._filenames
+
+    def get_source_type(self):
+        for filename in self._filenames:
+            ext = os.path.splitext(filename)[1].lower()
+            if ext == ".wav":
+                return "WAV"
+            if ext == ".flac":
+                return "FLAC"
+            if ext == ".m4a":
+                song = mutagen.File(filename)
+                if song.info.bitrate:
+                    bitrate = song.info.bitrate // 1000
+                    bitrate_mode = "CBR"
+                else:
+                    bitrate = (os.stat(filename).st_size * 8 / song.info.length) // 1000
+                    bitrate_mode = "VBR"
+                return f"AAC_{bitrate_mode}_{bitrate}"
+            elif ext == ".mp3":
+                song = mutagen.File(filename)
+                bitrate_mode = str(song.info.bitrate_mode).split(".")[-1]
+                bitrate = song.info.bitrate // 1000
+                return f"MP3_{bitrate_mode}_{bitrate}"
+        return "UNKNOWN"
 
     def get_wav_filenames(self):
         return sorted(glob.glob(os.path.join(self._temp_dir, "*.wav")))

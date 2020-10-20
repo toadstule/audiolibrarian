@@ -50,7 +50,7 @@ class AudioLibrarian:
             audio_source = audiosource.FilesAudioSource(self._args.filename)
         else:
             raise Exception(f"Invalid command: {self._args.command}")
-
+        self._source_type = audio_source.get_source_type()
         search_data = audio_source.get_search_data()
         search_data.disc_number = self._disc_number
         if self._args.artist:
@@ -154,8 +154,7 @@ class AudioLibrarian:
     def _make_flac(self, source=False):
         out_dir = self._source_dir if source else self._flac_dir
         commands = [
-            ("flac", "--silent", f"--output-prefix={out_dir}/", f)
-            for f in self._wav_filenames
+            ("flac", "--silent", f"--output-prefix={out_dir}/", f) for f in self._wav_filenames
         ]
         cmd.parallel("Making flac files...", commands, out_dir)
         info = self._info
@@ -371,6 +370,8 @@ class AudioLibrarian:
         [os.rename(f, f"{m4a_dir}/{os.path.basename(f)}") for f in self._m4a_filenames]
         [os.rename(f, f"{mp3_dir}/{os.path.basename(f)}") for f in self._mp3_filenames]
         [os.rename(f, f"{source_dir}/{os.path.basename(f)}") for f in self._source_filenames]
+        with open(os.path.join(source_dir, f"__{self._source_type}__"), "w") as source_type_file:
+            source_type_file.write("")
 
     def _normalize(self):
         print("Normalizing wav files...")
