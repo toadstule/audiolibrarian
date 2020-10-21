@@ -427,7 +427,7 @@ class AudioLibrarian:
                 "bitrate_mode": self._source_info["bitrate_mode"],
             },
         }
-        if self._args.cd:
+        if self._args.command == "manifest" and self._args.cd:
             manifest["source_info"] = {
                 "type": "CD",
                 "bitrate": 1411,
