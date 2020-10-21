@@ -176,7 +176,7 @@ class FilesAudioSource(AudioSource):
                 bitrate = song.info.bitrate // 1000
                 bitrate_mode = str(song.info.bitrate_mode).split(".")[-1]
                 # Hack for common CBRs
-                if bitrate_mode == "UNKNOWN" and bitrate in (128, 192, 320):
+                if bitrate_mode == "UNKNOWN" and bitrate in (128, 160, 192, 320):
                     bitrate_mode = "CBR"
                 return {"type": "MP3", "bitrate": bitrate, "bitrate_mode": bitrate_mode}
         return {"type": "UNKNOWN", "bitrate": 0, "bitrate_mode": ""}
