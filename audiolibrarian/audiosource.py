@@ -173,8 +173,11 @@ class FilesAudioSource(AudioSource):
                 return {"type": "AAC", "bitrate": bitrate, "bitrate_mode": bitrate_mode}
             elif ext == ".mp3":
                 song = mutagen.File(filename)
-                bitrate_mode = str(song.info.bitrate_mode).split(".")[-1]
                 bitrate = song.info.bitrate // 1000
+                bitrate_mode = str(song.info.bitrate_mode).split(".")[-1]
+                # Hack for common CBRs
+                if bitrate_mode == "UNKNOWN" and bitrate in (128, 192, 320):
+                    bitrate_mode = "CBR"
                 return {"type": "MP3", "bitrate": bitrate, "bitrate_mode": bitrate_mode}
         return {"type": "UNKNOWN", "bitrate": 0, "bitrate_mode": ""}
 
