@@ -6,3 +6,4 @@ venv/
 library/
 workdir/
 new_library/
+Manifest.yaml

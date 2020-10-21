@@ -52,6 +52,16 @@ def parse_args():
     _convert.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     _convert.add_argument("filename", nargs="+", help="directory name or audio file name")
 
+    # just create the manifest
+    _manifest = subparsers.add_parser("manifest", help="create the Manifest.yaml file")
+    _manifest.add_argument("--artist", "-a", help="provide artist (ignore tags)")
+    _manifest.add_argument("--album", "-m", help="provide album (ignore tags)")
+    _manifest.add_argument("--cd", "-c", action="store_true", help="original source was a CD")
+    _manifest.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
+    _manifest.add_argument("--mb-release-id", help="Musicbrainz release ID")
+    _manifest.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
+    _manifest.add_argument("filename", nargs="+", help="directory name or audio file name")
+
     # rip from CD
     _rip = subparsers.add_parser("rip", help="rip music from a CD")
     _rip.add_argument("--artist", "-a", help="provide artist")

@@ -61,7 +61,7 @@ class CDAudioSource(AudioSource):
         ]
 
     def get_source_info(self):
-        return {"type": "CD", "bitrate": 0, "bitrate_mode": ""}
+        return {"type": "CD", "bitrate": 1411, "bitrate_mode": "CBR"}
 
     def get_wav_filenames(self):
         return self.get_source_filenames()
@@ -153,9 +153,15 @@ class FilesAudioSource(AudioSource):
         for filename in self._filenames:
             ext = os.path.splitext(filename)[1].lower()
             if ext == ".wav":
-                return {"type": "WAV", "bitrate": 0, "bitrate_mode": ""}
+                song = mutagen.File(filename)
+                return {"type": "WAV", "bitrate": song.info.bitrate // 1000, "bitrate_mode": "CBR"}
             if ext == ".flac":
-                return {"type": "FLAC", "bitrate": 0, "bitrate_mode": ""}
+                song = mutagen.File(filename)
+                return {
+                    "type": "FLAC",
+                    "bitrate": song.info.bitrate // 1000,
+                    "bitrate_mode": "VBR",
+                }
             if ext == ".m4a":
                 song = mutagen.File(filename)
                 if song.info.bitrate:

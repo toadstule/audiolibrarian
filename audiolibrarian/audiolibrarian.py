@@ -20,7 +20,6 @@ import mutagen.id3
 import mutagen.mp3
 import mutagen.mp4
 import pyaml
-import yaml
 
 from audiolibrarian import text, audiosource, cmd
 from audiolibrarian.discogs import DiscogsInfo
@@ -42,15 +41,15 @@ class AudioLibrarian:
         self._source_dir = os.path.join(self._work_dir, "source")
         self._wav_dir = os.path.join(self._work_dir, "wav")
         self._lock_file = f"{self._work_dir}.lock"
-        self._manifest_file = os.path.join(self._source_dir, "Manifest.yaml")
+        self._manifest_file = "Manifest.yaml"
 
         d = self._args.disc
         self._disc_number, self._disc_count = d.split("/") if d else ("1", "1")
 
-        if self._args.command == "rip":
-            audio_source = audiosource.CDAudioSource()
-        elif self._args.command == "convert":
+        if self._args.command in ("convert", "manifest"):
             audio_source = audiosource.FilesAudioSource(self._args.filename)
+        elif self._args.command == "rip":
+            audio_source = audiosource.CDAudioSource()
         else:
             raise Exception(f"Invalid command: {self._args.command}")
         self._source_info = audio_source.get_source_info()
@@ -76,21 +75,22 @@ class AudioLibrarian:
             print("\n*** Track count does not match file count ***\n")
         if input("Confirm [Y,n]: ").lower() == "n":
             return
-        audio_source.prepare_source()
-        self._acquire_lock()
-        try:
-            self._make_clean_workdirs()
-            audio_source.copy_wavs(self._wav_dir)
-            self._rename_wav()
-            self._make_source()
-            self._normalize()
-            self._make_flac()
-            self._make_m4a()
-            self._make_mp3()
-            self._update_manifest()
-            self._move_files()
-        finally:
-            self._release_lock()
+        if self._args.command in ("convert", "rip"):
+            audio_source.prepare_source()
+            self._acquire_lock()
+            try:
+                self._make_clean_workdirs()
+                audio_source.copy_wavs(self._wav_dir)
+                self._rename_wav()
+                self._make_source()
+                self._normalize()
+                self._make_flac()
+                self._make_m4a()
+                self._make_mp3()
+                self._move_files()
+            finally:
+                self._release_lock()
+        self._update_manifest()
 
     @property
     def _flac_filenames(self):
@@ -373,10 +373,7 @@ class AudioLibrarian:
         [os.rename(f, f"{flac_dir}/{os.path.basename(f)}") for f in self._flac_filenames]
         [os.rename(f, f"{m4a_dir}/{os.path.basename(f)}") for f in self._m4a_filenames]
         [os.rename(f, f"{mp3_dir}/{os.path.basename(f)}") for f in self._mp3_filenames]
-        [
-            os.rename(f, f"{source_dir}/{os.path.basename(f)}")
-            for f in self._source_filenames + [self._manifest_file]
-        ]
+        [os.rename(f, f"{source_dir}/{os.path.basename(f)}") for f in self._source_filenames]
 
     def _normalize(self):
         print("Normalizing wav files...")
@@ -402,37 +399,43 @@ class AudioLibrarian:
                 os.rename(filename, new_name)
 
     def _update_manifest(self):
-        info = self._info  # we use this a lot below
-        if os.path.exists(self._manifest_file):
-            with open(self._manifest_file) as manifest_file:
-                manifest = yaml.safe_load(manifest_file)
+        if self._args.command in ("convert", "rip"):
+            artist_dir = text.get_filename(self._info.artist)
+            album_dir = text.get_filename(f"{self._info.original_year}__{self._info.album}")
+            manifest_filename = f"library/source/{artist_dir}/{album_dir}/{self._manifest_file}"
         else:
-            manifest = {}
-        manifest.update(
-            {
-                "album": info.album,
-                "artist": info.artist,
-                "artist_sort_name": info.artist_sort_name,
-                "media": info.media,
-                "genre": info.genre,
-                "disc_number": info.disc_number,
-                "disc_total": self._disc_count,
-                "original_year": info.original_year,
-                "date": info.year,
-                "musicbrainz_info": {
-                    "albumid": info.mb_release_id,
-                    "albumartistid": info.mb_artist_id,
-                    "releasegroupid": info.mb_release_group_id,
-                },
-                "source_info": {
-                    "type": self._source_info["type"],
-                    "bitrate": self._source_info["bitrate"],
-                    "bitrate_mode": self._source_info["bitrate_mode"],
-                }
+            manifest_filename = self._manifest_file
+        info = self._info  # we use this a lot below
+        manifest = {
+            "album": info.album,
+            "artist": info.artist,
+            "artist_sort_name": info.artist_sort_name,
+            "media": info.media,
+            "genre": info.genre,
+            "disc_number": info.disc_number,
+            "disc_total": self._disc_count,
+            "original_year": info.original_year,
+            "date": info.year,
+            "musicbrainz_info": {
+                "albumid": info.mb_release_id,
+                "albumartistid": info.mb_artist_id,
+                "releasegroupid": info.mb_release_group_id,
+            },
+            "source_info": {
+                "type": self._source_info["type"],
+                "bitrate": self._source_info["bitrate"],
+                "bitrate_mode": self._source_info["bitrate_mode"],
+            },
+        }
+        if self._args.cd:
+            manifest["source_info"] = {
+                "type": "CD",
+                "bitrate": 1411,
+                "bitrate_mode": "CBR",
             }
-        )
-        with open(self._manifest_file, "w") as manifest_file:
+        with open(manifest_filename, "w") as manifest_file:
             pyaml.dump(manifest, manifest_file)
+        print(f"Wrote {manifest_filename}")
 
 
 class GenreManager:
