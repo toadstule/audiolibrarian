@@ -5,6 +5,7 @@ import requests
 from fuzzywuzzy import fuzz
 from requests.auth import HTTPDigestAuth
 
+from audiolibrarian import text
 from audiolibrarian.audioinfo import AudioInfo
 
 musicbrainzngs.set_useragent("audiolibrarian", "0.1", "steve@jibson.com")
@@ -90,8 +91,7 @@ class MusicBrainsInfo(AudioInfo):
             if rg.get("primary-type") == "Album" and fuzz.ratio(album_l, rg["title"].lower()) > 80
         ]
 
-    @staticmethod
-    def _prompt_release_id(release_group_ids):
+    def _prompt_release_id(self, release_group_ids):
         print(
             "\n\nWe found the following release group(s). Use the link(s) below to "
             "find the release ID that best matches the audio files.\n"
@@ -99,14 +99,14 @@ class MusicBrainsInfo(AudioInfo):
         for release_group_id in release_group_ids:
             print(f"https://musicbrainz.org/release-group/{release_group_id}")
 
+        return self._prompt_uuid("\nRelease ID or URL: ")
+
+    @staticmethod
+    def _prompt_uuid(prompt):
         while True:
-            release_input = input("\nRelease ID or URL: ")
-            try:
-                release_id = release_input.split("/")[-1]
-            except ValueError:
-                pass
-            else:
-                return release_id
+            uuid = text.get_uuid(input(prompt))
+            if uuid is not None:
+                return uuid
 
     def _update(self):
         artist_id = self._search_data.mb_artist_id
@@ -126,7 +126,7 @@ class MusicBrainsInfo(AudioInfo):
         if not artist_id and self._search_data.artist:
             artist_id = self._get_artist_id()
         if not artist_id:
-            artist_id = input("Musicbrainz Artist ID: ")
+            artist_id = self._prompt_uuid("Musicbrainz Artist ID: ")
         print("ARTIST_ID:", artist_id)
         artist = musicbrainzngs.get_artist_by_id(artist_id)["artist"]
         self._pprint("ARTIST", artist)
@@ -138,7 +138,7 @@ class MusicBrainsInfo(AudioInfo):
             print("RELEASE_GROUPS:", release_group_ids)
             release_id = self._prompt_release_id(release_group_ids)
         else:
-            release_id = input("Musicbrainz Release ID: ")
+            release_id = self._prompt_uuid("Musicbrainz Release ID: ")
         release = musicbrainzngs.get_release_by_id(
             release_id,
             includes=["artist-credits", "isrcs", "labels", "recordings", "release-groups", "tags"],
