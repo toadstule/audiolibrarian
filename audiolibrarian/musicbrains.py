@@ -190,7 +190,10 @@ class MusicBrainsInfo(AudioInfo):
             self.tracks.append(track)
 
         if release["cover-art-archive"]["front"] == "true":
-            self.front_cover = musicbrainzngs.get_image_front(release_id, size=500)
+            try:
+                self.front_cover = musicbrainzngs.get_image_front(release_id, size=500)
+            except musicbrainzngs.musicbrainz.NetworkError as err:
+                print(f"Error getting front cover: {err}")
 
         self.album_type = [release_group["primary-type"].lower()]
         if release_group["type"].lower() != self.album_type[0]:
