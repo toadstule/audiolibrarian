@@ -40,7 +40,6 @@ def parse_args():
     subparsers = parser.add_subparsers(title="command", dest="command")
 
     # global options
-    parser.add_argument("--db", default="mb", choices=("discogs", "mb"), help="database")
     parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
 
     # convert from files

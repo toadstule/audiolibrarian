@@ -22,7 +22,6 @@ import mutagen.mp4
 import pyaml
 
 from audiolibrarian import text, audiosource, cmd
-from audiolibrarian.discogs import DiscogsInfo
 from audiolibrarian.musicbrains import MusicBrainsInfo, MusicBrainsSession
 
 TXXX = mutagen.id3.TXXX
@@ -65,10 +64,7 @@ class AudioLibrarian:
             search_data.mb_release_id = self._args.mb_release_id
         print("DATA:", search_data)
         pprint.pp([os.path.basename(f) for f in audio_source.get_source_filenames()])
-        if args.db == "discogs":
-            self._info = DiscogsInfo(search_data, args.verbose)
-        else:
-            self._info = MusicBrainsInfo(search_data, args.verbose)
+        self._info = MusicBrainsInfo(search_data, args.verbose)
         pprint.pp(self._info)
         source_filenames = audio_source.get_source_filenames()
         if len(source_filenames) != len(self._info.tracks):
