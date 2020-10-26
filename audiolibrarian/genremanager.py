@@ -4,10 +4,8 @@ from pathlib import Path
 from typing import Dict, List
 
 import mutagen
-import mutagen.easyid3
 import mutagen.flac
 import mutagen.id3
-import mutagen.mp3
 import mutagen.mp4
 
 from audiolibrarian.musicbrains import MusicBrainsSession
