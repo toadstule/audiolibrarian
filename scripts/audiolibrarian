@@ -9,7 +9,8 @@ import re
 import subprocess
 import sys
 
-from audiolibrarian.audiolibrarian import AudioLibrarian, GenreManager
+from audiolibrarian.audiolibrarian import AudioLibrarian
+from audiolibrarian.genremanager import GenreManager
 
 REQUIRED_EXE = (
     "cd-paranoia",
@@ -70,7 +71,12 @@ def parse_args():
     _rip.add_argument("--disc", "-d", help="x/y: disc x of y; multi-disc release")
 
     # genre management
-    _genre = subparsers.add_parser("genre", help="manager MB genre")
+    description = (
+        "Process all audio files in the given directory(ies), allowing the user to "
+        "*update* the genre in Musicbrainz or *tag* audio files with the "
+        "user-defined genre in Musicbrainz."
+    )
+    _genre = subparsers.add_parser("genre", help="manager MB genre", description=description)
     _genre.add_argument("directory", nargs="+", help="root of directory tree to process")
     _genre_action = _genre.add_mutually_exclusive_group()
     _genre_action.add_argument("--tag", action="store_true", help="update tags")
