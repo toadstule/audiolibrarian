@@ -5,7 +5,8 @@ import string
 uuid_regex = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.I)
 
 
-def get_filename(title):
+def get_filename(title: str) -> str:
+    """Convert a title into a filename."""
     allowed_chars = string.ascii_letters + string.digits + "_."
     no_underscore_replace = ",!'\""
     result = []
