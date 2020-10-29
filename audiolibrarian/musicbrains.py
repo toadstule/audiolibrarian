@@ -1,4 +1,5 @@
 import time
+import webbrowser
 from typing import List, Tuple
 
 import musicbrainzngs
@@ -104,8 +105,9 @@ class MusicBrainsInfo(AudioInfo):
             "find the release ID that best matches the audio files.\n"
         )
         for release_group_id in release_group_ids:
-            print(f"https://musicbrainz.org/release-group/{release_group_id}")
-
+            url = f"https://musicbrainz.org/release-group/{release_group_id}"
+            print(url)
+            webbrowser.open(url)
         return self._prompt_uuid("\nRelease ID or URL: ")
 
     @staticmethod
