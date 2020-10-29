@@ -14,6 +14,5 @@ audiolibrarian --help
 
 ## Todo ##
 
-* Update all fields that Picard updates
 * Reconvert from source
 * Create directories using artist sort order?
