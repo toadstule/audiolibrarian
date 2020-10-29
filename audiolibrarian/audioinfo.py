@@ -34,13 +34,13 @@ class AudioInfo(abc.ABC):
 
         self.disc_number = self._search_data.disc_number
         self.media = ""
-        self.organization = ""
+        self.organizations = ""
         self.barcode = ""
         self.asin = ""
         self.album_type = ""
         self.album_status = ""
         self.country = ""
-        self.catalog_number = ""
+        self.catalog_numbers = []
         self.mb_artist_ids = []
         self.mb_release_group_id = ""
         self.mb_release_id = ""

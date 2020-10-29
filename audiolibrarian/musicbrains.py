@@ -8,6 +8,7 @@ from requests.auth import HTTPDigestAuth
 
 from audiolibrarian import text
 from audiolibrarian.audioinfo import AudioInfo
+from audiolibrarian.text import fix
 
 musicbrainzngs.set_useragent("audiolibrarian", "0.1", "steve@jibson.com")
 
@@ -126,7 +127,7 @@ class MusicBrainsInfo(AudioInfo):
         for r in relationships:
             value = r["artist"]["name"]
             type_ = r["type"].lower()
-            if type_ == 'instrument':
+            if type_ == "instrument":
                 key = "PERFORMER"
                 value = f"{r['artist']['name']} ({','.join(r['attribute-list'])})"
             elif type_ == "mix":
@@ -237,11 +238,21 @@ class MusicBrainsInfo(AudioInfo):
 
         self.disc_number = medium["position"]
         self.media = medium.get("format", "")
-        self.organization = [x["label"]["name"] for x in release["label-info-list"]]
+        self.organizations = list(
+            dict.fromkeys([x["label"]["name"] for x in release["label-info-list"]])
+        )
         self.barcode = release.get("barcode", "")
         self.asin = release.get("asin", "")
         self.album_status = release.get("status", "").lower()
-        self.catalog_number = (release.get("label-info-list") or [{}])[0].get("catalog-number", "")
+        self.catalog_numbers = list(
+            dict.fromkeys(
+                [
+                    x["catalog-number"]
+                    for x in release.get("label-info-list", [])
+                    if x.get("catalog-number")
+                ]
+            )
+        )
         self.country = release.get("country", "")
         self.mb_release_group_id = release_group["id"]
         self.mb_release_id = release_id

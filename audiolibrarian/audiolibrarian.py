@@ -161,7 +161,7 @@ class AudioLibrarian:
         shared_tags = {
             "ALBUM": [info.album],
             "MEDIA": [info.media],
-            "LABEL": info.organization,
+            "LABEL": info.organizations,
             "ALBUMARTIST": [info.artist],
             "ALBUMARTISTSORT": [info.artist_sort_name],
             "DATE": [str(info.year)],
@@ -171,11 +171,11 @@ class AudioLibrarian:
             "DISCTOTAL": [self._disc_count],
             "TOTALDISCS": [self._disc_count],
             "SCRIPT": ["Latn"],
-            "ASIN": [info.asin],
+            "asin": [info.asin],
             "ORIGINALYEAR": [info.original_year],
             "ORIGINALDATE": [info.original_date],
-            "BARCODE": [info.barcode],
-            "CATALOGNUMBER": [info.catalog_number],
+            "barcode": [info.barcode],
+            "CATALOGNUMBER": info.catalog_numbers,
             "RELEASETYPE": info.album_type,
             "RELEASESTATUS": [info.album_status],
             "RELEASECOUNTRY": [info.country],
@@ -225,7 +225,7 @@ class AudioLibrarian:
         shared_tags = {
             "\xa9alb": [info.album],
             "----:com.apple.iTunes:MEDIA": [bytes(info.media, "utf8")],
-            "----:com.apple.iTunes:LABEL": [bytes(x, "utf8") for x in info.organization],
+            "----:com.apple.iTunes:LABEL": [bytes(x, "utf8") for x in info.organizations],
             "aART": [info.artist],
             "soaa": [info.artist_sort_name],
             "\xa9day": [str(info.year)],
@@ -237,7 +237,9 @@ class AudioLibrarian:
             "----:com.apple.iTunes:originalyear": [bytes(info.original_year, "utf8")],
             "----:com.apple.iTunes:originaldate": [bytes(info.original_date, "utf8")],
             "----:com.apple.iTunes:BARCODE": [bytes(info.barcode, "utf8")],
-            "----:com.apple.iTunes:CATALOGNUMBER": [bytes(info.catalog_number, "utf8")],
+            "----:com.apple.iTunes:CATALOGNUMBER": [
+                bytes(x, "utf8") for x in info.catalog_numbers
+            ],
             "----:com.apple.iTunes:MusicBrainz Album Type": [
                 bytes(x, "utf8") for x in info.album_type
             ],
@@ -299,7 +301,7 @@ class AudioLibrarian:
         shared_tags = [
             mutagen.id3.TALB(encoding=3, text=info.album),
             mutagen.id3.TMED(encoding=3, text=info.media),
-            mutagen.id3.TPUB(encoding=3, text="/".join(info.organization)),
+            mutagen.id3.TPUB(encoding=3, text="/".join(info.organizations)),
             mutagen.id3.TPE2(encoding=3, text=info.artist),
             mutagen.id3.TSO2(encoding=3, text=info.artist_sort_name),
             mutagen.id3.TDRC(encoding=3, text=info.year),
@@ -311,7 +313,7 @@ class AudioLibrarian:
             TXXX(encoding=3, desc="ASIN", text=info.asin),
             TXXX(encoding=3, desc="originalyear", text=info.original_year),
             TXXX(encoding=3, desc="BARCODE", text=info.barcode),
-            TXXX(encoding=3, desc="CATALOGNUMBER", text=info.catalog_number),
+            TXXX(encoding=3, desc="CATALOGNUMBER", text="/".join(info.catalog_numbers)),
             TXXX(encoding=3, desc="MusicBrainz Album Type", text="/".join(info.album_type)),
             TXXX(encoding=3, desc="MusicBrainz Album Status", text=info.album_status),
             TXXX(encoding=3, desc="MusicBrainz Album Release Country", text=info.country),
