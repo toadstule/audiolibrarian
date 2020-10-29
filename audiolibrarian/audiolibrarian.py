@@ -276,7 +276,7 @@ class AudioLibrarian:
                 "soar": [track["artist_sort_order"]],
             }
             for k, v in track["relationships"]:
-                if k in ("ENGINEER", "MIXER", "PRODUCER"):
+                if k in ("ENGINEER", "MIXER", "PRODUCER", "LYRICIST"):
                     tag_key = f"----:com.apple.iTunes:{k}"
                     if tag_key not in tags:
                         tags[tag_key] = []
@@ -351,6 +351,9 @@ class AudioLibrarian:
             for k, v in track["relationships"]:
                 key = k.lower()
                 value = v
+                if key == "lyricist":  # lyricist doesn't go into TIPL; it goes into TEXT
+                    tags.append(mutagen.id3.TEXT(encoding=3, text=v))
+                    continue
                 if key == "mixer":
                     key = "mix"
                 if key == "performer":
