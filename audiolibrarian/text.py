@@ -5,7 +5,17 @@ import string
 uuid_regex = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.I)
 
 
-def get_filename(title):
+def fix(text: str) -> str:
+    """Replace some special characters."""
+    replacements = {
+        8208: 45,  # hyphen
+        8217: 39,  # "smart" single quote
+    }
+    return "".join([chr(replacements[ord(c)]) if ord(c) in replacements else c for c in text])
+
+
+def get_filename(title: str) -> str:
+    """Convert a title into a filename."""
     allowed_chars = string.ascii_letters + string.digits + "_."
     no_underscore_replace = ",!'\""
     result = []

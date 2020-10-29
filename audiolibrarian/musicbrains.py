@@ -1,4 +1,6 @@
 import time
+import webbrowser
+from typing import List, Tuple
 
 import musicbrainzngs
 import requests
@@ -7,6 +9,7 @@ from requests.auth import HTTPDigestAuth
 
 from audiolibrarian import text
 from audiolibrarian.audioinfo import AudioInfo
+from audiolibrarian.text import fix
 
 musicbrainzngs.set_useragent("audiolibrarian", "0.1", "steve@jibson.com")
 
@@ -48,11 +51,11 @@ class MusicBrainsInfo(AudioInfo):
         self._session = MusicBrainsSession()
         super().__init__(search_data, verbose)
 
-    def _get_artist_id(self):
-        artist = self._search_data.artist
-        artist_list = musicbrainzngs.search_artists(artist)["artist-list"]
-        self._pprint("ARTISTS", artist_list)
-        return artist_list[0]["id"]
+    # def _get_artist_id(self):
+    #     artist = self._search_data.artist
+    #     artist_list = musicbrainzngs.search_artists(artist)["artist-list"]
+    #     self._pprint("ARTISTS", artist_list)
+    #     return artist_list[0]["id"]
 
     def _get_genre(self, release_group_id, artist_id):
         # Try to find the genre using the following methods (in order):
@@ -79,8 +82,13 @@ class MusicBrainsInfo(AudioInfo):
             return [g["name"] for g in reversed(sorted(at["genres"], key=lambda x: x["count"]))][0]
         return input("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
-    def _get_release_group_ids(self, artist_id):
+    def _get_release_group_ids(self):
+        artist_l = self._search_data.artist.lower()
         album_l = self._search_data.album.lower()
+        artist_list = musicbrainzngs.search_artists(query=artist_l, limit=500)["artist-list"]
+        if not artist_list:
+            return []
+        artist_id = artist_list[0]["id"]
         release_group_list = musicbrainzngs.browse_release_groups(artist=artist_id, limit=500)[
             "release-group-list"
         ]
@@ -97,9 +105,47 @@ class MusicBrainsInfo(AudioInfo):
             "find the release ID that best matches the audio files.\n"
         )
         for release_group_id in release_group_ids:
-            print(f"https://musicbrainz.org/release-group/{release_group_id}")
-
+            url = f"https://musicbrainz.org/release-group/{release_group_id}"
+            print(url)
+            webbrowser.open(url)
         return self._prompt_uuid("\nRelease ID or URL: ")
+
+    @staticmethod
+    def _process_artist_credit(artist_credit: list) -> Tuple[str, List[str], str, List[str]]:
+        # Get artist info from an artist-credit
+        artist_names = ""
+        artist_names_list = []
+        artist_sort_names = ""
+        artist_ids = []
+        for a in artist_credit:
+            if isinstance(a, dict):
+                artist_names += fix(a.get("name") or a["artist"]["name"])
+                artist_names_list.append(fix(a.get("name") or a["artist"]["name"]))
+                artist_sort_names += fix(a["artist"]["sort-name"])
+                artist_ids.append(fix(a["artist"]["id"]))
+            else:
+                artist_names += fix(a)
+                artist_sort_names += fix(a)
+        return artist_names, artist_names_list, artist_sort_names, artist_ids
+
+    @staticmethod
+    def _process_relationships(relationships: list) -> List[Tuple[str, str]]:
+        result = []
+        for r in relationships:
+            value = r["artist"]["name"]
+            type_ = r["type"].lower()
+            if type_ == "instrument":
+                key = "PERFORMER"
+                value = f"{r['artist']['name']} ({','.join(r['attribute-list'])})"
+            elif type_ == "mix":
+                key = "MIXER"
+            elif type_ == "vocal":
+                key = "PERFORMER"
+                value = f"{r['artist']['name']} (lead vocals)"
+            else:
+                key = r["type"].upper()
+            result.append((key, fix(value)))
+        return result
 
     @staticmethod
     def _prompt_uuid(prompt):
@@ -109,47 +155,51 @@ class MusicBrainsInfo(AudioInfo):
                 return uuid
 
     def _update(self):
-        artist_id = self._search_data.mb_artist_id
         release_id = self._search_data.mb_release_id
 
-        if not artist_id and not release_id and self._search_data.disc_id:
+        if not release_id and self._search_data.disc_id:
             result = musicbrainzngs.get_releases_by_discid(
                 self._search_data.disc_id, includes=["artists"]
             )
             self._pprint("DISC", result)
             if result.get("disc"):
-                artist_id = result["disc"]["release-list"][0]["artist-credit"][0]["artist"]["id"]
                 release_id = result["disc"]["release-list"][0]["id"]
             elif result.get("cdstub"):
                 print("A CD Stub exists for this disc, but no disc.")
 
-        if not artist_id and self._search_data.artist:
-            artist_id = self._get_artist_id()
-        if not artist_id:
-            artist_id = self._prompt_uuid("Musicbrainz Artist ID: ")
-        print("ARTIST_ID:", artist_id)
-        artist = musicbrainzngs.get_artist_by_id(artist_id)["artist"]
-        self._pprint("ARTIST", artist)
-
         if release_id:
             print(f"https://musicbrainz.org/release/{release_id}")
-        elif self._search_data.album:
-            release_group_ids = self._get_release_group_ids(artist_id)
+        elif self._search_data.artist and self._search_data.album:
+            release_group_ids = self._get_release_group_ids()
             print("RELEASE_GROUPS:", release_group_ids)
             release_id = self._prompt_release_id(release_group_ids)
         else:
             release_id = self._prompt_uuid("Musicbrainz Release ID: ")
         release = musicbrainzngs.get_release_by_id(
             release_id,
-            includes=["artist-credits", "isrcs", "labels", "recordings", "release-groups", "tags"],
+            includes=[
+                "artist-credits",
+                "artist-rels",
+                "isrcs",
+                "labels",
+                "recordings",
+                "recording-level-rels",
+                "release-groups",
+                "tags",
+                "work-rels",
+                "work-level-rels",
+            ],
         )["release"]
         release_group = release["release-group"]
         medium = release["medium-list"][int(self._search_data.disc_number) - 1]
         self._pprint("RELEASE", release)
 
-        self.artist = artist["name"]
-        self.artist_sort_name = artist["sort-name"]
-        self.album = release["title"].replace("’", "'")
+        artist_id = release["artist-credit"][0]["artist"]["id"]
+        artist, _, self.artist_sort_name, self.mb_artist_ids = self._process_artist_credit(
+            release["artist-credit"]
+        )
+        self.artist = fix(release.get("artist-credit-phrase") or artist)
+        self.album = fix(release["title"])
         self.genre = self._get_genre(release_group["id"], artist_id).title()
         self.year = release.get("release-event-list", [{}])[0].get("date") or input(
             "Release year: "
@@ -161,32 +211,23 @@ class MusicBrainsInfo(AudioInfo):
         for t in medium["track-list"]:
             r = t["recording"]
             ac = t.get("artist-credit") or r["artist-credit"]
+            # It seems that Picard doesn't use the track's artist-relation-list
+            # ar = t.get("artist-relation-list") or r["artist-relation-list"] or []
+            ar = release.get("artist-relation-list", [])
             track = {
                 "number": t["position"],
-                "title": (t.get("title") or r["title"]).replace("’", "'"),
+                "title": fix(t.get("title") or r["title"]),
                 "id": t["id"],
                 "recording_id": r["id"],
                 "isrc": r.get("isrc-list", []),
-                "artist_names": "/".join([a["artist"]["name"] for a in ac if isinstance(a, dict)]),
             }
-            artist_names = ""
-            artist_names_list = []
-            artist_sort_names = ""
-            artist_ids = []
-            for a in ac:
-                if isinstance(a, dict):
-                    artist_names += a["artist"]["name"]
-                    artist_names_list.append(a["artist"]["name"])
-                    artist_sort_names += a["artist"]["sort-name"]
-                    artist_ids.append(a["artist"]["id"])
-                else:
-                    artist_names += a
-                    artist_sort_names += a
-            track["artist"] = artist_names
-            track["artist_list"] = artist_names_list
-            track["artist_sort_order"] = artist_sort_names
-            track["artist_id"] = artist_ids
-
+            (
+                track["artist"],
+                track["artist_list"],
+                track["artist_sort_order"],
+                track["artist_ids"],
+            ) = self._process_artist_credit(ac)
+            track["relationships"] = self._process_relationships(ar)
             self.tracks.append(track)
 
         if release["cover-art-archive"]["front"] == "true":
@@ -204,12 +245,21 @@ class MusicBrainsInfo(AudioInfo):
 
         self.disc_number = medium["position"]
         self.media = medium.get("format", "")
-        self.organization = [x["label"]["name"] for x in release["label-info-list"]]
+        self.organizations = list(
+            dict.fromkeys([x["label"]["name"] for x in release["label-info-list"]])
+        )
         self.barcode = release.get("barcode", "")
         self.asin = release.get("asin", "")
         self.album_status = release.get("status", "").lower()
-        self.catalog_number = (release.get("label-info-list") or [{}])[0].get("catalog-number", "")
+        self.catalog_numbers = list(
+            dict.fromkeys(
+                [
+                    x["catalog-number"]
+                    for x in release.get("label-info-list", [])
+                    if x.get("catalog-number")
+                ]
+            )
+        )
         self.country = release.get("country", "")
-        self.mb_artist_id = artist_id
         self.mb_release_group_id = release_group["id"]
         self.mb_release_id = release_id

@@ -11,3 +11,8 @@ sudo pip install git+https://toadstule@bitbucket.org/toadstule/audiolibrarian
 ```bash
 audiolibrarian --help
 ```
+
+## Todo ##
+
+* Reconvert from source
+* Create directories using artist sort order?

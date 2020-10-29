@@ -4,14 +4,12 @@ Useful stuff: https://help.mp3tag.de/main_tags.html
 """
 import glob
 import os
-import pickle
 import pprint
+import re
 import shutil
 import subprocess
 import sys
 import time
-import webbrowser
-from pathlib import Path
 
 import mutagen
 import mutagen.easyid3
@@ -22,8 +20,7 @@ import mutagen.mp4
 import pyaml
 
 from audiolibrarian import text, audiosource, cmd
-from audiolibrarian.discogs import DiscogsInfo
-from audiolibrarian.musicbrains import MusicBrainsInfo, MusicBrainsSession
+from audiolibrarian.musicbrains import MusicBrainsInfo
 
 TXXX = mutagen.id3.TXXX
 UFID = mutagen.id3.UFID
@@ -63,17 +60,16 @@ class AudioLibrarian:
             search_data.mb_artist_id = self._args.mb_artist_id
         if self._args.mb_release_id:
             search_data.mb_release_id = self._args.mb_release_id
+        skip_confirm = bool(search_data.mb_artist_id and search_data.mb_release_id)
         print("DATA:", search_data)
         pprint.pp([os.path.basename(f) for f in audio_source.get_source_filenames()])
-        if args.db == "discogs":
-            self._info = DiscogsInfo(search_data, args.verbose)
-        else:
-            self._info = MusicBrainsInfo(search_data, args.verbose)
+        self._info = MusicBrainsInfo(search_data, args.verbose)
         pprint.pp(self._info)
         source_filenames = audio_source.get_source_filenames()
         if len(source_filenames) != len(self._info.tracks):
             print("\n*** Track count does not match file count ***\n")
-        if input("Confirm [Y,n]: ").lower() == "n":
+            skip_confirm = False
+        if not skip_confirm and input("Confirm [Y,n]: ").lower() == "n":
             return
         if self._args.command in ("convert", "rip"):
             audio_source.prepare_source()
@@ -163,29 +159,29 @@ class AudioLibrarian:
         cmd.parallel("Making flac files...", commands, out_dir)
         info = self._info
         shared_tags = {
-            "album": [info.album],
-            "media": [info.media],
-            "label": info.organization,
-            "albumartist": [info.artist],
-            "albumartistsort": [info.artist_sort_name],
-            "date": [str(info.year)],
+            "ALBUM": [info.album],
+            "MEDIA": [info.media],
+            "LABEL": info.organizations,
+            "ALBUMARTIST": [info.artist],
+            "ALBUMARTISTSORT": [info.artist_sort_name],
+            "DATE": [str(info.year)],
             "genre": [info.genre],
             "description": [info.get_comment_string()],
-            "discnumber": [info.disc_number],
-            "disctotal": [self._disc_count],
-            "totaldiscs": [self._disc_count],
-            "script": ["Latn"],
+            "DISCNUMBER": [info.disc_number],
+            "DISCTOTAL": [self._disc_count],
+            "TOTALDISCS": [self._disc_count],
+            "SCRIPT": ["Latn"],
             "asin": [info.asin],
-            "originalyear": [info.original_year],
-            "originaldate": [info.original_date],
+            "ORIGINALYEAR": [info.original_year],
+            "ORIGINALDATE": [info.original_date],
             "barcode": [info.barcode],
-            "catalognumber": [info.catalog_number],
-            "releasetype": info.album_type,
-            "releasestatus": [info.album_status],
-            "releasecountry": [info.country],
-            "musicbrainz_albumid": [info.mb_release_id],
-            "musicbrainz_albumartistid": [info.mb_artist_id],
-            "musicbrainz_releasegroupid": [info.mb_release_group_id],
+            "CATALOGNUMBER": info.catalog_numbers,
+            "RELEASETYPE": info.album_type,
+            "RELEASESTATUS": [info.album_status],
+            "RELEASECOUNTRY": [info.country],
+            "MUSICBRAINZ_ALBUMID": [info.mb_release_id],
+            "MUSICBRAINZ_ALBUMARTISTID": info.mb_artist_ids,
+            "MUSICBRAINZ_RELEASEGROUPID": [info.mb_release_group_id],
         }
         for flac in self._source_filenames if source else self._flac_filenames:
             number = str(int(os.path.basename(flac).split("__")[0]))
@@ -194,20 +190,21 @@ class AudioLibrarian:
             song.delete()
             song.clear_pictures()
             tags = {
-                "artists": track["artist_list"],
-                "musicbrainz_releasetrackid": [track["id"]],
-                "musicbrainz_trackid": [track["recording_id"]],
-                "isrc": track["isrc"],
-                "musicbrainz_artistid": track["artist_id"],
-                "title": [track["title"]],
-                "tracknumber": [str(track["number"])],
-                "artist": [track["artist"]],
-                "artistsort": [track["artist_sort_order"]],
-                "totaltracks": [str(len(info.tracks))],
-                "tracktotal": [str(len(info.tracks))],
+                "ARTISTS": track["artist_list"],
+                "MUSICBRAINZ_RELEASETRACKID": [track["id"]],
+                "MUSICBRAINZ_TRACKID": [track["recording_id"]],
+                "ISRC": track["isrc"],
+                "MUSICBRAINZ_ARTISTID": track["artist_ids"],
+                "TITLE": [track["title"]],
+                "TRACKNUMBER": [str(track["number"])],
+                "ARTIST": [track["artist"]],
+                "ARTISTSORT": [track["artist_sort_order"]],
+                "TOTALTRACKS": [str(len(info.tracks))],
+                "TRACKTOTAL": [str(len(info.tracks))],
             }
             song.update(shared_tags)
             song.update(tags)
+            song.tags.extend(track["relationships"])
             if info.front_cover:
                 cover = mutagen.flac.Picture()
                 cover.type = 3
@@ -228,7 +225,7 @@ class AudioLibrarian:
         shared_tags = {
             "\xa9alb": [info.album],
             "----:com.apple.iTunes:MEDIA": [bytes(info.media, "utf8")],
-            "----:com.apple.iTunes:LABEL": [bytes(x, "utf8") for x in info.organization],
+            "----:com.apple.iTunes:LABEL": [bytes(x, "utf8") for x in info.organizations],
             "aART": [info.artist],
             "soaa": [info.artist_sort_name],
             "\xa9day": [str(info.year)],
@@ -240,7 +237,9 @@ class AudioLibrarian:
             "----:com.apple.iTunes:originalyear": [bytes(info.original_year, "utf8")],
             "----:com.apple.iTunes:originaldate": [bytes(info.original_date, "utf8")],
             "----:com.apple.iTunes:BARCODE": [bytes(info.barcode, "utf8")],
-            "----:com.apple.iTunes:CATALOGNUMBER": [bytes(info.catalog_number, "utf8")],
+            "----:com.apple.iTunes:CATALOGNUMBER": [
+                bytes(x, "utf8") for x in info.catalog_numbers
+            ],
             "----:com.apple.iTunes:MusicBrainz Album Type": [
                 bytes(x, "utf8") for x in info.album_type
             ],
@@ -250,7 +249,7 @@ class AudioLibrarian:
             ],
             "----:com.apple.iTunes:MusicBrainz Album Id": [bytes(info.mb_release_id, "utf8")],
             "----:com.apple.iTunes:MusicBrainz Album Artist Id": [
-                bytes(info.mb_artist_id, "utf8")
+                bytes(x, "utf8") for x in info.mb_artist_ids
             ],
             "----:com.apple.iTunes:MusicBrainz Release Group Id": [
                 bytes(info.mb_release_group_id, "utf8")
@@ -269,13 +268,19 @@ class AudioLibrarian:
                 ],
                 "----:com.apple.iTunes:ISRC": [bytes(x, "utf8") for x in track["isrc"]],
                 "----:com.apple.iTunes:MusicBrainz Artist Id": [
-                    bytes(x, "utf8") for x in track["artist_id"]
+                    bytes(x, "utf8") for x in track["artist_ids"]
                 ],
                 "\xa9nam": [track["title"]],
                 "trkn": [(int(track["number"]), len(info.tracks))],
                 "\xa9ART": [track["artist"]],
                 "soar": [track["artist_sort_order"]],
             }
+            for k, v in track["relationships"]:
+                if k in ("ENGINEER", "MIXER", "PRODUCER", "LYRICIST"):
+                    tag_key = f"----:com.apple.iTunes:{k}"
+                    if tag_key not in tags:
+                        tags[tag_key] = []
+                    tags[tag_key].append(bytes(v, "utf8"))
             for k, v in shared_tags.items():
                 song[k] = v
             for k, v in tags.items():
@@ -296,7 +301,7 @@ class AudioLibrarian:
         shared_tags = [
             mutagen.id3.TALB(encoding=3, text=info.album),
             mutagen.id3.TMED(encoding=3, text=info.media),
-            mutagen.id3.TPUB(encoding=3, text="/".join(info.organization)),
+            mutagen.id3.TPUB(encoding=3, text="/".join(info.organizations)),
             mutagen.id3.TPE2(encoding=3, text=info.artist),
             mutagen.id3.TSO2(encoding=3, text=info.artist_sort_name),
             mutagen.id3.TDRC(encoding=3, text=info.year),
@@ -308,14 +313,17 @@ class AudioLibrarian:
             TXXX(encoding=3, desc="ASIN", text=info.asin),
             TXXX(encoding=3, desc="originalyear", text=info.original_year),
             TXXX(encoding=3, desc="BARCODE", text=info.barcode),
-            TXXX(encoding=3, desc="CATALOGNUMBER", text=info.catalog_number),
+            TXXX(encoding=3, desc="CATALOGNUMBER", text="/".join(info.catalog_numbers)),
             TXXX(encoding=3, desc="MusicBrainz Album Type", text="/".join(info.album_type)),
             TXXX(encoding=3, desc="MusicBrainz Album Status", text=info.album_status),
             TXXX(encoding=3, desc="MusicBrainz Album Release Country", text=info.country),
             TXXX(encoding=3, desc="MusicBrainz Album Id", text=info.mb_release_id),
-            TXXX(encoding=3, desc="MusicBrainz Album Artist Id", text=info.mb_artist_id),
+            TXXX(
+                encoding=3, desc="MusicBrainz Album Artist Id", text="/".join(info.mb_artist_ids)
+            ),
             TXXX(encoding=3, desc="MusicBrainz Release Group Id", text=info.mb_release_group_id),
         ]
+        performer_re = re.compile(r"(?P<value>.*)\((?P<key>.*)\)")
         for mp3 in self._mp3_filenames:
             number = str(int(os.path.basename(mp3).split("__")[0]))
             try:
@@ -336,9 +344,27 @@ class AudioLibrarian:
                 mutagen.id3.TSRC(encoding=3, text="/".join(track["isrc"])),
                 UFID(owner="http://musicbrainz.org", data=bytes(track["recording_id"], "utf8")),
                 TXXX(encoding=3, desc="MusicBrainz Release Track Id", text=track["id"]),
-                TXXX(encoding=3, desc="MusicBrainz Artist Id", text="/".join(track["artist_id"])),
-                TXXX(encoding=3, desc="ARTISTS", text=track["artist_names"]),
+                TXXX(encoding=3, desc="MusicBrainz Artist Id", text="/".join(track["artist_ids"])),
+                TXXX(encoding=3, desc="ARTISTS", text="/".join(track["artist_list"])),
             ]
+            people = []
+            for k, v in track["relationships"]:
+                key = k.lower()
+                value = v
+                if key == "lyricist":  # lyricist doesn't go into TIPL; it goes into TEXT
+                    tags.append(mutagen.id3.TEXT(encoding=3, text=v))
+                    continue
+                if key == "mixer":
+                    key = "mix"
+                if key == "performer":
+                    m = performer_re.match(value)
+                    if not m:
+                        continue
+                    key = m.groupdict()["key"]
+                    value = m.groupdict()["value"].strip()
+                people.append([key, value])
+            if people:
+                tags.append(mutagen.id3.TIPL(people=people))
             for tag in shared_tags + tags:
                 song.add(tag)
             if info.front_cover:
@@ -418,7 +444,7 @@ class AudioLibrarian:
             "date": info.year,
             "musicbrainz_info": {
                 "albumid": info.mb_release_id,
-                "albumartistid": info.mb_artist_id,
+                "albumartistid": info.mb_artist_ids,
                 "releasegroupid": info.mb_release_group_id,
             },
             "source_info": {
@@ -436,115 +462,3 @@ class AudioLibrarian:
         with open(manifest_filename, "w") as manifest_file:
             pyaml.dump(manifest, manifest_file)
         print(f"Wrote {manifest_filename}")
-
-
-class GenreManager:
-    def __init__(self, args):
-        self._args = args
-        self._mb = MusicBrainsSession()
-        self._paths = self._get_all_paths()
-        self._paths_by_artist = self._get_paths_by_artist()
-        _u, _c = self._get_genres_by_artist()
-        self._user_genres_by_artist, self._community_genres_by_artist = _u, _c
-        if self._args.update:
-            self._update_community_artists()
-        elif self._args.tag:
-            self._update_tags()
-
-    def _update_tags(self):
-        for artist_id, paths in self._paths_by_artist.items():
-            genre = self._user_genres_by_artist.get(artist_id)
-            if not genre:
-                continue
-            for path in paths:
-                if path.suffix == ".flac":
-                    song = mutagen.flac.FLAC(str(path))
-                    current_genre = song.tags["genre"][0]
-                    if current_genre != genre:
-                        song.tags["genre"] = genre
-                        song.save()
-                        print(f"{path}: {current_genre} --> {genre}")
-                elif path.suffix == ".m4a":
-                    song = mutagen.mp4.MP4(str(path))
-                    current_genre = song.tags["\xa9gen"][0]
-                    if current_genre != genre:
-                        song.tags["\xa9gen"] = genre
-                        song.save()
-                        print(f"{path}: {current_genre} --> {genre}")
-                elif path.suffix == ".mp3":
-                    song = mutagen.File(str(path))
-                    current_genre = str(song.tags["TCON"])
-                    if current_genre != genre:
-                        id3 = mutagen.id3.ID3(str(path))
-                        id3.add(mutagen.id3.TCON(encoding=3, text=genre))
-                        id3.save()
-                        print(f"{path}: {current_genre} --> {genre}")
-
-    def _update_community_artists(self):
-        for artist_id, artist in sorted(
-            self._community_genres_by_artist.items(), key=lambda x: x[1]["name"]
-        ):
-            i = input(f"Continue with {artist['name']} [Y, n, s]: ").lower().strip()
-            if i == "n":
-                break
-            if i != "s":
-                webbrowser.open(f"https://musicbrainz.org/artist/{artist_id}/tags")
-
-    def _get_all_paths(self):
-        paths = []
-        for directory in self._args.directory:
-            paths.extend([p for p in list(Path(directory).glob("**/*")) if p.is_file()])
-        return paths
-
-    def _get_paths_by_artist(self):
-        artists = {}
-        for path in self._paths:
-            artist_id = None
-            song = mutagen.File(str(path))
-            if path.suffix == ".flac":
-                artist_id = str(
-                    song.tags.get("musicbrainz_albumartistid", [""])[0]
-                    or song.tags.get("musicbrainz_artistid", [""])[0]
-                )
-            elif path.suffix == ".m4a":
-                artist_id = (
-                    song.tags.get("----:com.apple.iTunes:MusicBrainz Album Artist Id", [""])[0]
-                    or song.tags.get("----:com.apple.iTunes:MusicBrainz Artist Id", [""])[0]
-                ).decode("utf8")
-            elif path.suffix == ".mp3":
-                artist_id = str(
-                    song.tags.get("TXXX:MusicBrainz Album Artist Id", [""])[0]
-                    or song.tags.get("TXXX:MusicBrainz Artist Id", [""])[0]
-                )
-            if artist_id:
-                if artist_id not in artists:
-                    artists[artist_id] = []
-                artists[artist_id].append(path)
-        return artists
-
-    def _get_genres_by_artist(self):
-        user, community = {}, {}
-        user_modified = False
-        cache_file = Path.home() / ".cache" / "audiolibrarian" / "user-genres.pickle"
-        if cache_file.exists():
-            with cache_file.open(mode="rb") as cf:
-                user = pickle.load(cf)
-        for artist_id in self._paths_by_artist:
-            if artist_id in user:
-                # print("Cache hit:", artist_id, user[artist_id])
-                continue  # already in the cache
-            artist = self._mb.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
-            if artist["user-genres"]:
-                genre = artist["user-genres"][0]["name"].title()
-                user[artist_id] = genre
-                user_modified = True
-            elif artist["genres"]:
-                community[artist_id] = {
-                    "name": artist["name"],
-                    "genres": [{"name": x["name"], "count": x["count"]} for x in artist["genres"]],
-                }
-        if user_modified:
-            cache_file.parent.mkdir(exist_ok=True)
-            with cache_file.open(mode="wb") as cf:
-                pickle.dump(user, cf)
-        return user, community

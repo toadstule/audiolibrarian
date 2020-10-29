@@ -4,6 +4,13 @@ from audiolibrarian import text
 
 
 class TestText(TestCase):
+    def test__fix(self):
+        self.assertEqual("", text.fix(""))
+        self.assertEqual("abc", text.fix("abc"))
+        self.assertEqual("a-b", text.fix("a-b"))
+        self.assertEqual("a-b", text.fix(f"a{chr(8208)}b"))
+        self.assertEqual("'your_mom'", text.fix(f"{chr(8217)}your_mom{chr(8217)}"))
+
     def test__get_filename(self):
         self.assertEqual("your_mom", text.get_filename("your_mom"))
         self.assertEqual("your_mom", text.get_filename("your mom"))
