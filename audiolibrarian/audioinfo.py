@@ -41,7 +41,7 @@ class AudioInfo(abc.ABC):
         self.album_status = ""
         self.country = ""
         self.catalog_number = ""
-        self.mb_artist_id = ""
+        self.mb_artist_ids = []
         self.mb_release_group_id = ""
         self.mb_release_id = ""
 

@@ -6,6 +6,7 @@ from audiolibrarian.output import Dots
 
 
 def parallel(message, commands, touch=None):
+    """Execute commands in parallel."""
     touch = touch or []
     with Dots(message) as d:
         for p in [subprocess.Popen(c) for c in commands]:

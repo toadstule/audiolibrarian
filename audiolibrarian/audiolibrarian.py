@@ -158,29 +158,29 @@ class AudioLibrarian:
         cmd.parallel("Making flac files...", commands, out_dir)
         info = self._info
         shared_tags = {
-            "album": [info.album],
-            "media": [info.media],
-            "label": info.organization,
-            "albumartist": [info.artist],
-            "albumartistsort": [info.artist_sort_name],
-            "date": [str(info.year)],
+            "ALBUM": [info.album],
+            "MEDIA": [info.media],
+            "LABEL": info.organization,
+            "ALBUMARTIST": [info.artist],
+            "ALBUMARTISTSORT": [info.artist_sort_name],
+            "DATE": [str(info.year)],
             "genre": [info.genre],
             "description": [info.get_comment_string()],
-            "discnumber": [info.disc_number],
-            "disctotal": [self._disc_count],
-            "totaldiscs": [self._disc_count],
-            "script": ["Latn"],
-            "asin": [info.asin],
-            "originalyear": [info.original_year],
-            "originaldate": [info.original_date],
-            "barcode": [info.barcode],
-            "catalognumber": [info.catalog_number],
-            "releasetype": info.album_type,
-            "releasestatus": [info.album_status],
-            "releasecountry": [info.country],
-            "musicbrainz_albumid": [info.mb_release_id],
-            "musicbrainz_albumartistid": [info.mb_artist_id],
-            "musicbrainz_releasegroupid": [info.mb_release_group_id],
+            "DISCNUMBER": [info.disc_number],
+            "DISCTOTAL": [self._disc_count],
+            "TOTALDISCS": [self._disc_count],
+            "SCRIPT": ["Latn"],
+            "ASIN": [info.asin],
+            "ORIGINALYEAR": [info.original_year],
+            "ORIGINALDATE": [info.original_date],
+            "BARCODE": [info.barcode],
+            "CATALOGNUMBER": [info.catalog_number],
+            "RELEASETYPE": info.album_type,
+            "RELEASESTATUS": [info.album_status],
+            "RELEASECOUNTRY": [info.country],
+            "MUSICBRAINZ_ALBUMID": [info.mb_release_id],
+            "MUSICBRAINZ_ALBUMARTISTID": info.mb_artist_ids,
+            "MUSICBRAINZ_RELEASEGROUPID": [info.mb_release_group_id],
         }
         for flac in self._source_filenames if source else self._flac_filenames:
             number = str(int(os.path.basename(flac).split("__")[0]))
@@ -189,20 +189,21 @@ class AudioLibrarian:
             song.delete()
             song.clear_pictures()
             tags = {
-                "artists": track["artist_list"],
-                "musicbrainz_releasetrackid": [track["id"]],
-                "musicbrainz_trackid": [track["recording_id"]],
-                "isrc": track["isrc"],
-                "musicbrainz_artistid": track["artist_id"],
-                "title": [track["title"]],
-                "tracknumber": [str(track["number"])],
-                "artist": [track["artist"]],
-                "artistsort": [track["artist_sort_order"]],
-                "totaltracks": [str(len(info.tracks))],
-                "tracktotal": [str(len(info.tracks))],
+                "ARTISTS": track["artist_list"],
+                "MUSICBRAINZ_RELEASETRACKID": [track["id"]],
+                "MUSICBRAINZ_TRACKID": [track["recording_id"]],
+                "ISRC": track["isrc"],
+                "MUSICBRAINZ_ARTISTID": track["artist_ids"],
+                "TITLE": [track["title"]],
+                "TRACKNUMBER": [str(track["number"])],
+                "ARTIST": [track["artist"]],
+                "ARTISTSORT": [track["artist_sort_order"]],
+                "TOTALTRACKS": [str(len(info.tracks))],
+                "TRACKTOTAL": [str(len(info.tracks))],
             }
             song.update(shared_tags)
             song.update(tags)
+            song.tags.extend(track["relationships"])
             if info.front_cover:
                 cover = mutagen.flac.Picture()
                 cover.type = 3
@@ -245,7 +246,7 @@ class AudioLibrarian:
             ],
             "----:com.apple.iTunes:MusicBrainz Album Id": [bytes(info.mb_release_id, "utf8")],
             "----:com.apple.iTunes:MusicBrainz Album Artist Id": [
-                bytes(info.mb_artist_id, "utf8")
+                bytes(x, "utf8") for x in info.mb_artist_ids
             ],
             "----:com.apple.iTunes:MusicBrainz Release Group Id": [
                 bytes(info.mb_release_group_id, "utf8")
@@ -264,7 +265,7 @@ class AudioLibrarian:
                 ],
                 "----:com.apple.iTunes:ISRC": [bytes(x, "utf8") for x in track["isrc"]],
                 "----:com.apple.iTunes:MusicBrainz Artist Id": [
-                    bytes(x, "utf8") for x in track["artist_id"]
+                    bytes(x, "utf8") for x in track["artist_ids"]
                 ],
                 "\xa9nam": [track["title"]],
                 "trkn": [(int(track["number"]), len(info.tracks))],
@@ -308,7 +309,9 @@ class AudioLibrarian:
             TXXX(encoding=3, desc="MusicBrainz Album Status", text=info.album_status),
             TXXX(encoding=3, desc="MusicBrainz Album Release Country", text=info.country),
             TXXX(encoding=3, desc="MusicBrainz Album Id", text=info.mb_release_id),
-            TXXX(encoding=3, desc="MusicBrainz Album Artist Id", text=info.mb_artist_id),
+            TXXX(
+                encoding=3, desc="MusicBrainz Album Artist Id", text="/".join(info.mb_artist_ids)
+            ),
             TXXX(encoding=3, desc="MusicBrainz Release Group Id", text=info.mb_release_group_id),
         ]
         for mp3 in self._mp3_filenames:
@@ -331,7 +334,7 @@ class AudioLibrarian:
                 mutagen.id3.TSRC(encoding=3, text="/".join(track["isrc"])),
                 UFID(owner="http://musicbrainz.org", data=bytes(track["recording_id"], "utf8")),
                 TXXX(encoding=3, desc="MusicBrainz Release Track Id", text=track["id"]),
-                TXXX(encoding=3, desc="MusicBrainz Artist Id", text="/".join(track["artist_id"])),
+                TXXX(encoding=3, desc="MusicBrainz Artist Id", text="/".join(track["artist_ids"])),
                 TXXX(encoding=3, desc="ARTISTS", text=track["artist_names"]),
             ]
             for tag in shared_tags + tags:
@@ -413,7 +416,7 @@ class AudioLibrarian:
             "date": info.year,
             "musicbrainz_info": {
                 "albumid": info.mb_release_id,
-                "albumartistid": info.mb_artist_id,
+                "albumartistid": info.mb_artist_ids,
                 "releasegroupid": info.mb_release_group_id,
             },
             "source_info": {

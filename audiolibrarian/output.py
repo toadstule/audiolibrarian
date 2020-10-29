@@ -10,6 +10,7 @@ class Dots:
                 time.sleep(1)  # or better, actually do some work here instead
                 d.dot()
     """
+
     def __init__(self, message: str):
         self._out(message)
 
