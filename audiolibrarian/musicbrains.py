@@ -204,15 +204,14 @@ class MusicBrainsInfo(AudioInfo):
             r = t["recording"]
             ac = t.get("artist-credit") or r["artist-credit"]
             # It seems that Picard doesn't use the track's artist-relation-list
-            # ar = t.get("artist-relation-list") or r["artist-relation-list"]
-            ar = release["artist-relation-list"]
+            # ar = t.get("artist-relation-list") or r["artist-relation-list"] or []
+            ar = release.get("artist-relation-list", [])
             track = {
                 "number": t["position"],
                 "title": (t.get("title") or r["title"]).replace("’", "'"),
                 "id": t["id"],
                 "recording_id": r["id"],
                 "isrc": r.get("isrc-list", []),
-                "artist_names": "/".join([a["artist"]["name"] for a in ac if isinstance(a, dict)]),
             }
             (
                 track["artist"],

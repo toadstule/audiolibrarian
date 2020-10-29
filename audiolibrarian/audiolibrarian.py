@@ -5,6 +5,7 @@ Useful stuff: https://help.mp3tag.de/main_tags.html
 import glob
 import os
 import pprint
+import re
 import shutil
 import subprocess
 import sys
@@ -272,6 +273,12 @@ class AudioLibrarian:
                 "\xa9ART": [track["artist"]],
                 "soar": [track["artist_sort_order"]],
             }
+            for k, v in track["relationships"]:
+                if k in ("ENGINEER", "MIXER", "PRODUCER"):
+                    tag_key = f"----:com.apple.iTunes:{k}"
+                    if tag_key not in tags:
+                        tags[tag_key] = []
+                    tags[tag_key].append(bytes(v, "utf8"))
             for k, v in shared_tags.items():
                 song[k] = v
             for k, v in tags.items():
@@ -314,6 +321,7 @@ class AudioLibrarian:
             ),
             TXXX(encoding=3, desc="MusicBrainz Release Group Id", text=info.mb_release_group_id),
         ]
+        performer_re = re.compile(r"(?P<value>.*)\((?P<key>.*)\)")
         for mp3 in self._mp3_filenames:
             number = str(int(os.path.basename(mp3).split("__")[0]))
             try:
@@ -335,8 +343,23 @@ class AudioLibrarian:
                 UFID(owner="http://musicbrainz.org", data=bytes(track["recording_id"], "utf8")),
                 TXXX(encoding=3, desc="MusicBrainz Release Track Id", text=track["id"]),
                 TXXX(encoding=3, desc="MusicBrainz Artist Id", text="/".join(track["artist_ids"])),
-                TXXX(encoding=3, desc="ARTISTS", text=track["artist_names"]),
+                TXXX(encoding=3, desc="ARTISTS", text="/".join(track["artist_list"])),
             ]
+            people = []
+            for k, v in track["relationships"]:
+                key = k.lower()
+                value = v
+                if key == "mixer":
+                    key = "mix"
+                if key == "performer":
+                    m = performer_re.match(value)
+                    if not m:
+                        continue
+                    key = m.groupdict()["key"]
+                    value = m.groupdict()["value"].strip()
+                people.append([key, value])
+            if people:
+                tags.append(mutagen.id3.TIPL(people=people))
             for tag in shared_tags + tags:
                 song.add(tag)
             if info.front_cover:

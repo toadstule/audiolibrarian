@@ -14,5 +14,7 @@ if __name__ == "__main__":
     song2 = mutagen.File(filename2)
     pprint.pp(sorted(song2.tags))
 
-    pprint.pp(sorted(list(set(song1.tags) - set(song2.tags))))
-    pprint.pp(sorted(list(set(song2.tags) - set(song1.tags))))
+    # pprint.pp(sorted(list(set(song1.tags) - set(song2.tags))))
+    # pprint.pp(sorted(list(set(song2.tags) - set(song1.tags))))
+    print(sorted(list(set(song1.tags) - set(song2.tags))))
+    print(sorted(list(set(song2.tags) - set(song1.tags))))
