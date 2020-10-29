@@ -112,13 +112,13 @@ class MusicBrainsInfo(AudioInfo):
         artist_ids = []
         for a in artist_credit:
             if isinstance(a, dict):
-                artist_names += a.get("name") or a["artist"]["name"]
-                artist_names_list.append(a.get("name") or a["artist"]["name"])
-                artist_sort_names += a["artist"]["sort-name"]
-                artist_ids.append(a["artist"]["id"])
+                artist_names += fix(a.get("name") or a["artist"]["name"])
+                artist_names_list.append(fix(a.get("name") or a["artist"]["name"]))
+                artist_sort_names += fix(a["artist"]["sort-name"])
+                artist_ids.append(fix(a["artist"]["id"]))
             else:
-                artist_names += a
-                artist_sort_names += a
+                artist_names += fix(a)
+                artist_sort_names += fix(a)
         return artist_names, artist_names_list, artist_sort_names, artist_ids
 
     @staticmethod
@@ -137,7 +137,7 @@ class MusicBrainsInfo(AudioInfo):
                 value = f"{r['artist']['name']} (lead vocals)"
             else:
                 key = r["type"].upper()
-            result.append((key, value))
+            result.append((key, fix(value)))
         return result
 
     @staticmethod
@@ -191,8 +191,8 @@ class MusicBrainsInfo(AudioInfo):
         artist, _, self.artist_sort_name, self.mb_artist_ids = self._process_artist_credit(
             release["artist-credit"]
         )
-        self.artist = release.get("artist-credit-phrase") or artist
-        self.album = release["title"].replace("’", "'")
+        self.artist = fix(release.get("artist-credit-phrase") or artist)
+        self.album = fix(release["title"])
         self.genre = self._get_genre(release_group["id"], artist_id).title()
         self.year = release.get("release-event-list", [{}])[0].get("date") or input(
             "Release year: "
@@ -209,7 +209,7 @@ class MusicBrainsInfo(AudioInfo):
             ar = release.get("artist-relation-list", [])
             track = {
                 "number": t["position"],
-                "title": (t.get("title") or r["title"]).replace("’", "'"),
+                "title": fix(t.get("title") or r["title"]),
                 "id": t["id"],
                 "recording_id": r["id"],
                 "isrc": r.get("isrc-list", []),
