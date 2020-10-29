@@ -81,8 +81,13 @@ class MusicBrainsInfo(AudioInfo):
             return [g["name"] for g in reversed(sorted(at["genres"], key=lambda x: x["count"]))][0]
         return input("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
-    def _get_release_group_ids(self, artist_id):
+    def _get_release_group_ids(self):
+        artist_l = self._search_data.artist.lower()
         album_l = self._search_data.album.lower()
+        artist_list = musicbrainzngs.search_artists(query=artist_l, limit=500)["artist-list"]
+        if not artist_list:
+            return []
+        artist_id = artist_list[0]["id"]
         release_group_list = musicbrainzngs.browse_release_groups(artist=artist_id, limit=500)[
             "release-group-list"
         ]
@@ -162,10 +167,10 @@ class MusicBrainsInfo(AudioInfo):
 
         if release_id:
             print(f"https://musicbrainz.org/release/{release_id}")
-        # elif self._search_data.album:  TODO -- make this work without artist_id
-        #     release_group_ids = self._get_release_group_ids(artist_id)
-        #     print("RELEASE_GROUPS:", release_group_ids)
-        #     release_id = self._prompt_release_id(release_group_ids)
+        elif self._search_data.artist and self._search_data.album:
+            release_group_ids = self._get_release_group_ids()
+            print("RELEASE_GROUPS:", release_group_ids)
+            release_id = self._prompt_release_id(release_group_ids)
         else:
             release_id = self._prompt_uuid("Musicbrainz Release ID: ")
         release = musicbrainzngs.get_release_by_id(
