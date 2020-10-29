@@ -59,6 +59,7 @@ class AudioLibrarian:
             search_data.mb_artist_id = self._args.mb_artist_id
         if self._args.mb_release_id:
             search_data.mb_release_id = self._args.mb_release_id
+        skip_confirm = bool(search_data.mb_artist_id and search_data.mb_release_id)
         print("DATA:", search_data)
         pprint.pp([os.path.basename(f) for f in audio_source.get_source_filenames()])
         self._info = MusicBrainsInfo(search_data, args.verbose)
@@ -66,7 +67,8 @@ class AudioLibrarian:
         source_filenames = audio_source.get_source_filenames()
         if len(source_filenames) != len(self._info.tracks):
             print("\n*** Track count does not match file count ***\n")
-        if input("Confirm [Y,n]: ").lower() == "n":
+            skip_confirm = False
+        if not skip_confirm and input("Confirm [Y,n]: ").lower() == "n":
             return
         if self._args.command in ("convert", "rip"):
             audio_source.prepare_source()
