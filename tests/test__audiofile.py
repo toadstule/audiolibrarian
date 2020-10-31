@@ -9,7 +9,7 @@ from audiolibrarian.audiofile import open_
 test_data_path = Path("test_data").resolve()
 
 
-class TestFlac(TestCase):
+class TestAudioFile(TestCase):
     def setUp(self) -> None:
         self.maxDiff = None
         self._verify_test_data()
@@ -32,9 +32,11 @@ class TestFlac(TestCase):
 
     def test__no_changes(self) -> None:
         """Verify that a ready/write cycle doesn't change any tags."""
-        for src in test_data_path.glob("*.flac"):
+        for src in [
+            p.resolve() for p in test_data_path.glob("*") if p.suffix in (".flac", ".m4a")
+        ]:
             # work with a temp copy of the file so we don't break our test data
-            with tempfile.NamedTemporaryFile(mode="wb", prefix="test_", suffix=".flac") as dst:
+            with tempfile.NamedTemporaryFile(mode="wb", prefix="test_", suffix=src.suffix) as dst:
                 dst.write(src.read_bytes())
                 f = open_(dst.name)
                 before = dict(f._mut_file.tags)
