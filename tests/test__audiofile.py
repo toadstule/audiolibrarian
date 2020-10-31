@@ -10,7 +10,6 @@ test_data_path = Path("test_data").resolve()
 
 
 class TestFlac(TestCase):
-
     def setUp(self) -> None:
         self.maxDiff = None
         self._verify_test_data()

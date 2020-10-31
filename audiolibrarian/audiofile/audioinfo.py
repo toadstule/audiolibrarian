@@ -13,7 +13,6 @@ class ReleaseInfo:
     barcodes: List[str] = field(default_factory=list)
     catalog_numbers: List[str] = field(default_factory=list)
     date: str = ""
-    description: str = ""
     disc_number: int = 1
     disc_total: int = 1
     genres: List[str] = field(default_factory=list)

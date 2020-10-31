@@ -25,7 +25,6 @@ class FlacFile(AudioFile):
             barcodes=mut.get("barcode", []),
             catalog_numbers=mut.get("catalognumber", []),
             date=mut.get("date", [""])[0],
-            description=mut.get("description", [""])[0],
             disc_number=int(mut.get("discnumber", ["1"])[0]),
             disc_total=int(mut.get("disctotal", ["1"])[0]),
             genres=mut.get("genre", []),
@@ -78,7 +77,6 @@ class FlacFile(AudioFile):
             "barcode": release_info.barcodes,
             "catalognumber": release_info.catalog_numbers,
             "date": [release_info.date],
-            "description": [release_info.description],
             "discnumber": [str(release_info.disc_number)],
             "disctotal": [str(release_info.disc_total)],
             "genre": release_info.genres,
@@ -121,7 +119,7 @@ class FlacFile(AudioFile):
         self._mut_file.clear_pictures()
         self._mut_file.update(tags)
 
-        # TO-DO
+        # TO DO
         #     if info.front_cover:
         #         cover = mutagen.flac.Picture()
         #         cover.type = 3
