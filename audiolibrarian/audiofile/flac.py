@@ -14,6 +14,15 @@ from audiolibrarian.audiofile.audioinfo import (
 class FlacFile(AudioFile):
     extensions = (".flac",)
 
+    _missing_tags_if_blank = (
+        "engineer",
+        "genre",
+        "lyricist",
+        "mixer",
+        "performer",
+        "producer",
+    )
+
     def read_tags(self) -> Info:
         print("> MUT_FILE:", self._mut_file)
         mut = self._mut_file
@@ -73,47 +82,45 @@ class FlacFile(AudioFile):
             "album": [release_info.album],
             "albumartist": release_info.album_artists,
             "albumartistsort": release_info.album_artists_sort,
+            "artist": [track_info.artist],
+            "artists": track_info.artists,
+            "artistsort": track_info.artists_sort,
             "asin": release_info.asins,
             "barcode": release_info.barcodes,
             "catalognumber": release_info.catalog_numbers,
             "date": [release_info.date],
             "discnumber": [str(release_info.disc_number)],
             "disctotal": [str(release_info.disc_total)],
+            "engineer": relation_info.engineers,
             "genre": release_info.genres,
+            "isrc": track_info.isrcs,
             "label": release_info.labels,
+            "lyricist": relation_info.lyricists,
             "media": release_info.media,
+            "mixer": relation_info.mixers,
             "musicbrainz_albumartistid": release_info.musicbrainz_album_artist_ids,
             "musicbrainz_albumid": [release_info.musicbrainz_album_id],
+            "musicbrainz_artistid": track_info.musicbrainz_artist_ids,
             "musicbrainz_releasegroupid": [release_info.musicbrainz_release_group_id],
+            "musicbrainz_releasetrackid": [track_info.musicbrainz_release_track_id],
+            "musicbrainz_trackid": [track_info.musicbrainz_track_id],
             "originaldate": [release_info.original_date],
             "originalyear": [str(release_info.original_year)],
+            "performer": self._make_performer_tag(relation_info.performers),
+            "producer": relation_info.producers,
             "releasecountry": release_info.release_countries,
             "releasestatus": release_info.release_statuses,
             "releasetype": release_info.release_types,
             "script": [release_info.script],
-            "totaldiscs": [str(release_info.disc_total)],
-            "tracktotal": [str(release_info.track_total)],
-            "artist": [track_info.artist],
-            "artists": track_info.artists,
-            "artistsort": track_info.artists_sort,
-            "isrc": track_info.isrcs,
-            "musicbrainz_artistid": track_info.musicbrainz_artist_ids,
-            "musicbrainz_releasetrackid": [track_info.musicbrainz_release_track_id],
-            "musicbrainz_trackid": [track_info.musicbrainz_track_id],
             "title": [track_info.title],
-            "tracknumber": [str(track_info.track_number)],
+            "totaldiscs": [str(release_info.disc_total)],
             "totaltracks": [str(release_info.track_total)],
+            "tracknumber": [str(track_info.track_number)],
+            "tracktotal": [str(release_info.track_total)],
         }
-        if relation_info.engineers:
-            tags["engineer"] = relation_info.engineers
-        if relation_info.lyricists:
-            tags["lyricist"] = relation_info.lyricists
-        if relation_info.mixers:
-            tags["mixer"] = relation_info.mixers
-        if relation_info.producers:
-            tags["producer"] = relation_info.producers
-        if relation_info.performers:
-            tags["performer"] = self._make_performer_tag(relation_info.performers)
+        for tag in self._missing_tags_if_blank:
+            if tag in tags and not tags[tag]:
+                del tags[tag]
 
         self._mut_file.delete()  # clear old tags
         self._mut_file.clear_pictures()
