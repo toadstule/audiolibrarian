@@ -1,7 +1,6 @@
 dist/
 MANIFEST
 venv/
-*.flac
 *.jpg
 library/
 workdir/
