@@ -15,7 +15,7 @@ from audiolibrarian.audiofile.audioinfo import (
     TrackInfo,
 )
 
-test_data_path = Path("test_data").resolve()
+test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
 class TestAudioFile(TestCase):
