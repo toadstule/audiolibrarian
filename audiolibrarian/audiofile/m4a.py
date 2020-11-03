@@ -3,7 +3,7 @@ from typing import List
 from mutagen.mp4 import AtomDataType, MP4Cover, MP4FreeForm
 
 from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.audioinfo import (
+from audiolibrarian.audioinfo2 import (
     FrontCover,
     Info,
     RelationInfo,

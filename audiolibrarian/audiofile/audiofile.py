@@ -3,7 +3,7 @@ from pathlib import Path
 
 import mutagen
 
-from audiolibrarian.audioinfo import Info
+from audiolibrarian.audioinfo2 import Info
 
 
 class AudioFile(abc.ABC):
