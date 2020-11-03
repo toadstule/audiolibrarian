@@ -9,7 +9,7 @@ import re
 import subprocess
 import sys
 
-from audiolibrarian.audiolibrarian import AudioLibrarian
+from audiolibrarian.librarian import AudioLibrarian
 from audiolibrarian.genremanager import GenreManager
 
 REQUIRED_EXE = (
