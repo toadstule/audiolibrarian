@@ -62,17 +62,13 @@ class FlacFile(AudioFile):
             title=mut.get("title", [None])[0],
             track_number=int(mut["tracknumber"][0]) if mut.get("tracknumber") else None,
         )
-        relation_info = RelationInfo()
-        if mut.get("engineer"):
-            relation_info.engineers = mut["engineer"]
-        if mut.get("lyricist"):
-            relation_info.lyricists = mut["lyricist"]
-        if mut.get("mixer"):
-            relation_info.mixers = mut["mixer"]
-        if mut.get("producer"):
-            relation_info.producers = mut["producer"]
-        if mut.get("performer"):
-            relation_info.performers = self._parse_performer_tag(mut["performer"])
+        relation_info = RelationInfo(
+            engineers=mut.get("engineer"),
+            lyricists=mut.get("lyricist"),
+            mixers=mut.get("mixer"),
+            performers=mut.get("performer") and self._parse_performer_tag(mut["performer"]),
+            producers=mut.get("producer"),
+        )
 
         return Info(relation_info=relation_info, release_info=release_info, track_info=track_info)
 

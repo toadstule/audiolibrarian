@@ -69,21 +69,15 @@ class Mp3File(AudioFile):
             title=mut.get("TIT2", [None])[0],
             track_number=int(mut["TRCK"][0].split("/")[0]) if mut.get("TRCK") else None,
         )
-        relation_info = RelationInfo(lyricists=get_l("TEXT"))
-        if mut.get("TIPL"):
-            for relation, name in mut.get("TIPL").people:
-                if relation == "engineer":
-                    relation_info.engineers = relation_info.engineers or []
-                    relation_info.engineers.append(name)
-                elif relation == "mix":
-                    relation_info.mixers = relation_info.mixers or []
-                    relation_info.mixers.append(name)
-                elif relation == "producer":
-                    relation_info.producers = relation_info.producers or []
-                    relation_info.producers.append(name)
-                else:
-                    relation_info.performers = relation_info.performers or []
-                    relation_info.performers.append(Performer(name=name, instrument=relation))
+        people = mut["TIPL"].people if mut.get("TIPL") else []
+        roles = ("engineer", "mix", "producer")
+        relation_info = RelationInfo(
+            engineers=[name for relation, name in people if relation == "engineer"] or None,
+            lyricists=get_l("TEXT"),
+            mixers=[name for relation, name in people if relation == "mix"] or None,
+            producers=[name for relation, name in people if relation == "producer"] or None,
+            performers=[Performer(n, r) for r, n in people if r not in roles] or None,
+        )
 
         return Info(relation_info=relation_info, release_info=release_info, track_info=track_info)
 
