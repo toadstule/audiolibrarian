@@ -1,6 +1,13 @@
+# noinspection PyMissingConstructor
 class Tags(dict):
+    """A dict-like object that silently drops keys with None in their values.
 
-    # noinspection PyMissingConstructor
+    A key will be dropped if:
+    * its value is None
+    * its value is a list containing None
+    * its value is a dict with None in its values
+    """
+
     def __init__(self, *args, **kwargs):
         self.update(*args, **kwargs)
 
