@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest import TestCase
 
 from audiolibrarian.audiofile import open_
-from audiolibrarian.audiofile.audioinfo import (
+from audiolibrarian.audioinfo import (
     Info,
     FrontCover,
     Performer,

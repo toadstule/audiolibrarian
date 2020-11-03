@@ -4,7 +4,7 @@ import mutagen
 import mutagen.id3
 
 from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.audiofile.audioinfo import (
+from audiolibrarian.audioinfo import (
     FrontCover,
     Info,
     Performer,

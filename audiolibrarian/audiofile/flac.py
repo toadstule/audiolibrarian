@@ -4,7 +4,7 @@ from typing import List
 import mutagen.flac
 
 from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.audiofile.audioinfo import (
+from audiolibrarian.audioinfo import (
     FrontCover,
     Info,
     Performer,
