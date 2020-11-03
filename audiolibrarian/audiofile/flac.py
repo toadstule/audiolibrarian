@@ -1,65 +1,66 @@
 import re
 from typing import List
 
+import mutagen.flac
+
 from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.audiofile.audioinfo import (
+    FrontCover,
     Info,
     Performer,
     RelationInfo,
     ReleaseInfo,
     TrackInfo,
 )
+from audiolibrarian.audiofile.tags import Tags
 
 
 class FlacFile(AudioFile):
     extensions = (".flac",)
 
-    _missing_tags_if_blank = (
-        "engineer",
-        "genre",
-        "lyricist",
-        "mixer",
-        "performer",
-        "producer",
-    )
-
     def read_tags(self) -> Info:
-        print("> MUT_FILE:", self._mut_file)
         mut = self._mut_file
+
+        front_cover = None
+        if self._mut_file.pictures:
+            cover = self._mut_file.pictures[0]
+            front_cover = FrontCover(data=cover.data, desc=cover.desc or "", mime=cover.mime)
+
         release_info = ReleaseInfo(
-            album=mut.get("album", [""])[0],
-            album_artists=mut.get("albumartist", []),
-            album_artists_sort=mut.get("albumartistsort", []),
-            asins=mut.get("asin", []),
-            barcodes=mut.get("barcode", []),
-            catalog_numbers=mut.get("catalognumber", []),
-            date=mut.get("date", [""])[0],
-            disc_number=int(mut.get("discnumber", ["1"])[0]),
-            disc_total=int(mut.get("disctotal", ["1"])[0]),
-            genres=mut.get("genre", []),
-            labels=mut.get("label", []),
-            media=mut.get("media", []),
-            musicbrainz_album_artist_ids=mut.get("musicbrainz_albumartistid", []),
-            musicbrainz_album_id=mut.get("musicbrainz_albumid", [""])[0],
-            musicbrainz_release_group_id=mut.get("musicbrainz_releasegroupid", [""])[0],
-            original_date=mut.get("originaldate", [""])[0],
-            original_year=int(mut.get("originalyear", ["0"])[0]),
-            release_countries=mut.get("releasecountry", []),
-            release_statuses=mut.get("releasestatus", []),
-            release_types=mut.get("releasetype", []),
-            script=mut.get("script", [""])[0],
-            track_total=int(mut.get("tracktotal", ["0"])[0]),
+            album=mut.get("album", [None])[0],
+            album_artists=mut.get("albumartist"),
+            album_artists_sort=mut.get("albumartistsort"),
+            asins=mut.get("asin"),
+            barcodes=mut.get("barcode"),
+            catalog_numbers=mut.get("catalognumber"),
+            date=mut.get("date", [None])[0],
+            disc_number=int(mut["discnumber"][0]) if mut.get("discnumber") else None,
+            disc_total=int(mut["disctotal"][0]) if mut.get("disctotal") else None,
+            front_cover=front_cover,
+            genres=mut.get("genre"),
+            labels=mut.get("label"),
+            media=mut.get("media"),
+            musicbrainz_album_artist_ids=mut.get("musicbrainz_albumartistid"),
+            musicbrainz_album_id=mut.get("musicbrainz_albumid", [None])[0],
+            musicbrainz_release_group_id=mut.get("musicbrainz_releasegroupid", [None])[0],
+            original_date=mut.get("originaldate", [None])[0],
+            original_year=int(mut["originalyear"][0]) if mut.get("originalyear") else None,
+            release_countries=mut.get("releasecountry"),
+            release_statuses=mut.get("releasestatus"),
+            release_types=mut.get("releasetype"),
+            script=mut.get("script", [None])[0],
+            track_total=int(mut["tracktotal"][0]) if mut.get("tracktotal") else None,
         )
         track_info = TrackInfo(
-            artist=mut.get("artist", [""])[0],
-            artists=mut.get("artists", []),
-            artists_sort=mut.get("artistsort", []),
-            isrcs=mut.get("isrc", []),
-            musicbrainz_artist_ids=mut.get("musicbrainz_artistid", []),
-            musicbrainz_release_track_id=mut.get("musicbrainz_releasetrackid", [""])[0],
-            musicbrainz_track_id=mut.get("musicbrainz_trackid", [""])[0],
-            title=mut.get("title", [""])[0],
-            track_number=mut.get("tracknumber", [""])[0],
+            artist=mut.get("artist", [None])[0],
+            artists=mut.get("artists"),
+            artists_sort=mut.get("artistsort"),
+            isrcs=mut.get("isrc"),
+            musicbrainz_artist_ids=mut.get("musicbrainz_artistid"),
+            musicbrainz_release_track_id=mut.get("musicbrainz_releasetrackid", [None])[0],
+            musicbrainz_track_id=mut.get("musicbrainz_trackid", [None])[0],
+            title=mut.get("title", [None])[0],
+            track_number=int(mut["tracknumber"][0]) if mut.get("tracknumber") else None,
         )
         relation_info = RelationInfo()
         if mut.get("engineer"):
@@ -72,9 +73,11 @@ class FlacFile(AudioFile):
             relation_info.producers = mut["producer"]
         if mut.get("performer"):
             relation_info.performers = self._parse_performer_tag(mut["performer"])
+
         return Info(relation_info=relation_info, release_info=release_info, track_info=track_info)
 
     def write_tags(self) -> None:
+
         relation_info = self._info.relation_info
         release_info = self._info.release_info
         track_info = self._info.track_info
@@ -118,28 +121,25 @@ class FlacFile(AudioFile):
             "tracknumber": [str(track_info.track_number)],
             "tracktotal": [str(release_info.track_total)],
         }
-        for tag in self._missing_tags_if_blank:
-            if tag in tags and not tags[tag]:
-                del tags[tag]
-
+        tags = Tags(tags)
         self._mut_file.delete()  # clear old tags
         self._mut_file.clear_pictures()
         self._mut_file.update(tags)
 
-        # TO DO
-        #     if info.front_cover:
-        #         cover = mutagen.flac.Picture()
-        #         cover.type = 3
-        #         cover.mime = "image/jpeg"
-        #         cover.desc = "front cover"
-        #         cover.data = info.front_cover
-        #         song.add_picture(cover)
+        if release_info.front_cover is not None:
+            cover = mutagen.flac.Picture()
+            cover.type = 3
+            cover.mime = release_info.front_cover.mime
+            cover.desc = release_info.front_cover.desc or ""
+            cover.data = release_info.front_cover.data
+            self._mut_file.add_picture(cover)
 
         self._mut_file.save()
 
     @staticmethod
     def _make_performer_tag(performers: List[Performer]) -> List[str]:
-        return [f"{p.name} ({p.instrument})" for p in performers]
+        if performers is not None:
+            return [f"{p.name} ({p.instrument})" for p in performers]
 
     @staticmethod
     def _parse_performer_tag(performers_tag: List[str]) -> List[Performer]:

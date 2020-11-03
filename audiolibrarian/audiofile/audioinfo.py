@@ -1,61 +1,70 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List
+
 
 # Useful reference: https://github.com/metabrainz/picard/blob/master/picard/util/tags.py
 
 
 @dataclass
+class FrontCover:
+    data: bytes = None
+    desc: str = None
+    mime: str = None
+
+
+@dataclass
 class ReleaseInfo:
-    album: str = ""
-    album_artists: List[str] = field(default_factory=list)
-    album_artists_sort: List[str] = field(default_factory=list)
-    asins: List[str] = field(default_factory=list)
-    barcodes: List[str] = field(default_factory=list)
-    catalog_numbers: List[str] = field(default_factory=list)
-    date: str = ""
-    disc_number: int = 1
-    disc_total: int = 1
-    genres: List[str] = field(default_factory=list)
-    labels: List[str] = field(default_factory=list)
-    media: List[str] = field(default_factory=list)
-    musicbrainz_album_artist_ids: List[str] = field(default_factory=list)
-    musicbrainz_album_id: str = ""
-    musicbrainz_release_group_id: str = ""
-    original_date: str = ""
-    original_year: int = 0
-    release_countries: List[str] = field(default_factory=list)
-    release_statuses: List[str] = field(default_factory=list)
-    release_types: List[str] = field(default_factory=list)
-    script: str = ""
-    track_total: int = 1
+    album: str = None
+    album_artists: List[str] = None
+    album_artists_sort: List[str] = None
+    asins: List[str] = None
+    barcodes: List[str] = None
+    catalog_numbers: List[str] = None
+    date: str = None
+    disc_number: int = None
+    disc_total: int = None
+    front_cover: (FrontCover, None) = None
+    genres: List[str] = None
+    labels: List[str] = None
+    media: List[str] = None
+    musicbrainz_album_artist_ids: List[str] = None
+    musicbrainz_album_id: str = None
+    musicbrainz_release_group_id: str = None
+    original_date: str = None
+    original_year: int = None
+    release_countries: List[str] = None
+    release_statuses: List[str] = None
+    release_types: List[str] = None
+    script: str = None
+    track_total: int = None
 
 
 @dataclass
 class Performer:
-    name: str = ""
-    instrument: str = ""
+    name: str = None
+    instrument: str = None
 
 
 @dataclass
 class RelationInfo:
-    engineers: List[str] = field(default_factory=list)
-    lyricists: List[str] = field(default_factory=list)
-    mixers: List[str] = field(default_factory=list)
-    performers: List[Performer] = field(default_factory=list)
-    producers: List[str] = field(default_factory=list)
+    engineers: List[str] = None
+    lyricists: List[str] = None
+    mixers: List[str] = None
+    performers: (List[Performer], None) = None
+    producers: List[str] = None
 
 
 @dataclass
 class TrackInfo:
-    artist: str = ""
-    artists: List[str] = field(default_factory=list)
-    artists_sort: List[str] = field(default_factory=list)
-    isrcs: List[str] = field(default_factory=list)
-    musicbrainz_artist_ids: List[str] = field(default_factory=list)
-    musicbrainz_release_track_id: str = ""
-    musicbrainz_track_id: str = ""
-    title: str = ""
-    track_number: int = 0
+    artist: str = None
+    artists: List[str] = None
+    artists_sort: List[str] = None
+    isrcs: List[str] = None
+    musicbrainz_artist_ids: List[str] = None
+    musicbrainz_release_track_id: str = None
+    musicbrainz_track_id: str = None
+    title: str = None
+    track_number: int = None
 
 
 @dataclass
