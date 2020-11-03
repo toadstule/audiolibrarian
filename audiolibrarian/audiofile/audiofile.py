@@ -3,7 +3,7 @@ from pathlib import Path
 
 import mutagen
 
-from audiolibrarian.audioinfo2 import Info
+from audiolibrarian.records import TrackView
 
 
 class AudioFile(abc.ABC):
@@ -12,22 +12,22 @@ class AudioFile(abc.ABC):
     def __init__(self, filepath: Path):
         self._filepath = filepath
         self._mut_file = mutagen.File(self.filepath.absolute())
-        self._info = self.read_tags()
+        self._track_view = self.read_tags()
 
     @property
     def filepath(self) -> Path:
         return self._filepath
 
     @property
-    def info(self) -> Info:
-        return self._info
+    def track_view(self) -> TrackView:
+        return self._track_view
 
-    @info.setter
-    def info(self, info: Info) -> None:
-        self._info = info
+    @track_view.setter
+    def track_view(self, track_view: TrackView) -> None:
+        self._track_view = track_view
 
     @abc.abstractmethod
-    def read_tags(self) -> Info:
+    def read_tags(self) -> TrackView:
         pass
 
     @abc.abstractmethod

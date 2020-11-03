@@ -4,13 +4,13 @@ import mutagen
 import mutagen.id3
 
 from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.audioinfo2 import (
+from audiolibrarian.records import (
     FrontCover,
-    Info,
+    People,
     Performer,
-    RelationInfo,
-    ReleaseInfo,
-    TrackInfo,
+    Release,
+    Track,
+    TrackView,
 )
 
 APIC = mutagen.id3.APIC
@@ -22,7 +22,7 @@ MB_UFID = "http://musicbrainz.org"
 class Mp3File(AudioFile):
     extensions = (".mp3",)
 
-    def read_tags(self) -> Info:
+    def read_tags(self) -> TrackView:
         def get_l(key) -> (List, None):
             if (value := mut.get(key)) is None:
                 return None
@@ -33,8 +33,10 @@ class Mp3File(AudioFile):
         front_cover = None
         if apic := mut.get("APIC:front cover", mut.get("APIC:front", mut.get("APIC:"))):
             front_cover = FrontCover(data=apic.data, desc=apic.desc, mime=apic.mime)
+        tipl = mut["TIPL"].people if mut.get("TIPL") else []
+        roles = ("engineer", "mix", "producer")
 
-        release_info = ReleaseInfo(
+        release = Release(
             album=mut.get("TALB", [None])[0],
             album_artists=get_l("TPE2"),
             album_artists_sort=get_l("TSO2"),
@@ -52,13 +54,23 @@ class Mp3File(AudioFile):
             musicbrainz_album_id=mut.get("TXXX:MusicBrainz Album Id", [None])[0],
             musicbrainz_release_group_id=mut.get("TXXX:MusicBrainz Release Group Id", [None])[0],
             original_year=(mut.get("TDOR", [mutagen.id3.ID3TimeStamp("")])[0]).year,
+            people=(
+                People(
+                    engineers=[name for role, name in tipl if role == "engineer"] or None,
+                    lyricists=get_l("TEXT"),
+                    mixers=[name for role, name in tipl if role == "mix"] or None,
+                    producers=[name for role, name in tipl if role == "producer"] or None,
+                    performers=[Performer(n, r) for r, n in tipl if r not in roles] or None,
+                )
+                or None
+            ),
             release_countries=get_l("TXXX:MusicBrainz Album Release Country"),
             release_statuses=get_l("TXXX:MusicBrainz Album Status"),
             release_types=get_l("TXXX:MusicBrainz Album Type"),
             script=mut.get("TXXX:SCRIPT", [None])[0],
             track_total=int(mut["TRCK"][0].split("/")[1]) if mut.get("TRCK") else None,
         )
-        track_info = TrackInfo(
+        track = Track(
             artist=mut.get("TPE1", [None])[0],
             artists=get_l("TXXX:ARTISTS"),
             artists_sort=get_l("TSOP"),
@@ -69,28 +81,18 @@ class Mp3File(AudioFile):
             title=mut.get("TIT2", [None])[0],
             track_number=int(mut["TRCK"][0].split("/")[0]) if mut.get("TRCK") else None,
         )
-        people = mut["TIPL"].people if mut.get("TIPL") else []
-        roles = ("engineer", "mix", "producer")
-        relation_info = RelationInfo(
-            engineers=[name for relation, name in people if relation == "engineer"] or None,
-            lyricists=get_l("TEXT"),
-            mixers=[name for relation, name in people if relation == "mix"] or None,
-            producers=[name for relation, name in people if relation == "producer"] or None,
-            performers=[Performer(n, r) for r, n in people if r not in roles] or None,
-        )
 
-        return Info(relation_info=relation_info, release_info=release_info, track_info=track_info)
+        return TrackView(release=release, track=track)
 
     def write_tags(self) -> None:
-        relation = self._info.relation_info
-        release = self._info.release_info
-        track = self._info.track_info
+        release = self._track_view.release
+        track = self._track_view.track
 
-        people = (
-            [["engineer", x] for x in relation.engineers or []]
-            + [["mix", x] for x in relation.mixers or []]
-            + [["producer", x] for x in relation.producers or []]
-            + [[p.instrument, p.name] for p in relation.performers or []]
+        tipl_people = (
+            [["engineer", x] for x in release.people and release.people.engineers or []]
+            + [["mix", x] for x in release.people and release.people.mixers or []]
+            + [["producer", x] for x in release.people and release.people.producers or []]
+            + [[p.instrument, p.name] for p in release.people and release.people.performers or []]
         )
         tags = []
         if t := release.album:
@@ -101,9 +103,9 @@ class Mp3File(AudioFile):
             tags.append(mutagen.id3.TDOR(encoding=0, text=str(t)))
         if t := release.date:
             tags.append(mutagen.id3.TDRC(encoding=0, text=t))
-        if t := relation.lyricists:
+        if t := release.people and release.people.lyricists:
             tags.append(mutagen.id3.TEXT(encoding=1, text=t))
-        if p := people:
+        if p := tipl_people:
             tags.append(mutagen.id3.TIPL(encoding=1, people=p))
         if t := track.title:
             tags.append(mutagen.id3.TIT2(encoding=1, text=t))

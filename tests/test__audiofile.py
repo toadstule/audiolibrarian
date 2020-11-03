@@ -6,13 +6,13 @@ from pathlib import Path
 from unittest import TestCase
 
 from audiolibrarian.audiofile import open_
-from audiolibrarian.audioinfo2 import (
-    Info,
+from audiolibrarian.records import (
+    TrackView,
     FrontCover,
     Performer,
-    RelationInfo,
-    ReleaseInfo,
-    TrackInfo,
+    People,
+    Release,
+    Track,
 )
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
@@ -64,13 +64,11 @@ class TestAudioFile(TestCase):
 
     def test__no_changes_wr_blank(self) -> None:
         """Verify that a write/read cycle doesn't change any blank tags."""
-        blank_info = Info(
-            relation_info=RelationInfo(), release_info=ReleaseInfo(), track_info=TrackInfo()
-        )
+        blank_info = TrackView(release=Release(), track=Track())
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
                 f = open_(test_file.name)
-                f._info = blank_info
+                f._track_view = blank_info
                 f.write_tags()
                 info = f.read_tags()
                 self.assertEqual(blank_info, info, f"Blank file modified for {src.suffix}")
@@ -78,18 +76,8 @@ class TestAudioFile(TestCase):
     def test__no_changes_wr(self) -> None:
         """Verify that a write/read cycle doesn't change any tags."""
 
-        info = Info(
-            relation_info=RelationInfo(
-                engineers=["Engineer 1", "Engineer 2"],
-                lyricists=["Lyricist 1", "Lyricist 2"],
-                mixers=["Mixer 1", "Mixer 2"],
-                performers=[
-                    Performer(name="Performer 1", instrument="Instrument 1"),
-                    Performer(name="Performer 2", instrument="Instrument 2"),
-                ],
-                producers=["Producer 1", "Producer 2"],
-            ),
-            release_info=ReleaseInfo(
+        info = TrackView(
+            release=Release(
                 album="Album",
                 album_artists=["Album Artist One", "Album Artist Two"],
                 album_artists_sort=["One, Album Artist", "Two, Album Artist"],
@@ -108,13 +96,23 @@ class TestAudioFile(TestCase):
                 musicbrainz_release_group_id="MB-Release-Group_ID",
                 original_date="1972-04-02",
                 original_year=1992,
+                people=People(
+                    engineers=["Engineer 1", "Engineer 2"],
+                    lyricists=["Lyricist 1", "Lyricist 2"],
+                    mixers=["Mixer 1", "Mixer 2"],
+                    performers=[
+                        Performer(name="Performer 1", instrument="Instrument 1"),
+                        Performer(name="Performer 2", instrument="Instrument 2"),
+                    ],
+                    producers=["Producer 1", "Producer 2"],
+                ),
                 release_countries=["Release Country 1", "Release Country 2"],
                 release_statuses=["Release Status 1", "Release Status 2"],
                 release_types=["Release Type 1", "Release Type 2"],
                 script="Script",
                 track_total=10,
             ),
-            track_info=TrackInfo(
+            track=Track(
                 artist="Track Artist",
                 artists=["Track Artist One", "Track Artist Two"],
                 artists_sort=["One, Track Artist", "Two, Track Artist"],
@@ -129,15 +127,15 @@ class TestAudioFile(TestCase):
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
                 f = open_(test_file.name)
-                f._info = info
+                f._track_view = info
                 f.write_tags()
                 old_info = copy.deepcopy(info)
                 new_info = f.read_tags()
                 if src.suffix == ".m4a":
-                    old_info.relation_info.performers = None  # m4a doesn't save performers
-                    old_info.release_info.front_cover.desc = None  # m4a doesn't save cover desc
+                    old_info.release.people.performers = None  # m4a doesn't save performers
+                    old_info.release.front_cover.desc = None  # m4a doesn't save cover desc
                 if src.suffix == ".mp3":
-                    old_info.release_info.original_date = None  # mp3 doesn't save orig date
+                    old_info.release.original_date = None  # mp3 doesn't save orig date
                 self.assertEqual(old_info, new_info, f"Blank file modified for {src.suffix}")
 
 
