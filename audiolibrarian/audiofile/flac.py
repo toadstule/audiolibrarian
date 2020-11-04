@@ -44,7 +44,7 @@ class FlacFile(AudioFile):
             musicbrainz_album_id=mut.get("musicbrainz_albumid", [None])[0],
             musicbrainz_release_group_id=mut.get("musicbrainz_releasegroupid", [None])[0],
             original_date=mut.get("originaldate", [None])[0],
-            original_year=int(mut["originalyear"][0]) if mut.get("originalyear") else None,
+            original_year=mut["originalyear"][0] if mut.get("originalyear") else None,
             people=(
                 People(
                     engineers=mut.get("engineer"),

@@ -68,7 +68,7 @@ class Release(Record):
     musicbrainz_album_id: str = None
     musicbrainz_release_group_id: str = None
     original_date: str = None
-    original_year: int = None
+    original_year: str = None
     people: People = None
     release_countries: List[str] = None
     release_statuses: List[str] = None
@@ -80,7 +80,6 @@ class Release(Record):
 # View Record Types (no fields)
 @dataclass
 class ReleaseView(Record):
-    people: People
     release: Release
     tracks: List[Track]
 

@@ -53,7 +53,7 @@ class Mp3File(AudioFile):
             musicbrainz_album_artist_ids=get_l("TXXX:MusicBrainz Album Artist Id"),
             musicbrainz_album_id=mut.get("TXXX:MusicBrainz Album Id", [None])[0],
             musicbrainz_release_group_id=mut.get("TXXX:MusicBrainz Release Group Id", [None])[0],
-            original_year=(mut.get("TDOR", [mutagen.id3.ID3TimeStamp("")])[0]).year,
+            original_year=str((mut["TDOR"][0]).year) if mut.get("TDOR") else None,
             people=(
                 People(
                     engineers=[name for role, name in tipl if role == "engineer"] or None,

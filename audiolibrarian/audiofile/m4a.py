@@ -57,7 +57,7 @@ class M4aFile(AudioFile):
             musicbrainz_album_id=get_str(f"{ITUNES}:MusicBrainz Album Id"),
             musicbrainz_release_group_id=get_str(f"{ITUNES}:MusicBrainz Release Group Id"),
             original_date=get_str(f"{ITUNES}:originaldate"),
-            original_year=int(get_str(f"{ITUNES}:originalyear") or 0) or None,
+            original_year=get_str(f"{ITUNES}:originalyear") or None,
             people=(
                 People(
                     engineers=get_strl(f"{ITUNES}:ENGINEER"),
