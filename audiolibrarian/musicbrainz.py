@@ -20,6 +20,11 @@ mb.set_useragent("audiolibrarian", __version__, "audiolibrarian@jibson.com")
 
 
 class MusicBrainzSession:
+    """MusicBrainzSession provides access to the MusicBrainz API.
+
+    It can be for things that are not supported by the musicbrainzngs library.
+    """
+
     def __init__(self):
         self._session = requests.Session()
         self._session.auth = HTTPDigestAuth("toadstule", "***REMOVED***")
@@ -30,7 +35,7 @@ class MusicBrainzSession:
     def __del__(self):
         self._session.close()
 
-    def _get(self, path, params=None):
+    def _get(self, path: str, params=None):
         # Used for direct API calls; those not supported by the python library
         path = path.lstrip("/")
         url = f"https://musicbrainz.org/ws/2/{path}"
@@ -43,13 +48,15 @@ class MusicBrainzSession:
         assert r.status_code == 200, f"{r.status_code} - {url}"
         return r.json()
 
-    def get_artist_by_id(self, artist_id, includes=None):
+    def get_artist_by_id(self, artist_id: str, includes=None):
+        """Returns artist for the given musicbrainz-artist ID."""
         params = {}
         if includes is not None:
             params["inc"] = "+".join(includes)
         return self._get(f"artist/{artist_id}", params=params)
 
-    def get_release_group_by_id(self, release_group_id, includes=None):
+    def get_release_group_by_id(self, release_group_id: str, includes=None):
+        """Returns release-group for the given musicbrainz-release-group ID."""
         params = {}
         if includes is not None:
             params["inc"] = "+".join(includes)
@@ -57,6 +64,8 @@ class MusicBrainzSession:
 
 
 class MusicBrainzRelease:
+    """MusicBrainzRelease reads information from MusicBrains and provides a Release record."""
+
     _includes = [
         "artist-credits",
         "artist-rels",
@@ -78,11 +87,13 @@ class MusicBrainzRelease:
         self._release_record = None
 
     def get_release(self) -> Release:
+        """Returns the Release record."""
         if self._release_record is None:
             self._release_record = self._get_release()
         return self._release_record
 
-    def _get_front_cover(self, size: int = 500):
+    def _get_front_cover(self, size: int = 500) -> (FrontCover, None):
+        # Returns the FrontCover object (of None).
         if self._release["cover-art-archive"]["front"] == "true":
             try:
                 return FrontCover(
@@ -96,7 +107,7 @@ class MusicBrainzRelease:
             ) as err:
                 log.warning(f"Error getting front cover: {err}")
 
-    def _get_genre(self, release_group_id, artist_id):
+    def _get_genre(self, release_group_id: str, artist_id: str) -> str:
         # Try to find the genre using the following methods (in order):
         # - release-group user-genres
         # - artist user-genres
@@ -122,6 +133,7 @@ class MusicBrainzRelease:
         return input("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
     def _get_media(self) -> (Dict[int, Medium], None):
+        # Returns a dict of Media objects, keyed on number or position (or None).
         media = {}
         for medium in self._release.get("medium-list", []):
             medium_number = int(medium.get("number") or medium.get("position"))
@@ -134,6 +146,7 @@ class MusicBrainzRelease:
         return media
 
     def _get_people(self) -> (People, None):
+        # Returns a People object (or None).
         engineers, lyricists, mixers, performers, producers = [], [], [], [], []
         for r in self._release.get("artist-relation-list", []):
             name = fix(r["artist"]["name"])
@@ -164,6 +177,7 @@ class MusicBrainzRelease:
             )
 
     def _get_release(self) -> Release:
+        # Returns the Release object.
         release = self._release
         log.info(f"RELEASE {release}")
         if log.getEffectiveLevel() == DEBUG:
@@ -215,6 +229,7 @@ class MusicBrainzRelease:
         )
 
     def _get_tracks(self, medium_number: int = 1) -> (Dict[int, Track], None):
+        # Returns a dict of Track objects, keyed on track number.
         tracks = {}
         for medium in self._release.get("medium-list", []):
             if int(medium["position"]) == medium_number:
@@ -240,7 +255,7 @@ class MusicBrainzRelease:
 
     @staticmethod
     def _process_artist_credit(artist_credit: list) -> Tuple[str, List[str], str, List[str]]:
-        # Get artist info from an artist-credit
+        # Returns artist info from an artist-credit list.
         artist_names_str = ""
         artist_names_list = []
         artist_sort_names = ""
@@ -258,6 +273,7 @@ class MusicBrainzRelease:
 
     @staticmethod
     def _process_relationships(relationships: list) -> List[Tuple[str, str]]:
+        # Returns relationship info from a relationships list.
         result = []
         for r in relationships:
             value = r["artist"]["name"]
@@ -278,6 +294,8 @@ class MusicBrainzRelease:
 
 @dataclass
 class Searcher:
+    """Searcher objects contain data and methods for searching the MusicBrainz database."""
+
     artist: str = ""
     album: str = ""
     disc_id: str = ""
@@ -287,6 +305,7 @@ class Searcher:
     mb_release_id: str = ""
 
     def find_music_brains_release(self) -> (Release, None):
+        # Returns a Release object (or None) based on a search.
         release_id = self.mb_release_id
 
         if not release_id and self.disc_id:
@@ -308,7 +327,8 @@ class Searcher:
 
         return MusicBrainzRelease(release_id).get_release()
 
-    def _get_release_group_ids(self):
+    def _get_release_group_ids(self) -> List[str]:
+        # Returns release groups that fuzzy-match the search criteria.
         artist_l = self.artist.lower()
         album_l = self.album.lower()
         artist_list = mb.search_artists(query=artist_l, limit=500)["artist-list"]
@@ -328,7 +348,8 @@ class Searcher:
             if rg.get("primary-type") == "Album" and fuzz.ratio(album_l, rg["title"].lower()) > 80
         ]
 
-    def _prompt_release_id(self, release_group_ids):
+    def _prompt_release_id(self, release_group_ids: List[str]) -> str:
+        # Prompt for, and return a MusicBrainz release ID.
         print(
             "\n\nWe found the following release group(s). Use the link(s) below to "
             "find the release ID that best matches the audio files.\n"
@@ -340,7 +361,8 @@ class Searcher:
         return self._prompt_uuid("\nRelease ID or URL: ")
 
     @staticmethod
-    def _prompt_uuid(prompt):
+    def _prompt_uuid(prompt: str) -> str:
+        # Prompt for, and return a UUID.
         while True:
             uuid = get_uuid(input(prompt))
             if uuid is not None:

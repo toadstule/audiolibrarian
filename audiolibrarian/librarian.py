@@ -23,6 +23,12 @@ log = getLogger(__name__)
 
 
 class AudioLibrarian:
+    """AudioLibrarian tool for converting and tagging audio files.
+
+    This class performs all of its tasks on instantiation and provides no public members or
+    methods.
+    """
+
     def __init__(self, args):
         self._args = args
 
@@ -57,29 +63,35 @@ class AudioLibrarian:
             return
         if self._args.command in ("convert", "rip"):
             self._rip_convert(audio_source)
-        self._update_manifest()
+        self._write_manifest()
 
     @property
     def _flac_filenames(self):
+        # Returns the current list of flac files in the work directory.
         return sorted(self._flac_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
     def _m4a_filenames(self):
+        # Returns the current list of m4a files in the work directory.
         return sorted(self._m4a_dir.glob("*.m4a"), key=text.alpha_numeric_key)
 
     @property
     def _mp3_filenames(self):
+        # Returns the current list of mp3 files in the work directory.
         return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
 
     @property
     def _source_filenames(self):
+        # Returns the current list of source files in the work directory.
         return sorted(self._source_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
     def _wav_filenames(self):
+        # Returns the current list of wav files in the work directory.
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
     def _get_searcher(self, audio_source: audiosource.AudioSource) -> Searcher:
+        # Returns a Searcher object populated with data from the audio source and cli args.
         search_data = audio_source.get_search_data()
         searcher = Searcher(**search_data)
         searcher.disc_number = self._disc_number
@@ -96,22 +108,17 @@ class AudioLibrarian:
         return searcher
 
     def _make_clean_workdirs(self):
+        # Erases everything from the workdir and creates the empty directory structure.
         if self._work_dir.is_dir():
             shutil.rmtree(self._work_dir)
         for d in self._flac_dir, self._m4a_dir, self._mp3_dir, self._source_dir, self._wav_dir:
             d.mkdir(parents=True)
 
-    def _make_file(self, filenames: List[Path]) -> None:
-        for f in filenames:
-            song = open_(f)
-            song.one_track = OneTrack(
-                release=self._release,
-                medium_number=self._disc_number,
-                track_number=int(f.name.split("__")[0]),
-            )
-            song.write_tags()
-
     def _make_flac(self, source=False):
+        # Converts the wav files into flac files; tags them.
+        #
+        # If source is True, it stores the flac files in the source directory,
+        # otherwise it stores them in the flac directory.
         out_dir = self._source_dir if source else self._flac_dir
         commands = [
             ("flac", "--silent", f"--output-prefix={out_dir}/", f) for f in self._wav_filenames
@@ -119,31 +126,38 @@ class AudioLibrarian:
         cmd.parallel(f"Making {len(self._wav_filenames)} flac files...", commands)
         filenames = self._source_filenames if source else self._flac_filenames
         cmd.touch(filenames)
-        self._make_file(filenames)
+        self._tag_files(filenames)
 
     def _make_m4a(self):
+        # Converts the wav files into m4a files; tags them.
         commands = []
         for f in self._wav_filenames:
             dst_file = self._m4a_dir / f.name.replace(".wav", ".m4a")
             commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", dst_file, f))
         cmd.parallel(f"Making {len(commands)} m4a files...", commands)
         cmd.touch(self._m4a_filenames)
-        self._make_file(self._m4a_filenames)
+        self._tag_files(self._m4a_filenames)
 
     def _make_mp3(self):
+        # Converts the wav files into mp3 files; tags them.
         commands = []
         for f in self._wav_filenames:
             dst_file = self._mp3_dir / f.name.replace(".wav", ".mp3")
             commands.append(("lame", "--silent", "-h", "-b", "192", f, dst_file))
         cmd.parallel(f"Making {len(commands)} mp3 files...", commands)
         cmd.touch(self._mp3_filenames)
-        self._make_file(self._mp3_filenames)
+        self._tag_files(self._mp3_filenames)
 
     def _make_source(self):
+        # Converts the files into flac files; stores them in the source dir; reads their tags.
+        #
+        # The files are defined by the audio source; they could be wav files from a CD
+        # or another type of audio file.
         self._make_flac(source=True)
         self._source_example = open_(self._source_filenames[0]).read_tags()
 
     def _move_files(self):
+        # Moves converted/tagged files from the work directory into the library directory.
         artist_dir = text.get_filename(self._release.first("album_artists"))
         album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
         flac_dir = self._library_dir / "flac" / artist_dir / album_dir
@@ -165,6 +179,7 @@ class AudioLibrarian:
         [f.rename(source_dir / f.name) for f in self._source_filenames]
 
     def _normalize(self):
+        # Normalizes the wav files using wavegain.
         print("Normalizing wav files...")
         # command = ["wavegain", "--album", "--apply"]
         command = ["wavegain", "--radio", "--gain=5", "--apply"]
@@ -176,6 +191,7 @@ class AudioLibrarian:
         r.check_returncode()
 
     def _rename_wav(self):
+        # Renames the wav files to a filename-sane representation of the track title.
         for track_number, old_path in enumerate(self._wav_filenames, 1):
             title_filename = self._medium.tracks[track_number].get_filename() + ".wav"
             new_path = old_path.parent / title_filename
@@ -184,6 +200,7 @@ class AudioLibrarian:
                 old_path.rename(new_path)
 
     def _rip_convert(self, audio_source):
+        # Performs all of the steps of ripping, normalizing, converting and moving the files.
         audio_source.prepare_source()
         with self._lock:
             self._make_clean_workdirs()
@@ -197,6 +214,11 @@ class AudioLibrarian:
             self._move_files()
 
     def _summary(self, audio_source: audiosource.AudioSource) -> Tuple[str, bool]:
+        # Returns a summary of the conversion/tagging process and an "ok" flag indicating issues.
+        #
+        # The summary is a nicely formatted table showing the album, artist and track info.
+        # The "ok" flag indicating issues will be true if:
+        #   - the file count does not match the song count from the MusicBrainz database
         lines = []
         ok = True
         source_filenames = audio_source.get_source_filenames()
@@ -247,7 +269,19 @@ class AudioLibrarian:
         lines.append(f"\u255A{c1_line}\u2567{c2_line}\u2567{c3_line}\u255D")
         return "\n".join(lines), ok
 
-    def _update_manifest(self):
+    def _tag_files(self, filenames: List[Path]) -> None:
+        # Tags the given list of files.
+        for f in filenames:
+            song = open_(f)
+            song.one_track = OneTrack(
+                release=self._release,
+                medium_number=self._disc_number,
+                track_number=int(f.name.split("__")[0]),
+            )
+            song.write_tags()
+
+    def _write_manifest(self):
+        # Writes out a manifest file with release information.
         release = self._release  # we use this a lot below
         file_info = self._source_example.track.file_info
         manifest = {
