@@ -1,5 +1,6 @@
 import pickle
 import webbrowser
+from logging import getLogger
 from pathlib import Path
 from typing import Dict, List
 
@@ -8,13 +9,16 @@ import mutagen.flac
 import mutagen.id3
 import mutagen.mp4
 
-from audiolibrarian.musicbrains import MusicBrainsSession
+from audiolibrarian.musicbrainz import MusicBrainzSession
+
+
+log = getLogger(__name__)
 
 
 class GenreManager:
     def __init__(self, args):
         self._args = args
-        self._mb = MusicBrainsSession()
+        self._mb = MusicBrainzSession()
         self._paths = self._get_all_paths()
         self._paths_by_artist = self._get_paths_by_artist()
         _u, _c = self._get_genres_by_artist()
@@ -115,7 +119,7 @@ class GenreManager:
                 user = pickle.load(cf)
         for artist_id in self._paths_by_artist:
             if artist_id in user:
-                # print("Cache hit:", artist_id, user[artist_id])
+                log.debug(f"Cache hit: {artist_id} {user[artist_id]}")
                 continue  # already in the cache
             artist = self._mb.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
             if artist["user-genres"]:

@@ -5,12 +5,15 @@ PYTHONPATH=$(pwd) scripts/audiolibrarian /media/BlackBox/Music/flac/some_file
 
 """
 import argparse
+import logging
 import re
 import subprocess
 import sys
 
 from audiolibrarian.librarian import AudioLibrarian
 from audiolibrarian.genremanager import GenreManager
+
+log = logging.getLogger(__name__)
 
 REQUIRED_EXE = (
     "cd-paranoia",
@@ -22,6 +25,14 @@ REQUIRED_EXE = (
     "mpg123",
     "sndfile-convert",
     "wavegain",
+)
+
+LOG_LEVELS = (
+    "CRITICAL",
+    "ERROR",
+    "WARNING",
+    "INFO",
+    "DEBUG",
 )
 
 
@@ -45,7 +56,7 @@ def parse_args():
     subparsers = parser.add_subparsers(title="command", dest="command")
 
     # global options
-    parser.add_argument("--verbose", "-v", action="store_true", help="verbose output")
+    parser.add_argument("--log-level", "-l", choices=LOG_LEVELS, help="log-level (default: ERROR")
 
     # convert from files
     _convert = subparsers.add_parser("convert", help="convert music from files")
@@ -99,8 +110,8 @@ def _validate_args(a):
 
 if __name__ == "__main__":
     args = parse_args()
-    if args.verbose:
-        print(args)
+    logging.basicConfig(level=args.log_level)
+    log.info(f"ARGS: {args}")
     check_deps()
     if args.command == "genre":
         GenreManager(args)

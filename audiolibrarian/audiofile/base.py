@@ -1,4 +1,4 @@
-import pathlib
+from pathlib import Path
 
 from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.audiofile.flac import FlacFile
@@ -12,7 +12,7 @@ _audioFiles = [
 ]
 
 
-def open_(filename: str) -> AudioFile:
+def open_(filename: (str, Path)) -> AudioFile:
     """Factory function that returns an AudioFile object based on the filename extension.
 
     :param filename: filename of a supported audio file
@@ -21,7 +21,7 @@ def open_(filename: str) -> AudioFile:
     :raise NotImplementedError: if the type of the file is not supported
     """
 
-    filepath = pathlib.Path(filename).resolve()
+    filepath = Path(filename).resolve()
     if not filepath.is_file():
         raise FileNotFoundError(filepath)
     for audioFile in _audioFiles:

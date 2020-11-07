@@ -13,7 +13,7 @@ from audiolibrarian.records import (
     Release,
     Track,
 )
-from audiolibrarian.records.records import Medium, Source
+from audiolibrarian.records import BitrateMode, FileInfo, FileType, Medium, Source
 
 
 class FlacFile(AudioFile):
@@ -43,13 +43,20 @@ class FlacFile(AudioFile):
                 labels=mut.get("label"),
                 media={
                     medium_number: Medium(
-                        format=mut.get("media"),
+                        formats=mut.get("media"),
+                        titles=mut.get("discsubtitle"),
                         track_count=track_count,
                         tracks={
                             track_number: Track(
                                 artist=mut.get("artist", [None])[0],
                                 artists=mut.get("artists"),
                                 artists_sort=mut.get("artistsort"),
+                                file_info=FileInfo(
+                                    bitrate=mut.info.bitrate // 1000,
+                                    bitrate_mode=BitrateMode.CBR,
+                                    path=self.filepath,
+                                    type=FileType.FLAC,
+                                ),
                                 isrcs=mut.get("isrc"),
                                 musicbrainz_artist_ids=mut.get("musicbrainz_artistid"),
                                 musicbrainz_release_track_id=mut.get(
@@ -108,13 +115,14 @@ class FlacFile(AudioFile):
             "catalognumber": release.catalog_numbers,
             "date": [release.date],
             "discnumber": [str(medium_number)],
+            "discsubtitle": medium.titles,
             "disctotal": [str(release.medium_count)],
             "engineer": release.people and release.people.engineers,
             "genre": release.genres,
             "isrc": track.isrcs,
             "label": release.labels,
             "lyricist": release.people and release.people.lyricists,
-            "media": medium.format,
+            "media": medium.formats,
             "mixer": release.people and release.people.mixers,
             "musicbrainz_albumartistid": release.musicbrainz_album_artist_ids,
             "musicbrainz_albumid": [release.musicbrainz_album_id],

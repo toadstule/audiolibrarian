@@ -1,4 +1,6 @@
+ansicolors
 discid
+filelock
 fuzzywuzzy
 musicbrainzngs
 mutagen

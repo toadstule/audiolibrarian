@@ -30,6 +30,10 @@ class TestMusicBrainzRelease(TestCase):
             expected.genres, got.genres = None, None  # genres should be ignored
             expected.front_cover, got.front_cover = None, None  # don't compare image
             expected.asins, got.asins = None, None  # Something's weird with ASINS
+            # noinspection PyUnresolvedReferences
+            expected.media[medium_number].tracks[track_number].file_info = None
+            # noinspection PyUnresolvedReferences
+            got.media[medium_number].tracks[track_number].file_info = None
 
             if src.suffix == ".m4a":  # we don't store this for m4a files
                 if got.people:

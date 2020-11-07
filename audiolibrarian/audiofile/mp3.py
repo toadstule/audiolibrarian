@@ -14,6 +14,7 @@ from audiolibrarian.records import (
     Source,
     Track,
 )
+from audiolibrarian.records import BitrateMode, FileInfo, FileType
 
 APIC = mutagen.id3.APIC
 TXXX = mutagen.id3.TXXX
@@ -42,6 +43,11 @@ class Mp3File(AudioFile):
         medium_number = int(mut["TPOS"][0].split("/")[0]) if mut.get("TPOS") else None
         track_count = int(mut["TRCK"][0].split("/")[1]) if mut.get("TRCK") else None
         track_number = int(mut["TRCK"][0].split("/")[0]) if mut.get("TRCK") else None
+        bitrate = mut.info.bitrate // 1000
+        bitrate_mode = BitrateMode.__members__[str(mut.info.bitrate_mode).split(".")[-1]]
+        # Hack for common CBRs
+        if bitrate_mode == BitrateMode.UNKNOWN and bitrate in (128, 160, 192, 320):
+            bitrate_mode = BitrateMode.CBR
         release = (
             Release(
                 album=mut.get("TALB", [None])[0],
@@ -56,13 +62,20 @@ class Mp3File(AudioFile):
                 labels=get_l("TPUB"),
                 media={
                     medium_number: Medium(
-                        format=get_l("TMED"),
+                        formats=get_l("TMED"),
+                        titles=get_l("TSST"),
                         track_count=track_count,
                         tracks={
                             track_number: Track(
                                 artist=mut.get("TPE1", [None])[0],
                                 artists=get_l("TXXX:ARTISTS"),
                                 artists_sort=get_l("TSOP"),
+                                file_info=FileInfo(
+                                    bitrate=bitrate,
+                                    bitrate_mode=bitrate_mode,
+                                    path=self.filepath,
+                                    type=FileType.MP3,
+                                ),
                                 isrcs=get_l("TSRC"),
                                 musicbrainz_artist_ids=get_l("TXXX:MusicBrainz Artist Id"),
                                 musicbrainz_release_track_id=mut.get(
@@ -136,7 +149,7 @@ class Mp3File(AudioFile):
             tags.append(mutagen.id3.TIPL(encoding=1, people=p))
         if t := track.title:
             tags.append(mutagen.id3.TIT2(encoding=1, text=t))
-        if t := medium.format:
+        if t := medium.formats:
             tags.append(mutagen.id3.TMED(encoding=1, text=slash(t)))
         if t := track.artist:
             tags.append(mutagen.id3.TPE1(encoding=1, text=t))
@@ -154,6 +167,8 @@ class Mp3File(AudioFile):
             tags.append(mutagen.id3.TSOP(encoding=1, text=slash(t)))
         if t := track.isrcs:
             tags.append(mutagen.id3.TSRC(encoding=1, text=slash(t)))
+        if t := medium.titles:
+            tags.append(mutagen.id3.TSST(encoding=1, text=slash(t)))
         if t := track.artists:
             tags.append(TXXX(encoding=1, desc="ARTISTS", text=slash(t)))
         if t := release.asins:

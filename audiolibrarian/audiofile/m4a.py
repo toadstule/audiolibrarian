@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import List
 
 from mutagen.mp4 import AtomDataType, MP4Cover, MP4FreeForm
@@ -13,7 +14,9 @@ from audiolibrarian.records import (
     Source,
     Track,
 )
+from audiolibrarian.records import BitrateMode, FileInfo, FileType
 
+log = getLogger(__name__)
 ITUNES = "----:com.apple.iTunes"
 
 
@@ -58,13 +61,20 @@ class M4aFile(AudioFile):
                 labels=get_strl(f"{ITUNES}:LABEL"),
                 media={
                     medium_number: Medium(
-                        format=get_strl(f"{ITUNES}:MEDIA"),
+                        formats=get_strl(f"{ITUNES}:MEDIA"),
+                        titles=get_strl(f"{ITUNES}:DISCSUBTITLE"),
                         track_count=track_count,
                         tracks={
                             track_number: Track(
                                 artist=mut.get("\xa9ART", [None])[0],
                                 artists=get_strl(f"{ITUNES}:ARTISTS"),
                                 artists_sort=mut.get("soar"),
+                                file_info=FileInfo(
+                                    bitrate=mut.info.bitrate // 1000,
+                                    bitrate_mode=BitrateMode.CBR,
+                                    path=self.filepath,
+                                    type=FileType.AAC,
+                                ),
                                 isrcs=get_strl(f"{ITUNES}:ISRC"),
                                 musicbrainz_artist_ids=get_strl(f"{ITUNES}:MusicBrainz Artist Id"),
                                 musicbrainz_release_track_id=get_str(
@@ -130,11 +140,12 @@ class M4aFile(AudioFile):
             f"{ITUNES}:ASIN": ffl(release.asins),
             f"{ITUNES}:BARCODE": ffl(release.barcodes),
             f"{ITUNES}:CATALOGNUMBER": ffl(release.catalog_numbers),
+            f"{ITUNES}:DISCSUBTITLE": ffl(medium.titles),
             f"{ITUNES}:ENGINEER": ffl(release.people and release.people.engineers),
             f"{ITUNES}:ISRC": ffl(track.isrcs),
             f"{ITUNES}:LABEL": ffl(release.labels),
             f"{ITUNES}:LYRICIST": ffl(release.people and release.people.lyricists),
-            f"{ITUNES}:MEDIA": ffl(medium.format),
+            f"{ITUNES}:MEDIA": ffl(medium.formats),
             f"{ITUNES}:MIXER": ffl(release.people and release.people.mixers),
             f"{ITUNES}:MusicBrainz Album Artist Id": ffl(release.musicbrainz_album_artist_ids),
             f"{ITUNES}:MusicBrainz Album Id": [ff(release.musicbrainz_album_id)],
@@ -167,7 +178,7 @@ class M4aFile(AudioFile):
             try:
                 self._mut_file[k] = v
             except Exception:
-                print("ERROR:", k, v)
+                log.critical("ERROR:", k, v)
                 raise
 
         self._mut_file.save()

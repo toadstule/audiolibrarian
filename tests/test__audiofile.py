@@ -91,7 +91,8 @@ class TestAudioFile(TestCase):
                 labels=["Label 1", "Label 2"],
                 media={
                     7: Medium(
-                        format=["Media 1 Format"],
+                        formats=["Media 1 Format"],
+                        titles=["Disc title 1", "Disc title 2"],
                         track_count=10,
                         tracks={
                             3: Track(
@@ -140,6 +141,10 @@ class TestAudioFile(TestCase):
                 f.write_tags()
                 old_info = copy.deepcopy(info)
                 new_info = f.read_tags()
+
+                # remove stuff we don't want to check
+                new_info.track.file_info = None
+
                 if src.suffix == ".m4a":
                     old_info.release.people.performers = None  # m4a doesn't save performers
                     old_info.release.front_cover.desc = None  # m4a doesn't save cover desc

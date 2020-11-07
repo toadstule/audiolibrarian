@@ -1,8 +1,23 @@
 import re
 import string
 
-
+digit_regex = re.compile(r"([0-9]+)")
 uuid_regex = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.I)
+
+
+def alpha_numeric_key(x):
+    """A key that can be used for sorting alpha-numeric strings numerically.
+
+    Example:
+        from audiolibrarian.text import alpha_numeric_key
+
+        l = ["8__eight", "7__seven", "10__ten", "11__eleven"]
+        sorted(l)
+        # ['10__ten', '11__eleven', '7__seven', '8__eight']
+        sorted(l, key=alpha_numeric_key)
+        # ['7__seven', '8__eight', '10__ten', '11__eleven']
+    """
+    return [int(x) if x.isdigit() else x for x in digit_regex.split(str(x))]
 
 
 def fix(text: str) -> str:

@@ -2,28 +2,24 @@
 
 Useful stuff: https://help.mp3tag.de/main_tags.html
 """
-import glob
-import os
-import pprint
-import re
 import shutil
 import subprocess
-import sys
-import time
+from logging import getLogger
+from pathlib import Path
+from typing import List, Tuple
 
-import mutagen
-import mutagen.easyid3
-import mutagen.flac
-import mutagen.id3
-import mutagen.mp3
-import mutagen.mp4
 import pyaml
 
-from audiolibrarian import text, audiosource, cmd
-from audiolibrarian.musicbrains import MusicBrainsInfo
+# noinspection PyPackageRequirements
+from colors import color
+from filelock import FileLock
 
-TXXX = mutagen.id3.TXXX
-UFID = mutagen.id3.UFID
+from audiolibrarian import audiosource, cmd, text
+from audiolibrarian.audiofile import open_
+from audiolibrarian.musicbrainz import Searcher
+from audiolibrarian.records import OneTrack
+
+log = getLogger(__name__)
 
 
 class AudioLibrarian:
@@ -31,426 +27,248 @@ class AudioLibrarian:
         self._args = args
 
         # directories
-        self._work_dir = "/var/tmp/audiolibrarian"
-        self._flac_dir = os.path.join(self._work_dir, "flac")
-        self._m4a_dir = os.path.join(self._work_dir, "m4a")
-        self._mp3_dir = os.path.join(self._work_dir, "mp3")
-        self._source_dir = os.path.join(self._work_dir, "source")
-        self._wav_dir = os.path.join(self._work_dir, "wav")
-        self._lock_file = f"{self._work_dir}.lock"
+        self._library_dir = Path("library").resolve()
+        self._work_dir = Path("/var/tmp/audiolibrarian")
+        self._flac_dir = self._work_dir / "flac"
+        self._m4a_dir = self._work_dir / "m4a"
+        self._mp3_dir = self._work_dir / "mp3"
+        self._source_dir = self._work_dir / "source"
+        self._wav_dir = self._work_dir / "wav"
         self._manifest_file = "Manifest.yaml"
+        self._lock = FileLock(str(self._work_dir) + ".lock")
 
         d = self._args.disc
-        self._disc_number, self._disc_count = d.split("/") if d else ("1", "1")
+        self._disc_number, self._disc_count = map(int, d.split("/")) if d else (1, 1)
 
-        if self._args.command in ("convert", "manifest"):
-            audio_source = audiosource.FilesAudioSource(self._args.filename)
-        elif self._args.command == "rip":
+        if self._args.command == "rip":
             audio_source = audiosource.CDAudioSource()
         else:
-            raise Exception(f"Invalid command: {self._args.command}")
-        self._source_info = audio_source.get_source_info()
-        search_data = audio_source.get_search_data()
-        search_data.disc_number = self._disc_number
-        if self._args.artist:
-            search_data.artist = self._args.artist
-        if self._args.album:
-            search_data.album = self._args.album
-        if self._args.mb_artist_id:
-            search_data.mb_artist_id = self._args.mb_artist_id
-        if self._args.mb_release_id:
-            search_data.mb_release_id = self._args.mb_release_id
-        skip_confirm = bool(search_data.mb_artist_id and search_data.mb_release_id)
-        print("DATA:", search_data)
-        pprint.pp([os.path.basename(f) for f in audio_source.get_source_filenames()])
-        self._info = MusicBrainsInfo(search_data, args.verbose)
-        pprint.pp(self._info)
-        source_filenames = audio_source.get_source_filenames()
-        if len(source_filenames) != len(self._info.tracks):
-            print("\n*** Track count does not match file count ***\n")
+            audio_source = audiosource.FilesAudioSource([Path(x) for x in self._args.filename])
+        searcher = self._get_searcher(audio_source)
+        skip_confirm = bool(searcher.mb_artist_id and searcher.mb_release_id)
+        self._release = searcher.find_music_brains_release()
+        self._medium = self._release.media[int(self._disc_number)]
+        summary, ok = self._summary(audio_source)
+        print(summary)
+        if not ok:
+            print(color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
         if not skip_confirm and input("Confirm [Y,n]: ").lower() == "n":
             return
         if self._args.command in ("convert", "rip"):
-            audio_source.prepare_source()
-            self._acquire_lock()
-            try:
-                self._make_clean_workdirs()
-                audio_source.copy_wavs(self._wav_dir)
-                self._rename_wav()
-                self._make_source()
-                self._normalize()
-                self._make_flac()
-                self._make_m4a()
-                self._make_mp3()
-                self._move_files()
-            finally:
-                self._release_lock()
+            self._rip_convert(audio_source)
         self._update_manifest()
 
     @property
     def _flac_filenames(self):
-        return sorted(glob.glob(os.path.join(self._flac_dir, "*.flac")))
+        return sorted(self._flac_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
     def _m4a_filenames(self):
-        return sorted(glob.glob(os.path.join(self._m4a_dir, "*.m4a")))
+        return sorted(self._m4a_dir.glob("*.m4a"), key=text.alpha_numeric_key)
 
     @property
     def _mp3_filenames(self):
-        return sorted(glob.glob(os.path.join(self._mp3_dir, "*.mp3")))
+        return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
 
     @property
     def _source_filenames(self):
-        return sorted(glob.glob(os.path.join(self._source_dir, "*.flac")))
+        return sorted(self._source_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
     def _wav_filenames(self):
-        return sorted(glob.glob(os.path.join(self._wav_dir, "*.wav")))
+        return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
-    def _acquire_lock(self):
-        try:
-            while os.path.exists(self._lock_file):
-                print("Waiting for lock...")
-                time.sleep(5)
-        except KeyboardInterrupt:
-            if input("Lock not acquired; continue anyway? [N,y] ").lower() != "y":
-                sys.exit()
-        with open(self._lock_file, "w") as lock_file:
-            lock_file.write(str(os.getpid()))
-
-    def _get_artist_album(self):
-        if self._args.artist and self._args.album:
-            artist, album = None, None
-        else:
-            artist, album = self._get_artist_album_from_tags()
-        artist = self._args.artist or artist
-        album = self._args.album or album
-        return artist, album
-
-    def _get_artist_album_from_tags(self):
-        for filename in self._args.filename:
-            album, artist = None, None
-            song = mutagen.File(filename)
-            pprint.pp(song.tags)
-            artist = (
-                artist
-                or song.tags.get("ALBUMARTIST", [None])[0]
-                or song.tags.get("ARTIST", [None])[0]
-            )
-            album = album or song.tags.get("ALBUM", [None])[0]
-            print("Artist from tags:", artist)
-            print("Album from tags:", album)
-            if artist and album:
-                return artist, album
-        return None, None
+    def _get_searcher(self, audio_source: audiosource.AudioSource) -> Searcher:
+        search_data = audio_source.get_search_data()
+        searcher = Searcher(**search_data)
+        searcher.disc_number = self._disc_number
+        # override any user-provided info from args
+        if self._args.artist:
+            searcher.artist = self._args.artist
+        if self._args.album:
+            searcher.album = self._args.album
+        if self._args.mb_artist_id:
+            searcher.mb_artist_id = self._args.mb_artist_id
+        if self._args.mb_release_id:
+            searcher.mb_release_id = self._args.mb_release_id
+        log.info(f"SEARCHER: {searcher}")
+        return searcher
 
     def _make_clean_workdirs(self):
-        if os.path.isdir(self._work_dir):
+        if self._work_dir.is_dir():
             shutil.rmtree(self._work_dir)
         for d in self._flac_dir, self._m4a_dir, self._mp3_dir, self._source_dir, self._wav_dir:
-            os.makedirs(d)
+            d.mkdir(parents=True)
+
+    def _make_file(self, filenames: List[Path]) -> None:
+        for f in filenames:
+            song = open_(f)
+            song.one_track = OneTrack(
+                release=self._release,
+                medium_number=self._disc_number,
+                track_number=int(f.name.split("__")[0]),
+            )
+            song.write_tags()
 
     def _make_flac(self, source=False):
         out_dir = self._source_dir if source else self._flac_dir
         commands = [
             ("flac", "--silent", f"--output-prefix={out_dir}/", f) for f in self._wav_filenames
         ]
-        cmd.parallel("Making flac files...", commands, out_dir)
-        info = self._info
-        shared_tags = {
-            "ALBUM": [info.album],
-            "MEDIA": [info.media],
-            "LABEL": info.organizations,
-            "ALBUMARTIST": [info.artist],
-            "ALBUMARTISTSORT": [info.artist_sort_name],
-            "DATE": [str(info.year)],
-            "genre": [info.genre],
-            "description": [info.get_comment_string()],
-            "DISCNUMBER": [info.disc_number],
-            "DISCTOTAL": [self._disc_count],
-            "TOTALDISCS": [self._disc_count],
-            "SCRIPT": ["Latn"],
-            "asin": [info.asin],
-            "ORIGINALYEAR": [info.original_year],
-            "ORIGINALDATE": [info.original_date],
-            "barcode": [info.barcode],
-            "CATALOGNUMBER": info.catalog_numbers,
-            "RELEASETYPE": info.album_type,
-            "RELEASESTATUS": [info.album_status],
-            "RELEASECOUNTRY": [info.country],
-            "MUSICBRAINZ_ALBUMID": [info.mb_release_id],
-            "MUSICBRAINZ_ALBUMARTISTID": info.mb_artist_ids,
-            "MUSICBRAINZ_RELEASEGROUPID": [info.mb_release_group_id],
-        }
-        for flac in self._source_filenames if source else self._flac_filenames:
-            number = str(int(os.path.basename(flac).split("__")[0]))
-            song = mutagen.flac.FLAC(flac)
-            track = info.get_track(number)
-            song.delete()
-            song.clear_pictures()
-            tags = {
-                "ARTISTS": track["artist_list"],
-                "MUSICBRAINZ_RELEASETRACKID": [track["id"]],
-                "MUSICBRAINZ_TRACKID": [track["recording_id"]],
-                "ISRC": track["isrc"],
-                "MUSICBRAINZ_ARTISTID": track["artist_ids"],
-                "TITLE": [track["title"]],
-                "TRACKNUMBER": [str(track["number"])],
-                "ARTIST": [track["artist"]],
-                "ARTISTSORT": [track["artist_sort_order"]],
-                "TOTALTRACKS": [str(len(info.tracks))],
-                "TRACKTOTAL": [str(len(info.tracks))],
-            }
-            song.update(shared_tags)
-            song.update(tags)
-            song.tags.extend(track["relationships"])
-            if info.front_cover:
-                cover = mutagen.flac.Picture()
-                cover.type = 3
-                cover.mime = "image/jpeg"
-                cover.desc = "front cover"
-                cover.data = info.front_cover
-                song.add_picture(cover)
-            song.save()
+        cmd.parallel(f"Making {len(self._wav_filenames)} flac files...", commands)
+        filenames = self._source_filenames if source else self._flac_filenames
+        cmd.touch(filenames)
+        self._make_file(filenames)
 
     def _make_m4a(self):
         commands = []
         for f in self._wav_filenames:
-            dst_file = os.path.join(self._m4a_dir, os.path.basename(f).replace(".wav", ".m4a"))
+            dst_file = self._m4a_dir / f.name.replace(".wav", ".m4a")
             commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", dst_file, f))
-        cmd.parallel("Making m4a files...", commands, self._m4a_dir)
-        info = self._info  # we use this a lot below
-        disc_x_of_y = (int(info.disc_number), int(self._disc_count))
-        shared_tags = {
-            "\xa9alb": [info.album],
-            "----:com.apple.iTunes:MEDIA": [bytes(info.media, "utf8")],
-            "----:com.apple.iTunes:LABEL": [bytes(x, "utf8") for x in info.organizations],
-            "aART": [info.artist],
-            "soaa": [info.artist_sort_name],
-            "\xa9day": [str(info.year)],
-            "\xa9gen": [info.genre],
-            "\xa9cmt": [info.get_comment_string()],
-            "disk": [disc_x_of_y],
-            "----:com.apple.iTunes:SCRIPT": [bytes("Latn", "utf8")],
-            "----:com.apple.iTunes:ASIN": [bytes(info.asin, "utf8")],
-            "----:com.apple.iTunes:originalyear": [bytes(info.original_year, "utf8")],
-            "----:com.apple.iTunes:originaldate": [bytes(info.original_date, "utf8")],
-            "----:com.apple.iTunes:BARCODE": [bytes(info.barcode, "utf8")],
-            "----:com.apple.iTunes:CATALOGNUMBER": [
-                bytes(x, "utf8") for x in info.catalog_numbers
-            ],
-            "----:com.apple.iTunes:MusicBrainz Album Type": [
-                bytes(x, "utf8") for x in info.album_type
-            ],
-            "----:com.apple.iTunes:MusicBrainz Album Status": [bytes(info.album_status, "utf8")],
-            "----:com.apple.iTunes:MusicBrainz Album Release Country": [
-                bytes(info.country, "utf8")
-            ],
-            "----:com.apple.iTunes:MusicBrainz Album Id": [bytes(info.mb_release_id, "utf8")],
-            "----:com.apple.iTunes:MusicBrainz Album Artist Id": [
-                bytes(x, "utf8") for x in info.mb_artist_ids
-            ],
-            "----:com.apple.iTunes:MusicBrainz Release Group Id": [
-                bytes(info.mb_release_group_id, "utf8")
-            ],
-        }
-        for m4a in self._m4a_filenames:
-            number = str(int(os.path.basename(m4a).split("__")[0]))
-            song = mutagen.mp4.MP4(m4a)
-            track = info.get_track(number)
-            song.delete()
-            tags = {
-                "----:com.apple.iTunes:ARTISTS": [bytes(x, "utf8") for x in track["artist_list"]],
-                "----:com.apple.iTunes:MusicBrainz Release Track Id": [bytes(track["id"], "utf8")],
-                "----:com.apple.iTunes:MusicBrainz Track Id": [
-                    bytes(track["recording_id"], "utf8")
-                ],
-                "----:com.apple.iTunes:ISRC": [bytes(x, "utf8") for x in track["isrc"]],
-                "----:com.apple.iTunes:MusicBrainz Artist Id": [
-                    bytes(x, "utf8") for x in track["artist_ids"]
-                ],
-                "\xa9nam": [track["title"]],
-                "trkn": [(int(track["number"]), len(info.tracks))],
-                "\xa9ART": [track["artist"]],
-                "soar": [track["artist_sort_order"]],
-            }
-            for k, v in track["relationships"]:
-                if k in ("ENGINEER", "MIXER", "PRODUCER", "LYRICIST"):
-                    tag_key = f"----:com.apple.iTunes:{k}"
-                    if tag_key not in tags:
-                        tags[tag_key] = []
-                    tags[tag_key].append(bytes(v, "utf8"))
-            for k, v in shared_tags.items():
-                song[k] = v
-            for k, v in tags.items():
-                song[k] = v
-            if info.front_cover:
-                cover = mutagen.mp4.MP4Cover(info.front_cover)
-                song["covr"] = [cover]
-            song.save()
+        cmd.parallel(f"Making {len(commands)} m4a files...", commands)
+        cmd.touch(self._m4a_filenames)
+        self._make_file(self._m4a_filenames)
 
     def _make_mp3(self):
         commands = []
         for f in self._wav_filenames:
-            dst_file = os.path.join(self._mp3_dir, os.path.basename(f).replace(".wav", ".mp3"))
+            dst_file = self._mp3_dir / f.name.replace(".wav", ".mp3")
             commands.append(("lame", "--silent", "-h", "-b", "192", f, dst_file))
-        cmd.parallel("Making mp3 files...", commands, self._mp3_dir)
-        info = self._info  # we use this a lot below
-        disc_x_of_y = f"{info.disc_number}/{self._disc_count}"
-        shared_tags = [
-            mutagen.id3.TALB(encoding=3, text=info.album),
-            mutagen.id3.TMED(encoding=3, text=info.media),
-            mutagen.id3.TPUB(encoding=3, text="/".join(info.organizations)),
-            mutagen.id3.TPE2(encoding=3, text=info.artist),
-            mutagen.id3.TSO2(encoding=3, text=info.artist_sort_name),
-            mutagen.id3.TDRC(encoding=3, text=info.year),
-            mutagen.id3.TDOR(encoding=3, text=info.original_year),
-            mutagen.id3.TCON(encoding=3, text=info.genre),
-            mutagen.id3.COMM(encoding=3, text=info.get_comment_string()),
-            mutagen.id3.TPOS(encoding=3, text=disc_x_of_y),
-            TXXX(encoding=3, desc="SCRIPT", text="Latn"),
-            TXXX(encoding=3, desc="ASIN", text=info.asin),
-            TXXX(encoding=3, desc="originalyear", text=info.original_year),
-            TXXX(encoding=3, desc="BARCODE", text=info.barcode),
-            TXXX(encoding=3, desc="CATALOGNUMBER", text="/".join(info.catalog_numbers)),
-            TXXX(encoding=3, desc="MusicBrainz Album Type", text="/".join(info.album_type)),
-            TXXX(encoding=3, desc="MusicBrainz Album Status", text=info.album_status),
-            TXXX(encoding=3, desc="MusicBrainz Album Release Country", text=info.country),
-            TXXX(encoding=3, desc="MusicBrainz Album Id", text=info.mb_release_id),
-            TXXX(
-                encoding=3, desc="MusicBrainz Album Artist Id", text="/".join(info.mb_artist_ids)
-            ),
-            TXXX(encoding=3, desc="MusicBrainz Release Group Id", text=info.mb_release_group_id),
-        ]
-        performer_re = re.compile(r"(?P<value>.*)\((?P<key>.*)\)")
-        for mp3 in self._mp3_filenames:
-            number = str(int(os.path.basename(mp3).split("__")[0]))
-            try:
-                song = mutagen.id3.ID3(mp3)
-            except mutagen.id3.ID3NoHeaderError:
-                s = mutagen.File(mp3, easy=False)
-                s.add_tags()
-                s.save()
-                song = mutagen.id3.ID3(mp3)
-            track = info.get_track(number)
-            song.delete()
-            track_x_of_y = f"{track['number']}/{len(info.tracks)}"
-            tags = [
-                mutagen.id3.TPE1(encoding=3, text=track["artist"]),
-                mutagen.id3.TSOP(encoding=3, text=track["artist_sort_order"]),
-                mutagen.id3.TIT2(encoding=3, text=track["title"]),
-                mutagen.id3.TRCK(encoding=3, text=track_x_of_y),
-                mutagen.id3.TSRC(encoding=3, text="/".join(track["isrc"])),
-                UFID(owner="http://musicbrainz.org", data=bytes(track["recording_id"], "utf8")),
-                TXXX(encoding=3, desc="MusicBrainz Release Track Id", text=track["id"]),
-                TXXX(encoding=3, desc="MusicBrainz Artist Id", text="/".join(track["artist_ids"])),
-                TXXX(encoding=3, desc="ARTISTS", text="/".join(track["artist_list"])),
-            ]
-            people = []
-            for k, v in track["relationships"]:
-                key = k.lower()
-                value = v
-                if key == "lyricist":  # lyricist doesn't go into TIPL; it goes into TEXT
-                    tags.append(mutagen.id3.TEXT(encoding=3, text=v))
-                    continue
-                if key == "mixer":
-                    key = "mix"
-                if key == "performer":
-                    m = performer_re.match(value)
-                    if not m:
-                        continue
-                    key = m.groupdict()["key"]
-                    value = m.groupdict()["value"].strip()
-                people.append([key, value])
-            if people:
-                tags.append(mutagen.id3.TIPL(people=people))
-            for tag in shared_tags + tags:
-                song.add(tag)
-            if info.front_cover:
-                song["APIC"] = mutagen.id3.APIC(
-                    encoding=3,
-                    mime="image/jpeg",
-                    type=3,
-                    desc="front cover",
-                    data=info.front_cover,
-                )
-            song.save()
+        cmd.parallel(f"Making {len(commands)} mp3 files...", commands)
+        cmd.touch(self._mp3_filenames)
+        self._make_file(self._mp3_filenames)
 
     def _make_source(self):
         self._make_flac(source=True)
+        self._source_example = open_(self._source_filenames[0]).read_tags()
 
     def _move_files(self):
-        artist_dir = text.get_filename(self._info.artist)
-        album_dir = text.get_filename(f"{self._info.original_year}__{self._info.album}")
-        flac_dir = f"library/flac/{artist_dir}/{album_dir}"
-        m4a_dir = f"library/m4a/{artist_dir}/{album_dir}"
-        mp3_dir = f"library/mp3/{artist_dir}/{album_dir}"
-        source_dir = f"library/source/{artist_dir}/{album_dir}"
+        artist_dir = text.get_filename(self._release.first("album_artists"))
+        album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
+        flac_dir = self._library_dir / "flac" / artist_dir / album_dir
+        m4a_dir = self._library_dir / "m4a" / artist_dir / album_dir
+        mp3_dir = self._library_dir / "mp3" / artist_dir / album_dir
+        source_dir = self._library_dir / "source" / artist_dir / album_dir
         if self._args.disc:
-            flac_dir += f"/disc{self._disc_number}"
-            m4a_dir += f"/disc{self._disc_number}"
-            mp3_dir += f"/disc{self._disc_number}"
-            source_dir += f"/disc{self._disc_number}"
+            flac_dir /= f"disc{self._disc_number}"
+            m4a_dir /= f"disc{self._disc_number}"
+            mp3_dir /= f"disc{self._disc_number}"
+            source_dir /= f"disc{self._disc_number}"
         for d in (flac_dir, m4a_dir, mp3_dir, source_dir):
-            if os.path.isdir(d):
+            if d.is_dir():
                 shutil.rmtree(d)
-            os.makedirs(d)
-        [os.rename(f, f"{flac_dir}/{os.path.basename(f)}") for f in self._flac_filenames]
-        [os.rename(f, f"{m4a_dir}/{os.path.basename(f)}") for f in self._m4a_filenames]
-        [os.rename(f, f"{mp3_dir}/{os.path.basename(f)}") for f in self._mp3_filenames]
-        [os.rename(f, f"{source_dir}/{os.path.basename(f)}") for f in self._source_filenames]
+            d.mkdir(parents=True)
+        [f.rename(flac_dir / f.name) for f in self._flac_filenames]
+        [f.rename(m4a_dir / f.name) for f in self._m4a_filenames]
+        [f.rename(mp3_dir / f.name) for f in self._mp3_filenames]
+        [f.rename(source_dir / f.name) for f in self._source_filenames]
 
     def _normalize(self):
         print("Normalizing wav files...")
         # command = ["wavegain", "--album", "--apply"]
         command = ["wavegain", "--radio", "--gain=5", "--apply"]
-        command.extend(glob.glob(self._wav_dir))
-        r = subprocess.run(command, stdout=subprocess.DEVNULL)
+        command.extend(self._wav_filenames)
+        r = subprocess.run(command, capture_output=True)
+        for line in str(r.stderr).split(r"\n"):
+            line_trunc = line[:137] + "..." if len(line) > 140 else line
+            log.info(f"WAVEGAIN: {line_trunc}")
         r.check_returncode()
 
-    def _release_lock(self):
-        if os.path.exists(self._lock_file):
-            os.remove(self._lock_file)
-
     def _rename_wav(self):
-        number = 0
-        for filename in self._wav_filenames:
-            number += 1
-            path, base = os.path.split(filename)
-            track = self._info.get_track(str(number))
-            new_name = os.path.join(path, f"{track['filename']}.wav")
-            if new_name != filename:
-                print(f"{os.path.basename(filename)} --> {os.path.basename(new_name)}")
-                os.rename(filename, new_name)
+        for track_number, old_path in enumerate(self._wav_filenames, 1):
+            title_filename = self._medium.tracks[track_number].get_filename() + ".wav"
+            new_path = old_path.parent / title_filename
+            if new_path.resolve() != old_path.resolve():
+                log.info(f"RENAMING: {old_path.name} --> {new_path.name}")
+                old_path.rename(new_path)
+
+    def _rip_convert(self, audio_source):
+        audio_source.prepare_source()
+        with self._lock:
+            self._make_clean_workdirs()
+            audio_source.copy_wavs(self._wav_dir)
+            self._rename_wav()
+            self._make_source()
+            self._normalize()
+            self._make_flac()
+            self._make_m4a()
+            self._make_mp3()
+            self._move_files()
+
+    def _summary(self, audio_source: audiosource.AudioSource) -> Tuple[str, bool]:
+        lines = []
+        ok = True
+        source_filenames = audio_source.get_source_filenames()
+        col1 = [f.stem for f in source_filenames]
+        col2 = [t.get_filename() for _, t in sorted(self._medium.tracks.items())]
+        col3 = [f"{str(n).zfill(2)}: {t.title}" for n, t in sorted(self._medium.tracks.items())]
+        min_total_w = 74  # make sure we've got enough width for MB Release URL
+        w = 40
+        no_match = "(no match)"
+        col1_w = min(w, max([len(x) for x in col1] + [len(no_match)]))
+        col2_w = min(w, max([len(x) for x in col2] + [len(no_match)]))
+        col3_w = min(w, max([len(x) for x in col3] + [len(no_match)]))
+        if col1_w + col2_w + col3_w < min_total_w:
+            col3_w = min_total_w - (col1_w + col2_w)
+        tab_w = col1_w + col2_w + col3_w + 6
+        c1_line = (col1_w + 2) * "\u2550"
+        c2_line = (col2_w + 2) * "\u2550"
+        c3_line = (col3_w + 2) * "\u2550"
+        alb = f"Album:      {self._release.album}"
+        art = f"Artist(s):  {', '.join(self._release.album_artists)}"
+        med = f"Disc:       {self._disc_number} of {self._disc_count}"
+        mbr = f"MB Release: https://musicbrainz.org/release/{self._release.musicbrainz_album_id}"
+        lines.append(f"\u2554{c1_line}\u2550{c2_line}\u2550{c3_line}\u2557")
+        for x in (alb, art, mbr, med):
+            lines.append(f"\u2551 {x} {' ' * (tab_w - len(x))}\u2551")
+        lines.append(f"\u2560{c1_line}\u2564{c2_line}\u2564{c3_line}\u2563")
+        fmt = f"\u2551 {{c1: <{col1_w}}} \u2502 {{c2: <{col2_w}}} \u2502 {{c3: <{col3_w}}} \u2551"
+        rows = max(len(col1), len(col2), len(col3))
+        for i in range(rows):
+            c1 = (
+                ((col1[i][: w - 3] + "...") if len(col1[i]) > w else col1[i])
+                if len(col1) > i
+                else no_match
+            )
+            c2 = (
+                ((col2[i][: w - 3] + "...") if len(col2[i]) > w else col2[i])
+                if len(col2) > i
+                else no_match
+            )
+            c3 = (
+                ((col3[i][: w - 3] + "...") if len(col3[i]) > w else col3[i])
+                if len(col3) > i
+                else no_match
+            )
+            lines.append(fmt.format(c1=c1, c2=c2, c3=c3))
+            if no_match in (c1, c2, c3):
+                ok = False
+        lines.append(f"\u255A{c1_line}\u2567{c2_line}\u2567{c3_line}\u255D")
+        return "\n".join(lines), ok
 
     def _update_manifest(self):
-        if self._args.command in ("convert", "rip"):
-            artist_dir = text.get_filename(self._info.artist)
-            album_dir = text.get_filename(f"{self._info.original_year}__{self._info.album}")
-            manifest_filename = f"library/source/{artist_dir}/{album_dir}/{self._manifest_file}"
-        else:
-            manifest_filename = self._manifest_file
-        info = self._info  # we use this a lot below
+        release = self._release  # we use this a lot below
+        file_info = self._source_example.track.file_info
         manifest = {
-            "album": info.album,
-            "artist": info.artist,
-            "artist_sort_name": info.artist_sort_name,
-            "media": info.media,
-            "genre": info.genre,
-            "disc_number": info.disc_number,
+            "album": release.album,
+            "artist": release.first("album_artists"),
+            "artist_sort_name": release.first("album_artists_sort"),
+            "media": release.media[self._disc_number].first("formats"),
+            "genre": release.first("genres"),
+            "disc_number": self._disc_number,
             "disc_total": self._disc_count,
-            "original_year": info.original_year,
-            "date": info.year,
+            "original_year": release.original_year,
+            "date": release.date,
             "musicbrainz_info": {
-                "albumid": info.mb_release_id,
-                "albumartistid": info.mb_artist_ids,
-                "releasegroupid": info.mb_release_group_id,
+                "albumid": release.musicbrainz_album_id,
+                "albumartistid": release.first("musicbrainz_album_artist_ids"),
+                "releasegroupid": release.musicbrainz_release_group_id,
             },
             "source_info": {
-                "type": self._source_info["type"],
-                "bitrate": self._source_info["bitrate"],
-                "bitrate_mode": self._source_info["bitrate_mode"],
+                "type": file_info.type.name,
+                "bitrate": file_info.bitrate,
+                "bitrate_mode": file_info.bitrate_mode.name,
             },
         }
         if self._args.command == "manifest" and self._args.cd:
@@ -459,6 +277,13 @@ class AudioLibrarian:
                 "bitrate": 1411,
                 "bitrate_mode": "CBR",
             }
+        if self._args.command in ("convert", "rip"):
+            source_dir = self._library_dir / "source"
+            artist_dir = text.get_filename(self._release.first("album_artists"))
+            album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
+            manifest_filename = source_dir / artist_dir / album_dir / self._manifest_file
+        else:
+            manifest_filename = self._manifest_file  # write to current directory
         with open(manifest_filename, "w") as manifest_file:
             pyaml.dump(manifest, manifest_file)
         print(f"Wrote {manifest_filename}")

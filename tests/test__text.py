@@ -4,6 +4,16 @@ from audiolibrarian import text
 
 
 class TestText(TestCase):
+    def test__alpha_numeric_key(self):
+        for initial, expected in (
+            ([], []),
+            (["b", "a", "c"], ["a", "b", "c"]),
+            (["3", "2", "1"], ["1", "2", "3"]),
+            (["9", "10", "5"], ["5", "9", "10"]),
+            (["6_six", "10_ten", "1_one", "11_eleven"], ["1_one", "6_six", "10_ten", "11_eleven"]),
+        ):
+            self.assertListEqual(expected, sorted(initial, key=text.alpha_numeric_key))
+
     def test__fix(self):
         self.assertEqual("", text.fix(""))
         self.assertEqual("abc", text.fix("abc"))
