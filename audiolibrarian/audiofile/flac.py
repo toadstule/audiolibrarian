@@ -17,9 +17,12 @@ from audiolibrarian.records import BitrateMode, FileInfo, FileType, Medium, Sour
 
 
 class FlacFile(AudioFile):
+    """AudioFile for Flac files."""
+
     extensions = (".flac",)
 
     def read_tags(self) -> OneTrack:
+        """Reads the tags and returns a OneTrack object."""
         mut = self._mut_file
         front_cover = None
         if self._mut_file.pictures:
@@ -102,6 +105,7 @@ class FlacFile(AudioFile):
         return OneTrack(release=release, medium_number=medium_number, track_number=track_number)
 
     def write_tags(self) -> None:
+        """Writes the tags."""
         release, medium_number, medium, track_number, track = self._get_tag_sources()
         tags = {
             "album": [release.album],
@@ -161,11 +165,13 @@ class FlacFile(AudioFile):
 
     @staticmethod
     def _make_performer_tag(performers: List[Performer]) -> List[str]:
+        # Returns a list of performer tag strings "name (instrument)".
         if performers:
             return [f"{p.name} ({p.instrument})" for p in performers]
 
     @staticmethod
     def _parse_performer_tag(performers_tag: List[str]) -> List[Performer]:
+        # Parses a list of performer tags and returns a list of Performer objects.
         performer_re = re.compile(r"(?P<name>.*)\((?P<instrument>.*)\)")
         performers = []
         for p in performers_tag:

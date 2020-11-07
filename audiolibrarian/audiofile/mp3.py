@@ -23,9 +23,12 @@ MB_UFID = "http://musicbrainz.org"
 
 
 class Mp3File(AudioFile):
+    """AudioFile for MP3 files."""
+
     extensions = (".mp3",)
 
     def read_tags(self) -> OneTrack:
+        """Reads the tags and returns a OneTrack object."""
         def get_l(key) -> (List, None):
             if (value := mut.get(key)) is None:
                 return None
@@ -124,6 +127,7 @@ class Mp3File(AudioFile):
         return OneTrack(release=release, medium_number=medium_number, track_number=track_number)
 
     def write_tags(self) -> None:
+        """Writes the tags."""
         def slash(x):
             return "/".join(x)
 

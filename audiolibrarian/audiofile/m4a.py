@@ -21,9 +21,12 @@ ITUNES = "----:com.apple.iTunes"
 
 
 class M4aFile(AudioFile):
+    """AudioFile for M4A files."""
+
     extensions = (".m4a",)
 
     def read_tags(self) -> OneTrack:
+        """Reads the tags and returns a OneTrack object."""
         def get_str(key) -> (str, None):
             # Return first element for the given key, utf8-decoded.
             if mut.get(key) is None:
@@ -119,6 +122,7 @@ class M4aFile(AudioFile):
         return OneTrack(release=release, medium_number=medium_number, track_number=track_number)
 
     def write_tags(self) -> None:
+        """Writes the tags."""
         def ff(s: (str, int, None)) -> (bytes, None):
             if s is None:
                 return

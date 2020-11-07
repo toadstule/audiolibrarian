@@ -8,6 +8,8 @@ from audiolibrarian.records import Medium, OneTrack, Release, Track
 
 
 class AudioFile(abc.ABC):
+    """Abstract base class for AudioFile classes."""
+
     extensions = ()
 
     def __init__(self, filepath: Path):
@@ -36,6 +38,7 @@ class AudioFile(abc.ABC):
         pass
 
     def _get_tag_sources(self) -> Tuple[Release, int, Medium, int, Track]:
+        # Returns the objects and information required to generate tags.
         release = self.one_track.release or Release()
         medium_number = self.one_track.medium_number
         medium = self.one_track.medium or Medium()

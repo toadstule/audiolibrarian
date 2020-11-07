@@ -1,11 +1,13 @@
+"""Record (dataclass) definitions."""
+
+# Useful field reference: https://github.com/metabrainz/picard/blob/master/picard/util/tags.py
+
 import dataclasses
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List
 
-
-# Useful field reference: https://github.com/metabrainz/picard/blob/master/picard/util/tags.py
 from audiolibrarian import text
 
 
@@ -30,13 +32,19 @@ class Source(Enum):
 
 @dataclass
 class Record:
+    """Base class for records.
+
+    Overrides true/false test for records returning false if all fields are None."""
+
     def __bool__(self):
         return bool([x for x in asdict(self).values() if x is not None])
 
-    def asdict(self):
+    def asdict(self) -> Dict:
+        """Returns a dict version of the record."""
         return dataclasses.asdict(self)
 
     def first(self, name):
+        """Returns the first element of a list-type field."""
         try:
             return getattr(self, name)[0]
         except (TypeError, AttributeError):
@@ -78,7 +86,8 @@ class Track(Record):
     title: str = None
     track_number: int = None
 
-    def get_filename(self):
+    def get_filename(self) -> str:
+        """Returns a sane filename based on track number and title."""
         return str(self.track_number).zfill(2) + "__" + text.get_filename(self.title)
 
 
@@ -127,6 +136,7 @@ class Release(Record):
     source: Source = None
 
     def pp(self, medium_number: int) -> str:
+        """Returns a string summary of the Release."""
         tracks = "\n".join(
             (
                 f"  {str(n).zfill(2)}: {t.title}"
@@ -151,11 +161,13 @@ class OneTrack(Record):
     track_number: int = None
 
     @property
-    def medium(self):
+    def medium(self) -> (Medium, None):
+        """The Medium object (or None)."""
         if self.release and self.release.media:
             return self.release.media[self.medium_number]
 
     @property
-    def track(self):
+    def track(self) -> (Track, None):
+        """The Track object (or None)."""
         if self.medium and self.medium.tracks:
             return self.medium.tracks[self.track_number]
