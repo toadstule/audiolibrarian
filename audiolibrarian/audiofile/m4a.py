@@ -27,6 +27,7 @@ class M4aFile(AudioFile):
 
     def read_tags(self) -> OneTrack:
         """Reads the tags and returns a OneTrack object."""
+
         def get_str(key) -> (str, None):
             # Return first element for the given key, utf8-decoded.
             if mut.get(key) is None:
@@ -123,6 +124,7 @@ class M4aFile(AudioFile):
 
     def write_tags(self) -> None:
         """Writes the tags."""
+
         def ff(s: (str, int, None)) -> (bytes, None):
             if s is None:
                 return
