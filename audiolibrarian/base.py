@@ -132,7 +132,7 @@ class Base:
         if not ok:
             print(color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
-        if not skip_confirm and input("Confirm [Y,n]: ").lower() == "n":
+        if not skip_confirm and input("Confirm [N,y]: ").lower() != "y":
             sys.exit(1)
 
     def _make_clean_workdirs(self):
