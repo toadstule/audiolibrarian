@@ -16,7 +16,7 @@ if __name__ == "__main__":
     setup(
         name="audiolibrarian",
         version=get_version(),
-        packages=["audiolibrarian"],
+        packages=["audiolibrarian", "audiolibrarian.audiofile"],
         url="https://bitbucket.org/toadstule/jib-audio/",
         license="GNU General Public License v3.0",
         author="Steve Jibson",
