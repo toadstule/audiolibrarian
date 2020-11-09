@@ -1,6 +1,8 @@
+ansicolors==1.1.8
 certifi==2020.6.20
 chardet==3.0.4
 discid==1.2.0
+filelock==3.0.12
 fuzzywuzzy==0.18.0
 idna==2.10
 musicbrainzngs==0.7.1

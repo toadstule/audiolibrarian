@@ -9,7 +9,7 @@ pipelines:
     - step:
         name: Deploy to test
         deployment: test
-        max-time: 2
+        max-time: 5
         caches:
           - pip
         script: # Modify the commands below to build your repository.
