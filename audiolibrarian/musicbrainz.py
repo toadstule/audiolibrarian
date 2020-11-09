@@ -2,6 +2,7 @@ import pprint
 import time
 import webbrowser
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from logging import DEBUG, getLogger
 from typing import Dict, List, Tuple
 
@@ -25,6 +26,9 @@ class MusicBrainzSession:
     It can be for things that are not supported by the musicbrainzngs library.
     """
 
+    _api_rate = timedelta(seconds=1.5)
+    _last_api_call = datetime.now()
+
     def __init__(self):
         self._session = requests.Session()
         self._session.auth = HTTPDigestAuth("toadstule", "***REMOVED***")
@@ -33,17 +37,29 @@ class MusicBrainzSession:
         )
 
     def __del__(self):
-        self._session.close()
+        if self.__session is not None:
+            self.__session.close()
+
+    @property
+    def _session(self):
+        if self.__session is None:
+            self.__session = requests.Session()
+            self._session.auth = HTTPDigestAuth("toadstule", "***REMOVED***")
+            self._session.headers.update(
+                {"User-Agent": f"{_user_agent_name}/{__version__} ({_user_agent_contact})"}
+            )
+        return self.__session
 
     def _get(self, path: str, params=None):
         # Used for direct API calls; those not supported by the python library
         path = path.lstrip("/")
         url = f"https://musicbrainz.org/ws/2/{path}"
         params["fmt"] = "json"
+        self.sleep()
         r = self._session.get(url, params=params)
         while r.status_code == 503:
             log.warning("Waiting due to throttling...")
-            time.sleep(30)
+            time.sleep(10)
             r = self._session.get(url, params=params)
         assert r.status_code == 200, f"{r.status_code} - {url}"
         return r.json()
@@ -61,6 +77,18 @@ class MusicBrainzSession:
         if includes is not None:
             params["inc"] = "+".join(includes)
         return self._get(f"release-group/{release_group_id}", params=params)
+
+    @staticmethod
+    def sleep():
+        """Sleep so we don't abuse the MusicBrainz API service.
+
+        See https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
+        """
+        since_last = datetime.now() - MusicBrainzSession._last_api_call
+        if (sleep_seconds := (MusicBrainzSession._api_rate - since_last).total_seconds()) > 0:
+            log.debug(f"Sleeping {sleep_seconds} to avoid throttling...")
+            time.sleep(sleep_seconds)
+            MusicBrainzSession._last_api_call = datetime.now()
 
 
 class MusicBrainzRelease:
@@ -83,6 +111,7 @@ class MusicBrainzRelease:
         self._release_id = release_id
         self._verbose = verbose
         self._session = MusicBrainzSession()
+        self._session.sleep()
         self._release = mb.get_release_by_id(release_id, includes=self._includes)["release"]
         self._release_record = None
 
@@ -95,6 +124,7 @@ class MusicBrainzRelease:
     def _get_front_cover(self, size: int = 500) -> (FrontCover, None):
         # Returns the FrontCover object (of None).
         if self._release["cover-art-archive"]["front"] == "true":
+            self._session.sleep()
             try:
                 return FrontCover(
                     data=mb.get_image_front(self._release["id"], size=size),
@@ -304,11 +334,15 @@ class Searcher:
     mb_artist_id: str = ""
     mb_release_id: str = ""
 
+    def __init__(self):
+        self._session = MusicBrainzSession()
+
     def find_music_brains_release(self) -> (Release, None):
         # Returns a Release object (or None) based on a search.
         release_id = self.mb_release_id
 
         if not release_id and self.disc_id:
+            self._session.sleep()
             result = mb.get_releases_by_discid(self.disc_id, includes=["artists"])
             log.info("DISC: {result}")
             if result.get("disc"):
@@ -331,10 +365,12 @@ class Searcher:
         # Returns release groups that fuzzy-match the search criteria.
         artist_l = self.artist.lower()
         album_l = self.album.lower()
+        self._session.sleep()
         artist_list = mb.search_artists(query=artist_l, limit=500)["artist-list"]
         if not artist_list:
             return []
         artist_id = artist_list[0]["id"]
+        self._session.sleep()
         release_group_list = mb.browse_release_groups(artist=artist_id, limit=500)[
             "release-group-list"
         ]

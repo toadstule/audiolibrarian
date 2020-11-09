@@ -1,3 +1,5 @@
+import logging
+import os
 from pathlib import Path
 from unittest import TestCase
 
@@ -7,6 +9,8 @@ from audiolibrarian.records import Source
 from tests.test__audiofile import _audio_file_copy
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
+if log_level := os.getenv("LOG_LEVEL"):
+    logging.basicConfig(level=log_level)
 
 
 class TestMusicBrainzRelease(TestCase):
