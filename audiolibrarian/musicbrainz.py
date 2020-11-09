@@ -331,16 +331,19 @@ class Searcher:
     disc_number: str = ""
     mb_artist_id: str = ""
     mb_release_id: str = ""
+    __mb_session = None
 
-    def __init__(self):
-        self._session = MusicBrainzSession()
+    @property
+    def _mb_session(self):
+        if self.__mb_session is None:
+            self.__mb_session = MusicBrainzSession()
+        return self.__mb_session
 
     def find_music_brains_release(self) -> (Release, None):
         # Returns a Release object (or None) based on a search.
         release_id = self.mb_release_id
-
         if not release_id and self.disc_id:
-            self._session.sleep()
+            self._mb_session.sleep()
             result = mb.get_releases_by_discid(self.disc_id, includes=["artists"])
             log.info("DISC: {result}")
             if result.get("disc"):
@@ -363,12 +366,12 @@ class Searcher:
         # Returns release groups that fuzzy-match the search criteria.
         artist_l = self.artist.lower()
         album_l = self.album.lower()
-        self._session.sleep()
+        self._mb_session.sleep()
         artist_list = mb.search_artists(query=artist_l, limit=500)["artist-list"]
         if not artist_list:
             return []
         artist_id = artist_list[0]["id"]
-        self._session.sleep()
+        self._mb_session.sleep()
         release_group_list = mb.browse_release_groups(artist=artist_id, limit=500)[
             "release-group-list"
         ]
