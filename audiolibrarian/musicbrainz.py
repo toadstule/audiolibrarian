@@ -12,8 +12,7 @@ from fuzzywuzzy import fuzz
 from requests.auth import HTTPDigestAuth
 
 from audiolibrarian import __version__
-from audiolibrarian.records import FrontCover, People, Performer, Release, Track
-from audiolibrarian.records import Medium, Source
+from audiolibrarian.records import FrontCover, Medium, People, Performer, Release, Source, Track
 from audiolibrarian.text import fix, get_uuid
 
 log = getLogger(__name__)

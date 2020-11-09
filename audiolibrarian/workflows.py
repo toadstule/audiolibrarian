@@ -5,7 +5,6 @@ from audiolibrarian.audiofile import open_
 from audiolibrarian.audiosource import CDAudioSource, FilesAudioSource
 from audiolibrarian.base import Base
 
-
 log = getLogger(__name__)
 
 

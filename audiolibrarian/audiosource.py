@@ -13,7 +13,6 @@ from audiolibrarian import cmd
 from audiolibrarian.audiofile import open_
 from audiolibrarian.text import alpha_numeric_key
 
-
 log = getLogger(__name__)
 
 

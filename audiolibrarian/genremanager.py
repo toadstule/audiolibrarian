@@ -11,7 +11,6 @@ import mutagen.mp4
 
 from audiolibrarian.musicbrainz import MusicBrainzSession
 
-
 log = getLogger(__name__)
 
 
