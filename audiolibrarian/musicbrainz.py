@@ -17,7 +17,9 @@ from audiolibrarian.records import Medium, Source
 from audiolibrarian.text import fix, get_uuid
 
 log = getLogger(__name__)
-mb.set_useragent("audiolibrarian", __version__, "audiolibrarian@jibson.com")
+_user_agent_name = "audiolibrarian"
+_user_agent_contact = "audiolibrarian@jibson.com"
+mb.set_useragent(_user_agent_name, __version__, _user_agent_contact)
 
 
 class MusicBrainzSession:
@@ -30,11 +32,7 @@ class MusicBrainzSession:
     _last_api_call = datetime.now()
 
     def __init__(self):
-        self._session = requests.Session()
-        self._session.auth = HTTPDigestAuth("toadstule", "***REMOVED***")
-        self._session.headers.update(
-            {"User-Agent": f"audiolibrarian/{__version__}/audiolibrarian@jibson.com"}
-        )
+        self.__session = None
 
     def __del__(self):
         if self.__session is not None:
