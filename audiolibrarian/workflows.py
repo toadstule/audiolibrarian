@@ -1,6 +1,7 @@
 from logging import getLogger
 from pathlib import Path
 
+from audiolibrarian.audiofile import open_
 from audiolibrarian.audiosource import CDAudioSource, FilesAudioSource
 from audiolibrarian.base import Base
 
@@ -38,6 +39,10 @@ class Manifester(Base):
     def __init__(self, args):
         super().__init__(args)
         self._source_is_cd = args.cd
+        self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
+        source_filenames = self._audio_source.get_source_filenames()
+        self._source_example = open_(source_filenames[0]).read_tags()
+        self._get_tag_info()
         self._write_manifest()
 
 

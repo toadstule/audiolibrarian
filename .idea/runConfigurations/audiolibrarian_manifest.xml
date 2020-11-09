@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/audiolibrarian" />
-    <option name="PARAMETERS" value="manifest &quot;/media/BlackBox/Music/mp3/Alan_Parsons/2019__The_Secret/11__I_Cant_Get_There_From_Here.mp3&quot;" />
+    <option name="PARAMETERS" value="manifest &quot;/media/BlackBox/Music/mp3/Alan_Parsons/2019__The_Secret&quot;" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

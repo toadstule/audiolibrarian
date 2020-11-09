@@ -15,7 +15,7 @@ import pyaml
 from colors import color
 from filelock import FileLock
 
-from audiolibrarian import audiosource, cmd, text
+from audiolibrarian import cmd, text
 from audiolibrarian.audiofile import open_
 from audiolibrarian.musicbrainz import Searcher
 from audiolibrarian.records import OneTrack
@@ -62,6 +62,7 @@ class Base:
         self._release = None
         self._medium = None
         self._source_is_cd = None
+        self._source_example = None
 
     @property
     def _flac_filenames(self):
@@ -126,7 +127,7 @@ class Base:
         print("Finding MusicBrainz release information...")
         self._release = searcher.find_music_brains_release()
         self._medium = self._release.media[int(self._disc_number)]
-        summary, ok = self._summary(self._audio_source)
+        summary, ok = self._summary()
         print(summary)
         if not ok:
             print(color("\n*** Track count does not match file count ***\n", fg="red"))
@@ -226,7 +227,7 @@ class Base:
                 log.info(f"RENAMING: {old_path.name} --> {new_path.name}")
                 old_path.rename(new_path)
 
-    def _summary(self, audio_source: audiosource.AudioSource) -> Tuple[str, bool]:
+    def _summary(self) -> Tuple[str, bool]:
         # Returns a summary of the conversion/tagging process and an "ok" flag indicating issues.
         #
         # The summary is a nicely formatted table showing the album, artist and track info.
@@ -234,7 +235,7 @@ class Base:
         #   - the file count does not match the song count from the MusicBrainz database
         lines = []
         ok = True
-        source_filenames = audio_source.get_source_filenames()
+        source_filenames = self._audio_source.get_source_filenames()
         col1 = [f.stem for f in source_filenames]
         col2 = [t.get_filename() for _, t in sorted(self._medium.tracks.items())]
         col3 = [f"{str(n).zfill(2)}: {t.title}" for n, t in sorted(self._medium.tracks.items())]
