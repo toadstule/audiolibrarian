@@ -5,6 +5,9 @@ import mutagen.id3
 
 from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.records import (
+    BitrateMode,
+    FileInfo,
+    FileType,
     FrontCover,
     Medium,
     OneTrack,
@@ -14,7 +17,6 @@ from audiolibrarian.records import (
     Source,
     Track,
 )
-from audiolibrarian.records import BitrateMode, FileInfo, FileType
 
 APIC = mutagen.id3.APIC
 TXXX = mutagen.id3.TXXX

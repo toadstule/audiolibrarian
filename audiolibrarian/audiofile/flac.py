@@ -6,14 +6,18 @@ import mutagen.flac
 from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.audiofile.tags import Tags
 from audiolibrarian.records import (
+    BitrateMode,
+    FileInfo,
+    FileType,
     FrontCover,
+    Medium,
     OneTrack,
     People,
     Performer,
     Release,
+    Source,
     Track,
 )
-from audiolibrarian.records import BitrateMode, FileInfo, FileType, Medium, Source
 
 
 class FlacFile(AudioFile):

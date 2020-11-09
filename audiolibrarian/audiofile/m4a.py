@@ -6,6 +6,9 @@ from mutagen.mp4 import AtomDataType, MP4Cover, MP4FreeForm
 from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.audiofile.tags import Tags
 from audiolibrarian.records import (
+    BitrateMode,
+    FileInfo,
+    FileType,
     FrontCover,
     Medium,
     OneTrack,
@@ -14,7 +17,6 @@ from audiolibrarian.records import (
     Source,
     Track,
 )
-from audiolibrarian.records import BitrateMode, FileInfo, FileType
 
 log = getLogger(__name__)
 ITUNES = "----:com.apple.iTunes"
