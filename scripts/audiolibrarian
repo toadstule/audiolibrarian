@@ -12,7 +12,7 @@ import sys
 
 from audiolibrarian import genremanager, workflows
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("audiolibrarian")
 
 REQUIRED_EXE = (
     "cd-paranoia",
