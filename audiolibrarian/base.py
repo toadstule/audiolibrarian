@@ -29,15 +29,22 @@ class Base:
     This class should be sub-classed for various workflows.
     """
 
-    def __init__(self, args):
-        self._args = args
+    _command = None
 
-        # initialize stuff that will be defined later
-        self._audio_source = None
-        self._release = None
-        self._medium = None
-        self._disc_count = 1
-        self._disc_number = 1
+    def __init__(self, args):
+        # Pull in stuff from args
+        self._provided_search_data = {
+            "album": args.album,
+            "artist": args.artist,
+            "mb_artist_id": args.mb_artist_id,
+            "mb_release_id": args.mb_release_id,
+        }
+        if args.disc:
+            self._disc_number, self._disc_count = map(int, args.disc.split("/"))
+            self._multi_disc = True
+        else:
+            self._disc_number, self._disc_count = 1, 1
+            self._multi_disc = False
 
         # directories
         self._library_dir = Path("library").resolve()
@@ -50,8 +57,11 @@ class Base:
         self._manifest_file = "Manifest.yaml"
         self._lock = FileLock(str(self._work_dir) + ".lock")
 
-        if d := self._args.disc:
-            self._disc_number, self._disc_count = map(int, d.split("/"))
+        # initialize stuff that will be defined later
+        self._audio_source = None
+        self._release = None
+        self._medium = None
+        self._source_is_cd = None
 
     @property
     def _flac_filenames(self):
@@ -97,15 +107,15 @@ class Base:
         search_data = self._audio_source.get_search_data()
         searcher = Searcher(**search_data)
         searcher.disc_number = self._disc_number
-        # override any user-provided info from args
-        if self._args.artist:
-            searcher.artist = self._args.artist
-        if self._args.album:
-            searcher.album = self._args.album
-        if self._args.mb_artist_id:
-            searcher.mb_artist_id = self._args.mb_artist_id
-        if self._args.mb_release_id:
-            searcher.mb_release_id = self._args.mb_release_id
+        # override with user-provided info
+        if value := self._provided_search_data["artist"]:
+            searcher.artist = value
+        if value := self._provided_search_data["album"]:
+            searcher.album = value
+        if value := self._provided_search_data["mb_artist_id"]:
+            searcher.mb_artist_id = value
+        if value := self._provided_search_data["mb_release_id"]:
+            searcher.mb_release_id = value
         log.info(f"SEARCHER: {searcher}")
         return searcher
 
@@ -181,7 +191,7 @@ class Base:
         m4a_dir = self._library_dir / "m4a" / artist_dir / album_dir
         mp3_dir = self._library_dir / "mp3" / artist_dir / album_dir
         source_dir = self._library_dir / "source" / artist_dir / album_dir
-        if self._args.disc:
+        if self._multi_disc:
             flac_dir /= f"disc{self._disc_number}"
             m4a_dir /= f"disc{self._disc_number}"
             mp3_dir /= f"disc{self._disc_number}"
@@ -308,19 +318,19 @@ class Base:
                 "bitrate_mode": file_info.bitrate_mode.name,
             },
         }
-        if self._args.command == "manifest" and self._args.cd:
-            manifest["source_info"] = {
-                "type": "CD",
-                "bitrate": 1411,
-                "bitrate_mode": "CBR",
-            }
-        if self._args.command in ("convert", "rip"):
+        if self._command == "manifest":
+            manifest_filename = self._manifest_file  # write to current directory
+            if self._source_is_cd:
+                manifest["source_info"] = {
+                    "type": "CD",
+                    "bitrate": 1411,
+                    "bitrate_mode": "CBR",
+                }
+        else:
             source_dir = self._library_dir / "source"
             artist_dir = text.get_filename(self._release.first("album_artists"))
             album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
             manifest_filename = source_dir / artist_dir / album_dir / self._manifest_file
-        else:
-            manifest_filename = self._manifest_file  # write to current directory
         with open(manifest_filename, "w") as manifest_file:
             pyaml.dump(manifest, manifest_file)
         print(f"Wrote {manifest_filename}")

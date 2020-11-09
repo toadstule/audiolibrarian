@@ -15,9 +15,12 @@ class Converter(Base):
     methods.
     """
 
+    _command = "convert"
+
     def __init__(self, args):
         super().__init__(args)
-        self._audio_source = FilesAudioSource([Path(x) for x in self._args.filename])
+        self._source_is_cd = False
+        self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
         self._get_tag_info()
         self._convert()
         self._write_manifest()
@@ -30,8 +33,11 @@ class Manifester(Base):
     methods.
     """
 
+    _command = "manifest"
+
     def __init__(self, args):
         super().__init__(args)
+        self._source_is_cd = args.cd
         self._write_manifest()
 
 
@@ -42,8 +48,11 @@ class Ripper(Base):
     methods.
     """
 
+    _command = "rip"
+
     def __init__(self, args):
         super().__init__(args)
+        self._source_is_cd = True
         self._audio_source = CDAudioSource()
         self._get_tag_info()
         self._convert()
