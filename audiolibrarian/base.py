@@ -110,9 +110,9 @@ class Base:
         return searcher
 
     def _get_tag_info(self):
+        print("Finding MusicBrainz release information...")
         searcher = self._get_searcher()
         skip_confirm = bool(searcher.mb_artist_id and searcher.mb_release_id)
-        print("Finding MusicBrainz release information...")
         self._release = searcher.find_music_brains_release()
         self._medium = self._release.media[int(self._disc_number)]
         summary, ok = self._summary(self._audio_source)

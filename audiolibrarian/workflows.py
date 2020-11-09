@@ -1,7 +1,7 @@
 from logging import getLogger
 from pathlib import Path
 
-from audiolibrarian.audiosource import FilesAudioSource
+from audiolibrarian.audiosource import CDAudioSource, FilesAudioSource
 from audiolibrarian.base import Base
 
 
