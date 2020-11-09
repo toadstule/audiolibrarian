@@ -4,6 +4,7 @@ Useful stuff: https://help.mp3tag.de/main_tags.html
 """
 import shutil
 import subprocess
+import sys
 from logging import getLogger
 from pathlib import Path
 from typing import List, Tuple
@@ -22,15 +23,21 @@ from audiolibrarian.records import OneTrack
 log = getLogger(__name__)
 
 
-class AudioLibrarian:
-    """AudioLibrarian tool for converting and tagging audio files.
+class Base:
+    """AudioLibrarian base class.
 
-    This class performs all of its tasks on instantiation and provides no public members or
-    methods.
+    This class should be sub-classed for various workflows.
     """
 
     def __init__(self, args):
         self._args = args
+
+        # initialize stuff that will be defined later
+        self._audio_source = None
+        self._release = None
+        self._medium = None
+        self._disc_count = 1
+        self._disc_number = 1
 
         # directories
         self._library_dir = Path("library").resolve()
@@ -43,27 +50,8 @@ class AudioLibrarian:
         self._manifest_file = "Manifest.yaml"
         self._lock = FileLock(str(self._work_dir) + ".lock")
 
-        d = self._args.disc
-        self._disc_number, self._disc_count = map(int, d.split("/")) if d else (1, 1)
-
-        if self._args.command == "rip":
-            audio_source = audiosource.CDAudioSource()
-        else:
-            audio_source = audiosource.FilesAudioSource([Path(x) for x in self._args.filename])
-        searcher = self._get_searcher(audio_source)
-        skip_confirm = bool(searcher.mb_artist_id and searcher.mb_release_id)
-        self._release = searcher.find_music_brains_release()
-        self._medium = self._release.media[int(self._disc_number)]
-        summary, ok = self._summary(audio_source)
-        print(summary)
-        if not ok:
-            print(color("\n*** Track count does not match file count ***\n", fg="red"))
-            skip_confirm = False
-        if not skip_confirm and input("Confirm [Y,n]: ").lower() == "n":
-            return
-        if self._args.command in ("convert", "rip"):
-            self._rip_convert(audio_source)
-        self._write_manifest()
+        if d := self._args.disc:
+            self._disc_number, self._disc_count = map(int, d.split("/"))
 
     @property
     def _flac_filenames(self):
@@ -90,9 +78,23 @@ class AudioLibrarian:
         # Returns the current list of wav files in the work directory.
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
-    def _get_searcher(self, audio_source: audiosource.AudioSource) -> Searcher:
+    def _convert(self):
+        # Performs all of the steps of ripping, normalizing, converting and moving the files.
+        self._audio_source.prepare_source()
+        with self._lock:
+            self._make_clean_workdirs()
+            self._audio_source.copy_wavs(self._wav_dir)
+            self._rename_wav()
+            self._make_source()
+            self._normalize()
+            self._make_flac()
+            self._make_m4a()
+            self._make_mp3()
+            self._move_files()
+
+    def _get_searcher(self) -> Searcher:
         # Returns a Searcher object populated with data from the audio source and cli args.
-        search_data = audio_source.get_search_data()
+        search_data = self._audio_source.get_search_data()
         searcher = Searcher(**search_data)
         searcher.disc_number = self._disc_number
         # override any user-provided info from args
@@ -106,6 +108,20 @@ class AudioLibrarian:
             searcher.mb_release_id = self._args.mb_release_id
         log.info(f"SEARCHER: {searcher}")
         return searcher
+
+    def _get_tag_info(self):
+        searcher = self._get_searcher()
+        skip_confirm = bool(searcher.mb_artist_id and searcher.mb_release_id)
+        print("Finding MusicBrainz release information...")
+        self._release = searcher.find_music_brains_release()
+        self._medium = self._release.media[int(self._disc_number)]
+        summary, ok = self._summary(self._audio_source)
+        print(summary)
+        if not ok:
+            print(color("\n*** Track count does not match file count ***\n", fg="red"))
+            skip_confirm = False
+        if not skip_confirm and input("Confirm [Y,n]: ").lower() == "n":
+            sys.exit(1)
 
     def _make_clean_workdirs(self):
         # Erases everything from the workdir and creates the empty directory structure.
@@ -198,20 +214,6 @@ class AudioLibrarian:
             if new_path.resolve() != old_path.resolve():
                 log.info(f"RENAMING: {old_path.name} --> {new_path.name}")
                 old_path.rename(new_path)
-
-    def _rip_convert(self, audio_source):
-        # Performs all of the steps of ripping, normalizing, converting and moving the files.
-        audio_source.prepare_source()
-        with self._lock:
-            self._make_clean_workdirs()
-            audio_source.copy_wavs(self._wav_dir)
-            self._rename_wav()
-            self._make_source()
-            self._normalize()
-            self._make_flac()
-            self._make_m4a()
-            self._make_mp3()
-            self._move_files()
 
     def _summary(self, audio_source: audiosource.AudioSource) -> Tuple[str, bool]:
         # Returns a summary of the conversion/tagging process and an "ok" flag indicating issues.
