@@ -29,7 +29,7 @@ class Base:
     This class should be sub-classed for various workflows.
     """
 
-    _command = None
+    command = None
 
     def __init__(self, args):
         # Pull in stuff from args
@@ -319,7 +319,7 @@ class Base:
                 "bitrate_mode": file_info.bitrate_mode.name,
             },
         }
-        if self._command == "manifest":
+        if self.command == "manifest":
             manifest_filename = self._manifest_file  # write to current directory
             if self._source_is_cd:
                 manifest["source_info"] = {

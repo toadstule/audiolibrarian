@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-from audiolibrarian import __version__, genremanager, workflows
+from audiolibrarian.workflows import workflows
 
 log = logging.getLogger("audiolibrarian")
 
@@ -50,52 +50,24 @@ def check_deps():
         sys.exit(1)
 
 
+# noinspection PyProtectedMember
 def parse_args():
     parser = argparse.ArgumentParser(description="Audio Librarian")
     subparsers = parser.add_subparsers(title="command", dest="command")
 
     # global options
     parser.add_argument("--log-level", "-l", choices=LOG_LEVELS, help="log-level (default: ERROR")
-    parser.add_argument("--version", "-V", action="store_true", help="display version and exit")
 
-    # convert from files
-    _convert = subparsers.add_parser("convert", help="convert music from files")
-    _convert.add_argument("--artist", "-a", help="provide artist (ignore tags)")
-    _convert.add_argument("--album", "-m", help="provide album (ignore tags)")
-    _convert.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
-    _convert.add_argument("--mb-release-id", help="Musicbrainz release ID")
-    _convert.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
-    _convert.add_argument("filename", nargs="+", help="directory name or audio file name")
-
-    # just create the manifest
-    _manifest = subparsers.add_parser("manifest", help="create the Manifest.yaml file")
-    _manifest.add_argument("--artist", "-a", help="provide artist (ignore tags)")
-    _manifest.add_argument("--album", "-m", help="provide album (ignore tags)")
-    _manifest.add_argument("--cd", "-c", action="store_true", help="original source was a CD")
-    _manifest.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
-    _manifest.add_argument("--mb-release-id", help="Musicbrainz release ID")
-    _manifest.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
-    _manifest.add_argument("filename", nargs="+", help="directory name or audio file name")
-
-    # rip from CD
-    _rip = subparsers.add_parser("rip", help="rip music from a CD")
-    _rip.add_argument("--artist", "-a", help="provide artist")
-    _rip.add_argument("--album", "-m", help="provide album")
-    _rip.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
-    _rip.add_argument("--mb-release-id", help="Musicbrainz release ID")
-    _rip.add_argument("--disc", "-d", help="x/y: disc x of y; multi-disc release")
-
-    # genre management
-    description = (
-        "Process all audio files in the given directory(ies), allowing the user to "
-        "*update* the genre in Musicbrainz or *tag* audio files with the "
-        "user-defined genre in Musicbrainz."
-    )
-    _genre = subparsers.add_parser("genre", help="manager MB genre", description=description)
-    _genre.add_argument("directory", nargs="+", help="root of directory tree to process")
-    _genre_action = _genre.add_mutually_exclusive_group()
-    _genre_action.add_argument("--tag", action="store_true", help="update tags")
-    _genre_action.add_argument("--update", action="store_true", help="update Musicbrainz")
+    # add sub-commands and args for workflows
+    for wf in workflows:
+        # this is a total hack because argparse won't allow you to add an already
+        # existing ArgumentParser as a sub-parser.
+        if wf.parser:
+            wf.parser.prog = f"{subparsers._prog_prefix} {wf.command}"
+            subparsers._choices_actions.append(
+                subparsers._ChoicesPseudoAction(wf.command, (), wf.help)
+            )
+            subparsers._name_parser_map[wf.command] = wf.parser
 
     return _validate_args(parser.parse_args())
 
@@ -112,15 +84,7 @@ if __name__ == "__main__":
     args = parse_args()
     logging.basicConfig(level=args.log_level)
     log.info(f"ARGS: {args}")
-    if args.version:
-        print(f"audiolibrarian {__version__}")
-        sys.exit()
     check_deps()
-    if args.command == "convert":
-        workflows.Converter(args)
-    elif args.command == "manifest":
-        workflows.Manifester(args)
-    elif args.command == "genre":
-        genremanager.GenreManager(args)
-    elif args.command == "rip":
-        workflows.Ripper(args)
+    for workflow in workflows:
+        if args.command == workflow.command:
+            workflow(args)
