@@ -9,10 +9,10 @@ format:
 
 .PHONY: requirements
 requirements:
-	python -m pip install -r requirements.txt
+	python -m pip install -r requirements_base.txt
 
-#requirements.txt: requirements_base.txt requirements
-#	python -m pip freeze > $@
+requirements.txt: requirements_base.txt requirements
+	python -m pip freeze > $@
 
 .PHONY: sdist
 sdist: requirements
