@@ -8,8 +8,7 @@ import argparse
 import logging
 import sys
 
-from audiolibrarian import check_deps
-from audiolibrarian.commands import commands
+from audiolibrarian import check_deps, commands
 
 log = logging.getLogger("audiolibrarian")
 

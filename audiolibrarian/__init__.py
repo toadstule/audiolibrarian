@@ -2,6 +2,10 @@ __version__ = "0.8.3"
 
 import subprocess
 
+from audiolibrarian.commands import Convert, Genre, Manifest, Reconvert, Rip, Version
+
+commands = (Convert, Genre, Manifest, Reconvert, Rip, Version)
+
 REQUIRED_EXE = (
     "cd-paranoia",
     "eject",

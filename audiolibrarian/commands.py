@@ -178,10 +178,7 @@ class Version(_Command):
         print(f"audiolibrarian {__version__}")
 
 
-commands = (Convert, Genre, Manifest, Rip, Version)
-
-
-def _validate_disc_arg(args) -> bool:
+def _validate_disc_arg(args: Namespace) -> bool:
     if "disc" in args and args.disc:
         if not re.match(r"\d+/\d+", args.disc):
             print("Invalid --disc specification; should be x/y")
