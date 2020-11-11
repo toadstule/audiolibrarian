@@ -121,8 +121,10 @@ class Reconvert(_Command, Base):
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._source_is_cd = False
-        for manifest_path in self._find_manifests(args.directories):
-            print(f"Processing {manifest_path}...")
+        manifest_paths = self._find_manifests(args.directories)
+        count = len(manifest_paths)
+        for i, manifest_path in enumerate(manifest_paths):
+            print(f"Processing {i+1} of {count} ({i/count:.0%}): {manifest_path}...")
             self._audio_source = FilesAudioSource([manifest_path.parent])
             manifest = self._read_manifest(manifest_path)
             self._disc_number, self._disc_count = manifest["disc_number"], manifest["disc_count"]
