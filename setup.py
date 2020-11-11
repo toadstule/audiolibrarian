@@ -1,11 +1,7 @@
-import glob
-import os
 from distutils.core import setup
 
-SCRIPTS = glob.glob(os.path.join("scripts", "*"))
 
-
-def get_version():
+def get_version() -> str:
     with open("audiolibrarian/__init__.py") as pkg_init:
         for line in pkg_init:
             if line.startswith("__version__"):
@@ -17,11 +13,11 @@ if __name__ == "__main__":
         name="audiolibrarian",
         version=get_version(),
         packages=["audiolibrarian", "audiolibrarian.audiofile"],
-        url="https://bitbucket.org/toadstule/jib-audio/",
+        url="https://bitbucket.org/toadstule/audiolibrarian/",
         license="GNU General Public License v3.0",
         author="Steve Jibson",
-        author_email="steve@jibson.com",
+        author_email="audiolibrarian@jibson.com",
         description="Audio library utilities",
-        scripts=SCRIPTS,
+        scripts=["scripts/audiolibrarian"],
         install_requires=[line.strip() for line in open("requirements_base.txt")],
     )
