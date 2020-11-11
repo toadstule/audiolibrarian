@@ -1,4 +1,4 @@
-import abc
+import re
 from argparse import ArgumentParser
 from logging import getLogger
 from pathlib import Path
@@ -12,15 +12,18 @@ from audiolibrarian.genremanager import GenreManager
 log = getLogger(__name__)
 
 
-class Workflow(abc.ABC):
+class _Command:
+    # Base class for commands.
     help = ""
     parser = ArgumentParser()
 
-    def _validate_args(self):
-        pass
+    @staticmethod
+    def validate_args(args) -> bool:
+        _ = args
+        return True
 
 
-class Converter(Workflow, Base):
+class Convert(_Command, Base):
     """AudioLibrarian tool for converting and tagging audio files.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -45,9 +48,13 @@ class Converter(Workflow, Base):
         self._convert()
         self._write_manifest()
 
+    @staticmethod
+    def validate_args(args) -> bool:
+        return _validate_disc_arg(args)
 
-class Genrer(Workflow):
-    """I know that's not a word."""
+
+class Genre(_Command):
+    """Do stuff with genres."""
 
     command = "genre"
     help = "manager MB genre"
@@ -67,7 +74,7 @@ class Genrer(Workflow):
         GenreManager(args)
 
 
-class Manifester(Workflow, Base):
+class Manifest(_Command, Base):
     """AudioLibrarian tool for writing manifest.yaml files.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -94,8 +101,12 @@ class Manifester(Workflow, Base):
         self._get_tag_info()
         self._write_manifest()
 
+    @staticmethod
+    def validate_args(args) -> bool:
+        return _validate_disc_arg(args)
 
-class Recoverter(Workflow, Base):
+
+class Reconvert(_Command, Base):
     """AudioLibrarian tool for re-converting and tagging audio files from existing source files.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -113,7 +124,7 @@ class Recoverter(Workflow, Base):
         self._write_manifest()
 
 
-class Ripper(Workflow, Base):
+class Rip(_Command, Base):
     """AudioLibrarian tool for ripping, converting and tagging audio files.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -137,8 +148,12 @@ class Ripper(Workflow, Base):
         self._convert()
         self._write_manifest()
 
+    @staticmethod
+    def validate_args(args) -> bool:
+        return _validate_disc_arg(args)
 
-class Versioner(Workflow):
+
+class Version(_Command):
     """Print the version."""
 
     command = "version"
@@ -149,4 +164,12 @@ class Versioner(Workflow):
         print(f"audiolibrarian {__version__}")
 
 
-workflows = (Converter, Genrer, Manifester, Ripper, Versioner)
+commands = (Convert, Genre, Manifest, Rip, Version)
+
+
+def _validate_disc_arg(args) -> bool:
+    if "disc" in args and args.disc:
+        if not re.match(r"\d+/\d+", args.disc):
+            print("Invalid --disc specification; should be x/y")
+            return False
+    return True

@@ -26,7 +26,7 @@ log = getLogger(__name__)
 class Base:
     """AudioLibrarian base class.
 
-    This class should be sub-classed for various workflows.
+    This class should be sub-classed for various sub_commands.
     """
 
     command = None
@@ -209,7 +209,7 @@ class Base:
     def _normalize(self):
         # Normalizes the wav files using wavegain.
         print("Normalizing wav files...")
-        # command = ["wavegain", "--album", "--apply"]
+        # sub_command = ["wavegain", "--album", "--apply"]
         command = ["wavegain", "--radio", "--gain=5", "--apply"]
         command.extend(self._wav_filenames)
         r = subprocess.run(command, capture_output=True)
