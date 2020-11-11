@@ -1,5 +1,5 @@
 import re
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from logging import getLogger
 from pathlib import Path
 
@@ -114,14 +114,28 @@ class Reconvert(_Command, Base):
     """
 
     command = "reconvert"
+    help = "re-convert files from an existing source directory"
+    parser = ArgumentParser()
+    parser.add_argument("directories", nargs="+", help="source directories")
 
-    def __init__(self, args):
+    def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._source_is_cd = False
-        self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
-        self._get_tag_info()
-        self._convert()
-        self._write_manifest()
+        for manifest_path in self._find_manifests(args.directories):
+            print(f"Processing {manifest_path}...")
+            self._audio_source = FilesAudioSource([manifest_path.parent])
+            manifest = self._read_manifest(manifest_path)
+            self._disc_number, self._disc_count = manifest["disc_number"], manifest["disc_count"]
+            self._get_tag_info()
+            self._convert(make_source=False)
+
+    @staticmethod
+    def validate_args(args: Namespace) -> bool:
+        for directory in args.directories:
+            if not Path(directory).is_dir():
+                print(f"Directory not found: {directory}")
+                return False
+        return True
 
 
 class Rip(_Command, Base):

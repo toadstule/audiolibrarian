@@ -7,9 +7,10 @@ import subprocess
 import sys
 from logging import getLogger
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import pyaml
+import yaml
 
 # noinspection PyPackageRequirements
 from colors import color
@@ -33,18 +34,12 @@ class Base:
 
     def __init__(self, args):
         # Pull in stuff from args
-        self._provided_search_data = {
-            "album": args.album,
-            "artist": args.artist,
-            "mb_artist_id": args.mb_artist_id,
-            "mb_release_id": args.mb_release_id,
-        }
-        if args.disc:
-            self._disc_number, self._disc_count = map(int, args.disc.split("/"))
-            self._multi_disc = True
+        search_keys = ("album", "artist", "mb_artist_id", "mb_release_id")
+        self._provided_search_data = {k: v for k, v in vars(args).items() if k in search_keys}
+        if "disc" in args:
+            self._disc_number, self._disc_count = [int(x) for x in args.disc.split("/")]
         else:
             self._disc_number, self._disc_count = 1, 1
-            self._multi_disc = False
 
         # directories
         self._library_dir = Path("library").resolve()
@@ -80,6 +75,11 @@ class Base:
         return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
 
     @property
+    def _multi_disc(self) -> bool:
+        # Returns True if this is part of a multi-disc set.
+        return (self._disc_number, self._disc_count) != (1, 1)
+
+    @property
     def _source_filenames(self):
         # Returns the current list of source files in the work directory.
         return sorted(self._source_dir.glob("*.flac"), key=text.alpha_numeric_key)
@@ -96,12 +96,21 @@ class Base:
             self._make_clean_workdirs()
             self._audio_source.copy_wavs(self._wav_dir)
             self._rename_wav()
-            self._make_source()
+            self._make_source() if make_source else None
             self._normalize()
             self._make_flac()
             self._make_m4a()
             self._make_mp3()
-            self._move_files()
+            self._move_files(move_source=make_source)
+
+    def _find_manifests(self, directories: List[str]) -> List[Path]:
+        # Returns a sorted, unique list of manifest files anywhere in the given directories.
+        manifests = set()
+        for directory in directories:
+            path = Path(directory)
+            for manifest in path.glob(f"**/{self._manifest_file}"):
+                manifests.add(manifest)
+        return sorted(list(manifests))
 
     def _get_searcher(self) -> Searcher:
         # Returns a Searcher object populated with data from the audio source and cli args.
@@ -109,13 +118,13 @@ class Base:
         searcher = Searcher(**search_data)
         searcher.disc_number = self._disc_number
         # override with user-provided info
-        if value := self._provided_search_data["artist"]:
+        if value := self._provided_search_data.get("artist"):
             searcher.artist = value
-        if value := self._provided_search_data["album"]:
+        if value := self._provided_search_data.get("album"):
             searcher.album = value
-        if value := self._provided_search_data["mb_artist_id"]:
+        if value := self._provided_search_data.get("mb_artist_id"):
             searcher.mb_artist_id = value
-        if value := self._provided_search_data["mb_release_id"]:
+        if value := self._provided_search_data.get("mb_release_id"):
             searcher.mb_release_id = value
         log.info(f"SEARCHER: {searcher}")
         return searcher
@@ -184,7 +193,7 @@ class Base:
         self._make_flac(source=True)
         self._source_example = open_(self._source_filenames[0]).read_tags()
 
-    def _move_files(self):
+    def _move_files(self, move_source: bool = True) -> None:
         # Moves converted/tagged files from the work directory into the library directory.
         artist_dir = text.get_filename(self._release.first("album_artists"))
         album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
@@ -197,14 +206,14 @@ class Base:
             m4a_dir /= f"disc{self._disc_number}"
             mp3_dir /= f"disc{self._disc_number}"
             source_dir /= f"disc{self._disc_number}"
-        for d in (flac_dir, m4a_dir, mp3_dir, source_dir):
+        for d in [flac_dir, m4a_dir, mp3_dir] + ([source_dir] if move_source else []):
             if d.is_dir():
                 shutil.rmtree(d)
             d.mkdir(parents=True)
         [f.rename(flac_dir / f.name) for f in self._flac_filenames]
         [f.rename(m4a_dir / f.name) for f in self._m4a_filenames]
         [f.rename(mp3_dir / f.name) for f in self._mp3_filenames]
-        [f.rename(source_dir / f.name) for f in self._source_filenames]
+        [f.rename(source_dir / f.name) for f in self._source_filenames] if move_source else None
 
     def _normalize(self):
         # Normalizes the wav files using wavegain.
@@ -218,7 +227,12 @@ class Base:
             log.info(f"WAVEGAIN: {line_trunc}")
         r.check_returncode()
 
-    def _rename_wav(self):
+    @staticmethod
+    def _read_manifest(manifest_path: Path) -> Dict:
+        with open(manifest_path, "r") as manifest_file:
+            return yaml.safe_load(manifest_file)
+
+    def _rename_wav(self) -> None:
         # Renames the wav files to a filename-sane representation of the track title.
         for track_number, old_path in enumerate(self._wav_filenames, 1):
             title_filename = self._medium.tracks[track_number].get_filename() + ".wav"
