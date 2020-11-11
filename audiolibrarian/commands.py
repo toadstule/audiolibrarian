@@ -18,7 +18,7 @@ class _Command:
     parser = ArgumentParser()
 
     @staticmethod
-    def validate_args(args) -> bool:
+    def validate_args(args: Namespace) -> bool:
         _ = args
         return True
 
@@ -40,7 +40,7 @@ class Convert(_Command, Base):
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
-    def __init__(self, args):
+    def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._source_is_cd = False
         self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
@@ -49,7 +49,7 @@ class Convert(_Command, Base):
         self._write_manifest()
 
     @staticmethod
-    def validate_args(args) -> bool:
+    def validate_args(args: Namespace) -> bool:
         return _validate_disc_arg(args)
 
 
@@ -70,7 +70,7 @@ class Genre(_Command):
     parser_action.add_argument("--tag", action="store_true", help="update tags")
     parser_action.add_argument("--update", action="store_true", help="update Musicbrainz")
 
-    def __init__(self, args):
+    def __init__(self, args: Namespace) -> None:
         GenreManager(args)
 
 
@@ -92,7 +92,7 @@ class Manifest(_Command, Base):
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
-    def __init__(self, args):
+    def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._source_is_cd = args.cd
         self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
@@ -102,7 +102,7 @@ class Manifest(_Command, Base):
         self._write_manifest()
 
     @staticmethod
-    def validate_args(args) -> bool:
+    def validate_args(args: Namespace) -> bool:
         return _validate_disc_arg(args)
 
 
@@ -154,7 +154,7 @@ class Rip(_Command, Base):
     parser.add_argument("--mb-release-id", help="Musicbrainz release ID")
     parser.add_argument("--disc", "-d", help="x/y: disc x of y; multi-disc release")
 
-    def __init__(self, args):
+    def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._source_is_cd = True
         self._audio_source = CDAudioSource()
@@ -163,7 +163,7 @@ class Rip(_Command, Base):
         self._write_manifest()
 
     @staticmethod
-    def validate_args(args) -> bool:
+    def validate_args(args: Namespace) -> bool:
         return _validate_disc_arg(args)
 
 
@@ -173,7 +173,7 @@ class Version(_Command):
     command = "version"
     help = "display the program version"
 
-    def __init__(self, args):
+    def __init__(self, args: Namespace) -> None:
         _ = args
         print(f"audiolibrarian {__version__}")
 

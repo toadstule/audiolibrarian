@@ -5,6 +5,7 @@ Useful stuff: https://help.mp3tag.de/main_tags.html
 import shutil
 import subprocess
 import sys
+from argparse import Namespace
 from logging import getLogger
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -32,7 +33,7 @@ class Base:
 
     command = None
 
-    def __init__(self, args):
+    def __init__(self, args: Namespace) -> None:
         # Pull in stuff from args
         search_keys = ("album", "artist", "mb_artist_id", "mb_release_id")
         self._provided_search_data = {k: v for k, v in vars(args).items() if k in search_keys}
@@ -60,17 +61,17 @@ class Base:
         self._source_example = None
 
     @property
-    def _flac_filenames(self):
+    def _flac_filenames(self) -> List[Path]:
         # Returns the current list of flac files in the work directory.
         return sorted(self._flac_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
-    def _m4a_filenames(self):
+    def _m4a_filenames(self) -> List[Path]:
         # Returns the current list of m4a files in the work directory.
         return sorted(self._m4a_dir.glob("*.m4a"), key=text.alpha_numeric_key)
 
     @property
-    def _mp3_filenames(self):
+    def _mp3_filenames(self) -> List[Path]:
         # Returns the current list of mp3 files in the work directory.
         return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
 
@@ -80,16 +81,16 @@ class Base:
         return (self._disc_number, self._disc_count) != (1, 1)
 
     @property
-    def _source_filenames(self):
+    def _source_filenames(self) -> List[Path]:
         # Returns the current list of source files in the work directory.
         return sorted(self._source_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
-    def _wav_filenames(self):
+    def _wav_filenames(self) -> List[Path]:
         # Returns the current list of wav files in the work directory.
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
-    def _convert(self):
+    def _convert(self, make_source: bool = True) -> None:
         # Performs all of the steps of ripping, normalizing, converting and moving the files.
         self._audio_source.prepare_source()
         with self._lock:
@@ -129,7 +130,7 @@ class Base:
         log.info(f"SEARCHER: {searcher}")
         return searcher
 
-    def _get_tag_info(self):
+    def _get_tag_info(self) -> None:
         print("Gathering search information...")
         searcher = self._get_searcher()
         skip_confirm = bool(searcher.mb_artist_id and searcher.mb_release_id)
@@ -144,14 +145,14 @@ class Base:
         if not skip_confirm and input("Confirm [N,y]: ").lower() != "y":
             sys.exit(1)
 
-    def _make_clean_workdirs(self):
+    def _make_clean_workdirs(self) -> None:
         # Erases everything from the workdir and creates the empty directory structure.
         if self._work_dir.is_dir():
             shutil.rmtree(self._work_dir)
         for d in self._flac_dir, self._m4a_dir, self._mp3_dir, self._source_dir, self._wav_dir:
             d.mkdir(parents=True)
 
-    def _make_flac(self, source=False):
+    def _make_flac(self, source: bool = False) -> None:
         # Converts the wav files into flac files; tags them.
         #
         # If source is True, it stores the flac files in the source directory,
@@ -165,7 +166,7 @@ class Base:
         cmd.touch(filenames)
         self._tag_files(filenames)
 
-    def _make_m4a(self):
+    def _make_m4a(self) -> None:
         # Converts the wav files into m4a files; tags them.
         commands = []
         for f in self._wav_filenames:
@@ -175,7 +176,7 @@ class Base:
         cmd.touch(self._m4a_filenames)
         self._tag_files(self._m4a_filenames)
 
-    def _make_mp3(self):
+    def _make_mp3(self) -> None:
         # Converts the wav files into mp3 files; tags them.
         commands = []
         for f in self._wav_filenames:
@@ -185,7 +186,7 @@ class Base:
         cmd.touch(self._mp3_filenames)
         self._tag_files(self._mp3_filenames)
 
-    def _make_source(self):
+    def _make_source(self) -> None:
         # Converts the files into flac files; stores them in the source dir; reads their tags.
         #
         # The files are defined by the audio source; they could be wav files from a CD
@@ -215,7 +216,7 @@ class Base:
         [f.rename(mp3_dir / f.name) for f in self._mp3_filenames]
         [f.rename(source_dir / f.name) for f in self._source_filenames] if move_source else None
 
-    def _normalize(self):
+    def _normalize(self) -> None:
         # Normalizes the wav files using wavegain.
         print("Normalizing wav files...")
         # sub_command = ["wavegain", "--album", "--apply"]
@@ -308,7 +309,7 @@ class Base:
             )
             song.write_tags()
 
-    def _write_manifest(self):
+    def _write_manifest(self) -> None:
         # Writes out a manifest file with release information.
         release = self._release  # we use this a lot below
         file_info = self._source_example.track.file_info
