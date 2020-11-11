@@ -23,10 +23,12 @@ def alpha_numeric_key(x):
 def fix(text: str) -> str:
     """Replace some special characters."""
     replacements = {
-        8208: 45,  # hyphen
-        8217: 39,  # "smart" single quote
+        8208: "-",  # hyphen
+        8216: "'",  # "smart" single open quote
+        8217: "'",  # "smart" single close quote
+        8230: "...",  # ellipsis
     }
-    return "".join([chr(replacements[ord(c)]) if ord(c) in replacements else c for c in text])
+    return "".join([replacements[ord(c)] if ord(c) in replacements else c for c in text])
 
 
 def get_filename(title: str) -> str:

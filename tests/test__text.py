@@ -19,7 +19,9 @@ class TestText(TestCase):
         self.assertEqual("abc", text.fix("abc"))
         self.assertEqual("a-b", text.fix("a-b"))
         self.assertEqual("a-b", text.fix(f"a{chr(8208)}b"))
-        self.assertEqual("'your_mom'", text.fix(f"{chr(8217)}your_mom{chr(8217)}"))
+        self.assertEqual("'your_mom'", text.fix(f"{chr(8216)}your_mom{chr(8217)}"))
+        self.assertEqual("one...two", text.fix("one…two"))
+        self.assertEqual("one...two", text.fix(f"one{chr(8230)}two"))
 
     def test__get_filename(self):
         self.assertEqual("your_mom", text.get_filename("your_mom"))
