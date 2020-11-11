@@ -1,5 +1,5 @@
 ansicolors
-discid>=1.2.0
+discid
 filelock
 fuzzywuzzy
 musicbrainzngs
