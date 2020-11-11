@@ -261,7 +261,7 @@ class MusicBrainzRelease:
         for medium in self._release.get("medium-list", []):
             if int(medium["position"]) == medium_number:
                 for t in medium["track-list"]:
-                    track_number = int(t["number"])
+                    track_number = int(t["position"])
                     recording = t["recording"]
                     artist, artist_list, artist_sort, artist_ids = self._process_artist_credit(
                         t.get("artist-credit") or recording["artist-credit"]
