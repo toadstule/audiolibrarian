@@ -18,7 +18,7 @@ REQUIRED_EXE = (
 def check_deps() -> bool:
     """Check that all of the executables defined in REQUIRED_EXE exist on the system.
 
-    If any of the required executables are missing, list them and exit (exit code 1).
+    If any of the required executables are missing, list them and return False.
     """
     missing = []
     for exe in REQUIRED_EXE:
