@@ -12,19 +12,16 @@ pipelines:
         max-time: 5
         caches:
           - pip
-        script: # Modify the commands below to build your repository.
-          - pip install -r requirements.txt
-          - python -m unittest discover tests/
+        script:
+          - make clean requirements test
   branches:
     master:
       - step:
           name: Deploy to production
           deployment: production
-          max-time: 2
+          max-time: 5
           caches:
             - pip
-          script: # Modify the commands below to build your repository.
-            - pip install -r requirements.txt
-            - python -m unittest discover tests/
-            - python setup.py sdist
+          script:
+            - make clean requirements test sdist
             - find dist -name '*.gz' -exec curl -X POST "https://${BB_AUTH_STRING}@api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" --form files=@"{}" \;
