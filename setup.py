@@ -28,7 +28,7 @@ if __name__ == "__main__":
     setup(
         name="audiolibrarian",
         version=get_version(),
-        packages=["audiolibrarian", "audiolibrarian.audiofile"],
+        packages=["audiolibrarian", "audiolibrarian.audiofile", "audiolibrarian.picard_src"],
         url="https://bitbucket.org/toadstule/audiolibrarian/",
         license="GNU General Public License v3.0",
         author="Steve Jibson",
