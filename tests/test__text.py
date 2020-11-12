@@ -19,6 +19,7 @@ class TestText(TestCase):
         self.assertEqual("abc", text.fix("abc"))
         self.assertEqual("a-b", text.fix("a-b"))
         self.assertEqual("a-b", text.fix(f"a{chr(8208)}b"))
+        self.assertEqual("a-b", text.fix(f"a{chr(8211)}b"))
         self.assertEqual("'your_mom'", text.fix(f"{chr(8216)}your_mom{chr(8217)}"))
         self.assertEqual("one...two", text.fix("one…two"))
         self.assertEqual("one...two", text.fix(f"one{chr(8230)}two"))

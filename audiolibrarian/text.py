@@ -1,6 +1,8 @@
 import re
 import string
 
+from audiolibrarian.picard_src import replace_non_ascii
+
 digit_regex = re.compile(r"([0-9]+)")
 uuid_regex = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.I)
 
@@ -22,13 +24,7 @@ def alpha_numeric_key(x):
 
 def fix(text: str) -> str:
     """Replace some special characters."""
-    replacements = {
-        8208: "-",  # hyphen
-        8216: "'",  # "smart" single open quote
-        8217: "'",  # "smart" single close quote
-        8230: "...",  # ellipsis
-    }
-    return "".join([replacements[ord(c)] if ord(c) in replacements else c for c in text])
+    return replace_non_ascii(text)
 
 
 def get_filename(title: str) -> str:
@@ -36,7 +32,7 @@ def get_filename(title: str) -> str:
     allowed_chars = string.ascii_letters + string.digits + "_."
     no_underscore_replace = ",!'\""
     result = []
-    for ch in title:
+    for ch in fix(title):
         if ch in allowed_chars:
             result.append(ch)
         elif ch == "&":
