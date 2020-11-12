@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 """Record (dataclass) definitions."""
 
 # Useful field reference: https://github.com/metabrainz/picard/blob/master/picard/util/tags.py

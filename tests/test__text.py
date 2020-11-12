@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 from unittest import TestCase
 
 from audiolibrarian import text

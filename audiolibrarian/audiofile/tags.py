@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 # noinspection PyMissingConstructor
 class Tags(dict):
     """A dict-like object that silently drops keys with None in their values.

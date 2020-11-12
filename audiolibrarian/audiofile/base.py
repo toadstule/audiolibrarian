@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 from pathlib import Path
 
 from audiolibrarian.audiofile.audiofile import AudioFile

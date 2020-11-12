@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 import contextlib
 import copy
 import hashlib

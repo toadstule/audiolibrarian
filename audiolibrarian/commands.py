@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 import re
 from argparse import ArgumentParser, Namespace
 from logging import getLogger

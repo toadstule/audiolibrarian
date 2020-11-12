@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 import pickle
 import webbrowser
 from logging import getLogger

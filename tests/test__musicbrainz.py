@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 import logging
 import os
 from pathlib import Path

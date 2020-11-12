@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 """
 
 Useful stuff: https://help.mp3tag.de/main_tags.html
@@ -37,7 +39,7 @@ class Base:
         # Pull in stuff from args
         search_keys = ("album", "artist", "mb_artist_id", "mb_release_id")
         self._provided_search_data = {k: v for k, v in vars(args).items() if k in search_keys}
-        if "disc" in args:
+        if vars(args).get("disc"):
             self._disc_number, self._disc_count = [int(x) for x in args.disc.split("/")]
         else:
             self._disc_number, self._disc_count = 1, 1

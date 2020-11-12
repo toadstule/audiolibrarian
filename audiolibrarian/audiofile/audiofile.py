@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 import abc
 from pathlib import Path
 from typing import Tuple

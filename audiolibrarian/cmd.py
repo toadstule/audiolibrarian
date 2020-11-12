@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 import subprocess
 from typing import List, Tuple
 

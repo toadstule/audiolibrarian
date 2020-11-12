@@ -1,5 +1,7 @@
 #!python
 
+# Copyright (C) 2020 Stephen Jibson
+
 """
 PYTHONPATH=$(pwd) scripts/audiolibrarian /media/BlackBox/Music/flac/some_file
 

@@ -1,3 +1,5 @@
+# Copyright (C) 2020 Stephen Jibson
+
 from logging import getLogger
 from typing import List
 

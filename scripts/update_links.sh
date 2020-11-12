@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (C) 2020 Stephen Jibson
+
+
 # This file should be located in the /bin directory of the library (i.e. "/media/music/bin")
 # along side the flac, m4a, mp3 directories
 

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+# Copyright (C) 2020 Stephen Jibson
+
 import pprint
 import sys
 
