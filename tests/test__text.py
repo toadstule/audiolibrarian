@@ -30,6 +30,26 @@ class TestText(TestCase):
         ):
             self.assertListEqual(expected, sorted(initial, key=text.alpha_numeric_key))
 
+    def test__comma_and_join(self):
+        self.assertEqual("", text.join([]))
+        self.assertEqual("a", text.join(["a"]))
+        self.assertEqual("aa", text.join(["aa"]))
+        self.assertEqual("aa and bb", text.join(["aa", "bb"]))
+        self.assertEqual("aa, bb and cc", text.join(["aa", "bb", "cc"]))
+        self.assertEqual("aa, bb, cc and dd", text.join(["aa", "bb", "cc", "dd"]))
+        self.assertEqual("", text.join([], joiner="; "))
+        self.assertEqual("a", text.join(["a"], joiner="; "))
+        self.assertEqual("aa", text.join(["aa"], joiner="; "))
+        self.assertEqual("aa and bb", text.join(["aa", "bb"], joiner="; "))
+        self.assertEqual("aa; bb and cc", text.join(["aa", "bb", "cc"], joiner="; "))
+        self.assertEqual("aa; bb; cc and dd", text.join(["aa", "bb", "cc", "dd"], joiner="; "))
+        self.assertEqual("", text.join([], word="or"))
+        self.assertEqual("a", text.join(["a"], word="or"))
+        self.assertEqual("aa", text.join(["aa"], word="or"))
+        self.assertEqual("aa or bb", text.join(["aa", "bb"], word="or"))
+        self.assertEqual("aa, bb or cc", text.join(["aa", "bb", "cc"], word="or"))
+        self.assertEqual("aa, bb, cc or dd", text.join(["aa", "bb", "cc", "dd"], word="or"))
+
     def test__fix(self):
         self.assertEqual("", text.fix(""))
         self.assertEqual("abc", text.fix("abc"))

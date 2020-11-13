@@ -121,11 +121,15 @@ class M4aFile(AudioFile):
                 original_year=get_str(f"{ITUNES}:originalyear") or None,
                 people=(
                     People(
+                        arrangers=get_strl(f"{ITUNES}:ARRANGER"),
+                        composers=get_strl(f"{ITUNES}:COMPOSER"),
+                        conductors=get_strl(f"{ITUNES}:CONDUCTOR"),
                         engineers=get_strl(f"{ITUNES}:ENGINEER"),
                         lyricists=get_strl(f"{ITUNES}:LYRICIST"),
                         mixers=get_strl(f"{ITUNES}:MIXER"),
                         producers=get_strl(f"{ITUNES}:PRODUCER"),
                         performers=None,
+                        writers=get_strl(f"{ITUNES}:WRITER"),
                     )
                     or None
                 ),
@@ -160,10 +164,13 @@ class M4aFile(AudioFile):
             image_format = AtomDataType.PNG if c.mime == "image/png" else AtomDataType.JPEG
             front_cover = [MP4Cover(c.data, imageformat=image_format)]
         tags = {
+            f"{ITUNES}:ARRANGER": ffl(release.people and release.people.arrangers),
             f"{ITUNES}:ARTISTS": ffl(track.artists),
             f"{ITUNES}:ASIN": ffl(release.asins),
             f"{ITUNES}:BARCODE": ffl(release.barcodes),
             f"{ITUNES}:CATALOGNUMBER": ffl(release.catalog_numbers),
+            f"{ITUNES}:COMPOSER": ffl(release.people and release.people.composers),
+            f"{ITUNES}:CONDUCTOR": ffl(release.people and release.people.conductors),
             f"{ITUNES}:DISCSUBTITLE": ffl(medium.titles),
             f"{ITUNES}:ENGINEER": ffl(release.people and release.people.engineers),
             f"{ITUNES}:ISRC": ffl(track.isrcs),
@@ -184,6 +191,7 @@ class M4aFile(AudioFile):
             f"{ITUNES}:originalyear": [ff(release.original_year)],
             f"{ITUNES}:PRODUCER": ffl(release.people and release.people.producers),
             f"{ITUNES}:SCRIPT": [ff(release.script)],
+            f"{ITUNES}:WRITER": ffl(release.people and release.people.writers),
             "\xa9alb": [release.album],
             "\xa9ART": [track.artist],
             "\xa9day": [release.date],

@@ -16,6 +16,7 @@
 
 import re
 import string
+from typing import List
 
 from audiolibrarian.picard_src import replace_non_ascii
 
@@ -36,6 +37,14 @@ def alpha_numeric_key(x):
         # ['7__seven', '8__eight', '10__ten', '11__eleven']
     """
     return [int(x) if x.isdigit() else x for x in digit_regex.split(str(x))]
+
+
+def join(strings: List[str], joiner: str = ", ", word: str = "and") -> str:
+    if not strings:
+        return ""
+    if len(strings) == 1:
+        return strings[0]
+    return joiner.join(strings[:-1]) + " " + word + " " + strings[-1]
 
 
 def fix(text: str) -> str:

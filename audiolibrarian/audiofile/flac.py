@@ -104,12 +104,16 @@ class FlacFile(AudioFile):
                 original_year=mut["originalyear"][0] if mut.get("originalyear") else None,
                 people=(
                     People(
+                        arrangers=mut.get("arranger"),
+                        composers=mut.get("composer"),
+                        conductors=mut.get("conductor"),
                         engineers=mut.get("engineer"),
                         lyricists=mut.get("lyricist"),
                         mixers=mut.get("mixer"),
                         performers=mut.get("performer")
                         and self._parse_performer_tag(mut["performer"]),
                         producers=mut.get("producer"),
+                        writers=mut.get("writer"),
                     )
                     or None
                 ),
@@ -131,12 +135,15 @@ class FlacFile(AudioFile):
             "album": [release.album],
             "albumartist": release.album_artists,
             "albumartistsort": release.album_artists_sort,
+            "arranger": release.people and release.people.arrangers,
             "artist": [track.artist],
             "artists": track.artists,
             "artistsort": track.artists_sort,
             "asin": release.asins,
             "barcode": release.barcodes,
             "catalognumber": release.catalog_numbers,
+            "composer": release.people and release.people.composers,
+            "conductor": release.people and release.people.conductors,
             "date": [release.date],
             "discnumber": [str(medium_number)],
             "discsubtitle": medium.titles,
@@ -167,6 +174,7 @@ class FlacFile(AudioFile):
             "totaltracks": [str(medium.track_count)],
             "tracknumber": [str(track_number)],
             "tracktotal": [str(medium.track_count)],
+            "writer": release.people and release.people.writers,
         }
         tags = Tags(tags)
         self._mut_file.delete()  # clear old tags

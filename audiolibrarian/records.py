@@ -22,7 +22,7 @@ import dataclasses
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from audiolibrarian import text
 
@@ -118,11 +118,15 @@ class Medium(Record):
 
 @dataclass
 class People(Record):
+    arrangers: List[str] = None
+    composers: List[str] = None
+    conductors: List[str] = None
     engineers: List[str] = None
     lyricists: List[str] = None
     mixers: List[str] = None
     performers: (List[Performer], None) = None
     producers: List[str] = None
+    writers: List[str] = None
 
 
 @dataclass
