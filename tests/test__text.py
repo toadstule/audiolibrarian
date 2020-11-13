@@ -59,6 +59,7 @@ class TestText(TestCase):
         self.assertEqual("'your_mom'", text.fix(f"{chr(8216)}your_mom{chr(8217)}"))
         self.assertEqual("one...two", text.fix("one…two"))
         self.assertEqual("one...two", text.fix(f"one{chr(8230)}two"))
+        self.assertEqual("é", text.fix("é"), "fix should not drop accents")
 
     def test__get_filename(self):
         self.assertEqual("your_mom", text.get_filename("your_mom"))
@@ -68,6 +69,7 @@ class TestText(TestCase):
         self.assertEqual("your__mom", text.get_filename("your (mom)"))
         self.assertEqual("your__mom", text.get_filename("your [mom]"))
         self.assertEqual("your_mom_and_me", text.get_filename("your mom & me"))
+        self.assertEqual("e", text.get_filename("é"), "get_filename should drop accents")
 
     def test__get_uuid(self):
         input_ = "your mom"

@@ -25,6 +25,6 @@ if __name__ == "__main__":
     filename = sys.argv[1]
 
     song = mutagen.File(filename)
-    if 'covr' in song.tags:
+    if "covr" in song.tags:
         song.tags["covr"] = ""
     pprint.pp(dict(song.tags))

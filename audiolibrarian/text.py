@@ -18,7 +18,12 @@ import re
 import string
 from typing import List
 
-from audiolibrarian.picard_src import replace_non_ascii
+from audiolibrarian.picard_src import (
+    replace_non_ascii,
+    unicode_simplify_combinations,
+    unicode_simplify_compatibility,
+    unicode_simplify_punctuation,
+)
 
 digit_regex = re.compile(r"([0-9]+)")
 uuid_regex = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.I)
@@ -49,7 +54,12 @@ def join(strings: List[str], joiner: str = ", ", word: str = "and") -> str:
 
 def fix(text: str) -> str:
     """Replace some special characters."""
-    return replace_non_ascii(text)
+    interim = text
+    interim = unicode_simplify_combinations(text)
+    # interim = unicode_simplify_accents(interim)
+    interim = unicode_simplify_punctuation(interim)
+    interim = unicode_simplify_compatibility(interim)
+    return interim
 
 
 def get_filename(title: str) -> str:
@@ -57,7 +67,7 @@ def get_filename(title: str) -> str:
     allowed_chars = string.ascii_letters + string.digits + "_."
     no_underscore_replace = ",!'\""
     result = []
-    for ch in fix(title):
+    for ch in replace_non_ascii(title):
         if ch in allowed_chars:
             result.append(ch)
         elif ch == "&":
