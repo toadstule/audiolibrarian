@@ -55,12 +55,11 @@ def join(strings: List[str], joiner: str = ", ", word: str = "and") -> str:
 
 def fix(text: str) -> str:
     """Replace some special characters."""
-    interim = text
-    interim = unicode_simplify_combinations(text)
-    # interim = unicode_simplify_accents(interim)
-    interim = unicode_simplify_punctuation(interim)
-    interim = unicode_simplify_compatibility(interim)
-    return interim
+    text = unicode_simplify_combinations(text)
+    # text = unicode_simplify_accents(text)
+    text = unicode_simplify_punctuation(text)
+    text = unicode_simplify_compatibility(text)
+    return text
 
 
 def get_filename(title: str) -> str:
