@@ -14,8 +14,6 @@
 # <https://www.gnu.org/licenses/>.
 #
 
-from typing import List
-
 import mutagen
 import mutagen.id3
 
@@ -25,6 +23,7 @@ from audiolibrarian.records import (
     FileInfo,
     FileType,
     FrontCover,
+    ListF,
     Medium,
     OneTrack,
     People,
@@ -48,12 +47,12 @@ class Mp3File(AudioFile):
     def read_tags(self) -> OneTrack:
         """Reads the tags and returns a OneTrack object."""
 
-        def get_l(key) -> (List, None):
+        def get_l(key) -> (ListF, None):
             if (value := mut.get(key)) is None:
                 return None
             if "/" in str(value):
-                return str(value).split("/")
-            return list(value)
+                return ListF(str(value).split("/"))
+            return ListF(value)
 
         mut = self._mut_file
         front_cover = None

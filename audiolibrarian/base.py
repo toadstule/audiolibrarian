@@ -216,7 +216,7 @@ class Base:
 
     def _move_files(self, move_source: bool = True) -> None:
         # Moves converted/tagged files from the work directory into the library directory.
-        artist_dir = text.get_filename(self._release.first("album_artists"))
+        artist_dir = text.get_filename(self._release.album_artists.first)
         album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
         flac_dir = self._library_dir / "flac" / artist_dir / album_dir
         m4a_dir = self._library_dir / "m4a" / artist_dir / album_dir
@@ -335,17 +335,17 @@ class Base:
         file_info = self._source_example.track.file_info
         manifest = {
             "album": release.album,
-            "artist": release.first("album_artists"),
-            "artist_sort_name": release.first("album_artists_sort"),
-            "media": release.media[self._disc_number].first("formats"),
-            "genre": release.first("genres"),
+            "artist": release.album_artists.first,
+            "artist_sort_name": release.album_artists_sort.first,
+            "media": release.media[self._disc_number].formats.first,
+            "genre": release.genres.first,
             "disc_number": self._disc_number,
             "disc_total": self._disc_count,
             "original_year": release.original_year,
             "date": release.date,
             "musicbrainz_info": {
                 "albumid": release.musicbrainz_album_id,
-                "albumartistid": release.first("musicbrainz_album_artist_ids"),
+                "albumartistid": release.musicbrainz_album_artist_ids.first,
                 "releasegroupid": release.musicbrainz_release_group_id,
             },
             "source_info": {
@@ -364,7 +364,7 @@ class Base:
                 }
         else:
             source_dir = self._library_dir / "source"
-            artist_dir = text.get_filename(self._release.first("album_artists"))
+            artist_dir = text.get_filename(self._release.album_artists.first)
             album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
             manifest_filename = source_dir / artist_dir / album_dir / self._manifest_file
         with open(manifest_filename, "w") as manifest_file:

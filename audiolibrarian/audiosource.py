@@ -118,11 +118,11 @@ class FilesAudioSource(AudioSource):
             release = one_track.release
             track = one_track.track
 
-            artist = release.first("artists") or track.artist or track.first("artists") or ""
+            artist = track.artist or track.artists.first or ""
             album = release.album or ""
             mb_artist_id = (
-                release.first("musicbrainz_album_artist_ids")
-                or track.first("musicbrainz_artist_ids")
+                release.musicbrainz_album_artist_ids.first
+                or track.musicbrainz_artist_ids.first
                 or ""
             )
             mb_release_id = release.musicbrainz_album_id or ""

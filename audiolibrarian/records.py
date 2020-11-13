@@ -22,7 +22,7 @@ import dataclasses
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from audiolibrarian import text
 
@@ -44,6 +44,13 @@ class FileType(Enum):
 class Source(Enum):
     MUSICBRAINZ = 1
     TAGS = 2
+
+
+class ListF(list):
+    @property
+    def first(self):
+        if len(self):
+            return self[0]
 
 
 @dataclass
@@ -92,11 +99,11 @@ class Performer(Record):
 @dataclass
 class Track(Record):
     artist: str = None
-    artists: List[str] = None
+    artists: ListF = None
     artists_sort: List[str] = None
     file_info: FileInfo = None
     isrcs: List[str] = None
-    musicbrainz_artist_ids: List[str] = None
+    musicbrainz_artist_ids: ListF = None
     musicbrainz_release_track_id: str = None
     musicbrainz_track_id: str = None
     title: str = None
@@ -110,7 +117,7 @@ class Track(Record):
 # Combined Record Types (fields + other record types)
 @dataclass
 class Medium(Record):
-    formats: List[str] = None
+    formats: ListF = None
     titles: List[str] = None
     track_count: int = None
     tracks: Dict[int, Track] = None
@@ -132,18 +139,18 @@ class People(Record):
 @dataclass
 class Release(Record):
     album: str = None
-    album_artists: List[str] = None
-    album_artists_sort: List[str] = None
+    album_artists: ListF = None
+    album_artists_sort: ListF = None
     asins: List[str] = None
     barcodes: List[str] = None
     catalog_numbers: List[str] = None
     date: str = None
     front_cover: (FrontCover, None) = field(default=None, repr=False)
-    genres: List[str] = None
+    genres: ListF = None
     labels: List[str] = None
     media: Dict[int, Medium] = None
     medium_count: int = None
-    musicbrainz_album_artist_ids: List[str] = None
+    musicbrainz_album_artist_ids: ListF = None
     musicbrainz_album_id: str = None
     musicbrainz_release_group_id: str = None
     original_date: str = None

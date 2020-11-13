@@ -28,7 +28,16 @@ from fuzzywuzzy import fuzz
 from requests.auth import HTTPDigestAuth
 
 from audiolibrarian import __version__
-from audiolibrarian.records import FrontCover, Medium, People, Performer, Release, Source, Track
+from audiolibrarian.records import (
+    FrontCover,
+    ListF,
+    Medium,
+    People,
+    Performer,
+    Release,
+    Source,
+    Track,
+)
 from audiolibrarian.text import fix, get_uuid, input_, join
 
 log = getLogger(__name__)
@@ -181,7 +190,7 @@ class MusicBrainzRelease:
         for medium in self._release.get("medium-list", []):
             medium_number = int(medium.get("number") or medium.get("position"))
             media[medium_number] = Medium(
-                formats=[medium["format"]],
+                formats=ListF([medium["format"]]),
                 titles=[fix(medium["title"])] if medium.get("title") else None,
                 track_count=medium["track-count"],
                 tracks=self._get_tracks(medium_number=medium_number),
@@ -276,18 +285,18 @@ class MusicBrainzRelease:
         )
         return Release(
             album=fix(release["title"]),
-            album_artists=[artist_phrase or album_artist_names_str],
-            album_artists_sort=[album_artist_sort_names],
+            album_artists=ListF([artist_phrase or album_artist_names_str]),
+            album_artists_sort=ListF([album_artist_sort_names]),
             asins=[release["asin"]] if release.get("asin") else None,
             barcodes=[release["barcode"]] if release.get("barcode") else None,
             catalog_numbers=catalog_numbers or None,
             date=year,
             front_cover=self._get_front_cover(),
-            genres=[self._get_genre(release_group["id"], artist_ids[0]).title()],
+            genres=ListF([self._get_genre(release_group["id"], artist_ids.first).title()]),
             labels=labels,
             media=self._get_media(),
             medium_count=release.get("medium-count", 0),
-            musicbrainz_album_artist_ids=artist_ids,
+            musicbrainz_album_artist_ids=ListF(artist_ids),
             musicbrainz_album_id=self._release_id,
             musicbrainz_release_group_id=release_group["id"],
             original_date=release_group.get("first-release-date", ""),
@@ -326,12 +335,12 @@ class MusicBrainzRelease:
         return tracks or None
 
     @staticmethod
-    def _process_artist_credit(artist_credit: list) -> Tuple[str, List[str], str, List[str]]:
+    def _process_artist_credit(artist_credit: list) -> Tuple[str, ListF, str, ListF]:
         # Returns artist info from an artist-credit list.
         artist_names_str = ""
-        artist_names_list = []
+        artist_names_list = ListF()
         artist_sort_names = ""
-        artist_ids = []
+        artist_ids = ListF()
         for a in artist_credit:
             if isinstance(a, dict):
                 artist_names_str += fix(a.get("name") or a["artist"]["name"])
