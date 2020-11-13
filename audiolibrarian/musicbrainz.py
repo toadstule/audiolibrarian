@@ -193,9 +193,9 @@ class MusicBrainzRelease:
         arrangers, composers, conductors, engineers, lyricists = [], [], [], [], []
         mixers, performers, producers, writers = [], [], [], []
         for r in self._release.get("artist-relation-list", []):
-            import pprint
-
-            pprint.pp(r)
+            if log.getEffectiveLevel() == DEBUG:
+                pprint.pp("== ARTIST-RELATION-LIST ===================")
+                pprint.pp(r)
             name = fix(r["artist"]["name"])
             type_ = r["type"].lower()
             if type_ == "arranger":
@@ -215,7 +215,8 @@ class MusicBrainzRelease:
             elif type_ == "vocal":
                 performers.append(Performer(name=name, instrument="lead vocals"))
                 if attrs := r.get("attribute-list"):
-                    performers.append(Performer(name=name, instrument=fix(join(attrs))))
+                    if attrs := [x for x in attrs if x != "lead vocals"]:
+                        performers.append(Performer(name=name, instrument=fix(join(attrs))))
                 else:
                     performers.append(Performer(name=name, instrument="vocals"))
             elif type_ == "producer":
