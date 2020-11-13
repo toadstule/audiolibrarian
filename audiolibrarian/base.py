@@ -153,6 +153,9 @@ class Base:
         print("Finding MusicBrainz release information...")
         self._release = searcher.find_music_brains_release()
         self._medium = self._release.media[int(self._disc_number)]
+        if fc := not self._release.front_cover and self._audio_source.get_front_cover():
+            log.info("Using front-cover image from source file")
+            self._release.front_cover = fc
         summary, ok = self._summary()
         print(summary)
         if not ok:
