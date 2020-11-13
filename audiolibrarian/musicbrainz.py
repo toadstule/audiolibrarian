@@ -29,7 +29,7 @@ from requests.auth import HTTPDigestAuth
 
 from audiolibrarian import __version__
 from audiolibrarian.records import FrontCover, Medium, People, Performer, Release, Source, Track
-from audiolibrarian.text import fix, get_uuid, join
+from audiolibrarian.text import fix, get_uuid, input_, join
 
 log = getLogger(__name__)
 _user_agent_name = "audiolibrarian"
@@ -173,7 +173,7 @@ class MusicBrainzRelease:
             return [g["name"] for g in reversed(sorted(rg["genres"], key=lambda x: x["count"]))][0]
         if at["genres"]:
             return [g["name"] for g in reversed(sorted(at["genres"], key=lambda x: x["count"]))][0]
-        return input("Genre not found; enter the genre [Alternative]: ") or "Alternative"
+        return input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
     def _get_media(self) -> (Dict[int, Medium], None):
         # Returns a dict of Media objects, keyed on number or position (or None).
@@ -263,7 +263,7 @@ class MusicBrainzRelease:
             artist_ids,
         ) = self._process_artist_credit(release["artist-credit"])
         artist_phrase = fix(release.get("artist-credit-phrase", ""))
-        year = release.get("release-event-list", [{}])[0].get("date") or input("Release year: ")
+        year = release.get("release-event-list", [{}])[0].get("date") or input_("Release year: ")
         album_type = [release_group["primary-type"].lower()]
         if release_group["type"].lower() != album_type[0]:
             album_type.append(release_group["type"].lower())
@@ -425,6 +425,6 @@ class Searcher:
     def _prompt_uuid(prompt: str) -> str:
         # Prompt for, and return a UUID.
         while True:
-            uuid = get_uuid(input(prompt))
+            uuid = get_uuid(input_(prompt))
             if uuid is not None:
                 return uuid

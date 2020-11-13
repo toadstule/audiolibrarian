@@ -16,6 +16,7 @@
 
 import re
 import string
+import sys
 from typing import List
 
 from audiolibrarian.picard_src import (
@@ -82,3 +83,10 @@ def get_uuid(text: str) -> (str, None):
     match = uuid_regex.search(text)
     if match is not None:
         return match.group()
+
+
+def input_(prompt: str) -> str:
+    # terminal bell
+    sys.stdout.write("\a")
+    sys.stdout.flush()
+    return input(prompt)

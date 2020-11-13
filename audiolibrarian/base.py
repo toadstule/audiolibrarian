@@ -37,6 +37,7 @@ from audiolibrarian import cmd, text
 from audiolibrarian.audiofile import open_
 from audiolibrarian.musicbrainz import Searcher
 from audiolibrarian.records import OneTrack
+from audiolibrarian.text import input_
 
 log = getLogger(__name__)
 
@@ -161,7 +162,7 @@ class Base:
         if not ok:
             print(color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
-        if not skip_confirm and input("Confirm [N,y]: ").lower() != "y":
+        if not skip_confirm and input_("Confirm [N,y]: ").lower() != "y":
             sys.exit(1)
 
     def _make_clean_workdirs(self) -> None:
