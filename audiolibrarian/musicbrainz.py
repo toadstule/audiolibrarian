@@ -28,8 +28,17 @@ from fuzzywuzzy import fuzz
 from requests.auth import HTTPDigestAuth
 
 from audiolibrarian import __version__
-from audiolibrarian.records import FrontCover, Medium, People, Performer, Release, Source, Track
-from audiolibrarian.text import fix, get_uuid
+from audiolibrarian.records import (
+    FrontCover,
+    ListF,
+    Medium,
+    People,
+    Performer,
+    Release,
+    Source,
+    Track,
+)
+from audiolibrarian.text import fix, get_uuid, input_, join
 
 log = getLogger(__name__)
 _user_agent_name = "audiolibrarian"
@@ -173,7 +182,7 @@ class MusicBrainzRelease:
             return [g["name"] for g in reversed(sorted(rg["genres"], key=lambda x: x["count"]))][0]
         if at["genres"]:
             return [g["name"] for g in reversed(sorted(at["genres"], key=lambda x: x["count"]))][0]
-        return input("Genre not found; enter the genre [Alternative]: ") or "Alternative"
+        return input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
     def _get_media(self) -> (Dict[int, Medium], None):
         # Returns a dict of Media objects, keyed on number or position (or None).
@@ -181,8 +190,8 @@ class MusicBrainzRelease:
         for medium in self._release.get("medium-list", []):
             medium_number = int(medium.get("number") or medium.get("position"))
             media[medium_number] = Medium(
-                formats=[medium["format"]],
-                titles=[medium["title"]] if medium.get("title") else None,
+                formats=ListF([medium["format"]]),
+                titles=[fix(medium["title"])] if medium.get("title") else None,
                 track_count=medium["track-count"],
                 tracks=self._get_tracks(medium_number=medium_number),
             )
@@ -190,33 +199,62 @@ class MusicBrainzRelease:
 
     def _get_people(self) -> (People, None):
         # Returns a People object (or None).
-        engineers, lyricists, mixers, performers, producers = [], [], [], [], []
+        arrangers, composers, conductors, engineers, lyricists = [], [], [], [], []
+        mixers, performers, producers, writers = [], [], [], []
         for r in self._release.get("artist-relation-list", []):
+            if log.getEffectiveLevel() == DEBUG:
+                pprint.pp("== ARTIST-RELATION-LIST ===================")
+                pprint.pp(r)
             name = fix(r["artist"]["name"])
             type_ = r["type"].lower()
-            if type_ == "engineer":
+            if type_ == "arranger":
+                arrangers.append(name)
+            elif type_ == "composer":
+                composers.append(name)
+            elif type_ == "conductor":
+                conductors.append(name)
+            elif type_ == "engineer":
                 engineers.append(name)
             elif type_ == "lyricist":
                 lyricists.append(name)
             elif type_ == "mix":
                 mixers.append(name)
             elif type_ == "instrument":
-                performers.append(
-                    Performer(name=name, instrument=fix(",".join(r["attribute-list"])))
-                )
+                performers.append(Performer(name=name, instrument=fix(join(r["attribute-list"]))))
             elif type_ == "vocal":
                 performers.append(Performer(name=name, instrument="lead vocals"))
+                if attrs := r.get("attribute-list"):
+                    if attrs := [x for x in attrs if x != "lead vocals"]:
+                        performers.append(Performer(name=name, instrument=fix(join(attrs))))
+                else:
+                    performers.append(Performer(name=name, instrument="vocals"))
             elif type_ == "producer":
                 producers.append(name)
+            elif type_ == "writer":
+                writers.append(name)
             else:
                 log.warning(f"Unknown artist-relation type: {type_}")
-        if engineers or lyricists or mixers or performers or producers:
+        if (
+            engineers
+            or arrangers
+            or composers
+            or conductors
+            or lyricists
+            or mixers
+            or performers
+            or producers
+            or writers
+        ):
             return People(
+                arrangers=arrangers or None,
+                composers=composers or None,
+                conductors=conductors or None,
                 engineers=engineers or None,
                 lyricists=lyricists or None,
                 mixers=mixers or None,
                 performers=performers or None,
                 producers=producers or None,
+                writers=writers or None,
             )
 
     def _get_release(self) -> Release:
@@ -234,7 +272,7 @@ class MusicBrainzRelease:
             artist_ids,
         ) = self._process_artist_credit(release["artist-credit"])
         artist_phrase = fix(release.get("artist-credit-phrase", ""))
-        year = release.get("release-event-list", [{}])[0].get("date") or input("Release year: ")
+        year = release.get("release-event-list", [{}])[0].get("date") or input_("Release year: ")
         album_type = [release_group["primary-type"].lower()]
         if release_group["type"].lower() != album_type[0]:
             album_type.append(release_group["type"].lower())
@@ -247,18 +285,18 @@ class MusicBrainzRelease:
         )
         return Release(
             album=fix(release["title"]),
-            album_artists=[artist_phrase or album_artist_names_str],
-            album_artists_sort=[album_artist_sort_names],
+            album_artists=ListF([artist_phrase or album_artist_names_str]),
+            album_artists_sort=ListF([album_artist_sort_names]),
             asins=[release["asin"]] if release.get("asin") else None,
             barcodes=[release["barcode"]] if release.get("barcode") else None,
             catalog_numbers=catalog_numbers or None,
             date=year,
             front_cover=self._get_front_cover(),
-            genres=[self._get_genre(release_group["id"], artist_ids[0]).title()],
+            genres=ListF([self._get_genre(release_group["id"], artist_ids.first).title()]),
             labels=labels,
             media=self._get_media(),
             medium_count=release.get("medium-count", 0),
-            musicbrainz_album_artist_ids=artist_ids,
+            musicbrainz_album_artist_ids=ListF(artist_ids),
             musicbrainz_album_id=self._release_id,
             musicbrainz_release_group_id=release_group["id"],
             original_date=release_group.get("first-release-date", ""),
@@ -297,12 +335,12 @@ class MusicBrainzRelease:
         return tracks or None
 
     @staticmethod
-    def _process_artist_credit(artist_credit: list) -> Tuple[str, List[str], str, List[str]]:
+    def _process_artist_credit(artist_credit: list) -> Tuple[str, ListF, str, ListF]:
         # Returns artist info from an artist-credit list.
         artist_names_str = ""
-        artist_names_list = []
+        artist_names_list = ListF()
         artist_sort_names = ""
-        artist_ids = []
+        artist_ids = ListF()
         for a in artist_credit:
             if isinstance(a, dict):
                 artist_names_str += fix(a.get("name") or a["artist"]["name"])
@@ -313,26 +351,6 @@ class MusicBrainzRelease:
                 artist_names_str += fix(a)
                 artist_sort_names += fix(a)
         return artist_names_str, artist_names_list, artist_sort_names, artist_ids
-
-    @staticmethod
-    def _process_relationships(relationships: list) -> List[Tuple[str, str]]:
-        # Returns relationship info from a relationships list.
-        result = []
-        for r in relationships:
-            value = r["artist"]["name"]
-            type_ = r["type"].lower()
-            if type_ == "instrument":
-                key = "PERFORMER"
-                value = f"{r['artist']['name']} ({','.join(r['attribute-list'])})"
-            elif type_ == "mix":
-                key = "MIXER"
-            elif type_ == "vocal":
-                key = "PERFORMER"
-                value = f"{r['artist']['name']} (lead vocals)"
-            else:
-                key = r["type"].upper()
-            result.append((key, fix(value)))
-        return result
 
 
 @dataclass
@@ -416,6 +434,6 @@ class Searcher:
     def _prompt_uuid(prompt: str) -> str:
         # Prompt for, and return a UUID.
         while True:
-            uuid = get_uuid(input(prompt))
+            uuid = get_uuid(input_(prompt))
             if uuid is not None:
                 return uuid

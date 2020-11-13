@@ -14,8 +14,6 @@
 # <https://www.gnu.org/licenses/>.
 #
 
-from typing import List
-
 import mutagen
 import mutagen.id3
 
@@ -25,6 +23,7 @@ from audiolibrarian.records import (
     FileInfo,
     FileType,
     FrontCover,
+    ListF,
     Medium,
     OneTrack,
     People,
@@ -48,19 +47,19 @@ class Mp3File(AudioFile):
     def read_tags(self) -> OneTrack:
         """Reads the tags and returns a OneTrack object."""
 
-        def get_l(key) -> (List, None):
+        def get_l(key) -> (ListF, None):
             if (value := mut.get(key)) is None:
                 return None
             if "/" in str(value):
-                return str(value).split("/")
-            return list(value)
+                return ListF(str(value).split("/"))
+            return ListF(value)
 
         mut = self._mut_file
         front_cover = None
         if apic := mut.get("APIC:front cover", mut.get("APIC:front", mut.get("APIC:"))):
             front_cover = FrontCover(data=apic.data, desc=apic.desc, mime=apic.mime)
         tipl = mut["TIPL"].people if mut.get("TIPL") else []
-        roles = ("engineer", "mix", "producer")
+        roles = ("arranger", "composer", "conductor", "engineer", "mix", "producer", "writer")
         medium_count = int(mut["TPOS"][0].split("/")[1]) if mut.get("TPOS") else None
         medium_number = int(mut["TPOS"][0].split("/")[0]) if mut.get("TPOS") else None
         track_count = int(mut["TRCK"][0].split("/")[1]) if mut.get("TRCK") else None
@@ -126,11 +125,15 @@ class Mp3File(AudioFile):
                 original_year=str((mut["TDOR"][0]).year) if mut.get("TDOR") else None,
                 people=(
                     People(
+                        arrangers=[name for role, name in tipl if role == "arranger"] or None,
+                        composers=[name for role, name in tipl if role == "composer"] or None,
+                        conductors=[name for role, name in tipl if role == "conductor"] or None,
                         engineers=[name for role, name in tipl if role == "engineer"] or None,
                         lyricists=get_l("TEXT"),
                         mixers=[name for role, name in tipl if role == "mix"] or None,
                         producers=[name for role, name in tipl if role == "producer"] or None,
                         performers=[Performer(n, r) for r, n in tipl if r not in roles] or None,
+                        writers=[name for role, name in tipl if role == "writer"] or None,
                     )
                     or None
                 ),
@@ -153,14 +156,20 @@ class Mp3File(AudioFile):
 
         release, medium_number, medium, track_number, track = self._get_tag_sources()
         tipl_people = (
-            [["engineer", x] for x in release.people and release.people.engineers or []]
+            [["arranger", x] for x in release.people and release.people.arrangers or []]
+            + [["composer", x] for x in release.people and release.people.composers or []]
+            + [["conductor", x] for x in release.people and release.people.conductors or []]
+            + [["engineer", x] for x in release.people and release.people.engineers or []]
             + [["mix", x] for x in release.people and release.people.mixers or []]
             + [["producer", x] for x in release.people and release.people.producers or []]
             + [[p.instrument, p.name] for p in release.people and release.people.performers or []]
+            + [["writer", x] for x in release.people and release.people.writers or []]
         )
         tags = []
         if t := release.album:
             tags.append(mutagen.id3.TALB(encoding=1, text=t))
+        if t := release.people and release.people.composers:
+            tags.append(mutagen.id3.TCOM(encoding=1, text=slash(t)))
         if t := release.genres:
             tags.append(mutagen.id3.TCON(encoding=3, text=slash(t)))
         if t := release.original_year:
@@ -179,6 +188,8 @@ class Mp3File(AudioFile):
             tags.append(mutagen.id3.TPE1(encoding=1, text=t))
         if t := release.album_artists:
             tags.append(mutagen.id3.TPE2(encoding=1, text=slash(t)))
+        if t := release.people and release.people.conductors:
+            tags.append(mutagen.id3.TPE3(encoding=1, text=slash(t)))
         if (n := medium_number) and (t := release.medium_count):
             tags.append(mutagen.id3.TPOS(encoding=0, text=f"{n}/{t}"))
         if t := release.labels:

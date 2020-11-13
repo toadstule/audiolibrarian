@@ -26,6 +26,7 @@ import mutagen.id3
 import mutagen.mp4
 
 from audiolibrarian.musicbrainz import MusicBrainzSession
+from audiolibrarian.text import input_
 
 log = getLogger(__name__)
 
@@ -79,7 +80,8 @@ class GenreManager:
         for artist_id, artist in sorted(
             self._community_genres_by_artist.items(), key=lambda x: x[1]["name"]
         ):
-            i = input(f"Continue with {artist['name']} (YES, no, skip)[Y, n, s]: ").lower().strip()
+            artist_name = artist["name"]
+            i = input_(f"Continue with {artist_name} (YES, no, skip)[Y, n, s]: ").lower().strip()
             if i == "n":
                 break
             if i != "s":

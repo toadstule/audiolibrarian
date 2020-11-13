@@ -27,6 +27,7 @@ import discid
 
 from audiolibrarian import cmd
 from audiolibrarian.audiofile import open_
+from audiolibrarian.records import FrontCover
 from audiolibrarian.text import alpha_numeric_key
 
 log = getLogger(__name__)
@@ -43,6 +44,9 @@ class AudioSource(abc.ABC):
     def copy_wavs(self, dest_dir) -> None:
         for fn in self.get_wav_filenames():
             shutil.copy2(fn, dest_dir / fn.name)
+
+    def get_front_cover(self) -> (FrontCover, None):
+        pass
 
     @abc.abstractmethod
     def get_search_data(self) -> Dict[str, str]:
@@ -101,17 +105,24 @@ class FilesAudioSource(AudioSource):
                     break
         self._file_type = self._filenames[0].suffix.lstrip(".")
 
+    def get_front_cover(self) -> (FrontCover, None):
+        for filename in self._filenames:
+            one_track = open_(filename).one_track
+            release = one_track.release
+            if release.front_cover:
+                return release.front_cover
+
     def get_search_data(self) -> Dict[str, str]:
         for filename in self._filenames:
             one_track = open_(filename).one_track
             release = one_track.release
             track = one_track.track
 
-            artist = release.first("artists") or track.artist or track.first("artists") or ""
+            artist = track.artist or track.artists.first or ""
             album = release.album or ""
             mb_artist_id = (
-                release.first("musicbrainz_album_artist_ids")
-                or track.first("musicbrainz_artist_ids")
+                release.musicbrainz_album_artist_ids.first
+                or track.musicbrainz_artist_ids.first
                 or ""
             )
             mb_release_id = release.musicbrainz_album_id or ""

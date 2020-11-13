@@ -37,6 +37,7 @@ from audiolibrarian import cmd, text
 from audiolibrarian.audiofile import open_
 from audiolibrarian.musicbrainz import Searcher
 from audiolibrarian.records import OneTrack
+from audiolibrarian.text import input_
 
 log = getLogger(__name__)
 
@@ -153,12 +154,15 @@ class Base:
         print("Finding MusicBrainz release information...")
         self._release = searcher.find_music_brains_release()
         self._medium = self._release.media[int(self._disc_number)]
+        if fc := not self._release.front_cover and self._audio_source.get_front_cover():
+            log.info("Using front-cover image from source file")
+            self._release.front_cover = fc
         summary, ok = self._summary()
         print(summary)
         if not ok:
             print(color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
-        if not skip_confirm and input("Confirm [N,y]: ").lower() != "y":
+        if not skip_confirm and input_("Confirm [N,y]: ").lower() != "y":
             sys.exit(1)
 
     def _make_clean_workdirs(self) -> None:
@@ -212,7 +216,7 @@ class Base:
 
     def _move_files(self, move_source: bool = True) -> None:
         # Moves converted/tagged files from the work directory into the library directory.
-        artist_dir = text.get_filename(self._release.first("album_artists"))
+        artist_dir = text.get_filename(self._release.album_artists.first)
         album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
         flac_dir = self._library_dir / "flac" / artist_dir / album_dir
         m4a_dir = self._library_dir / "m4a" / artist_dir / album_dir
@@ -331,17 +335,17 @@ class Base:
         file_info = self._source_example.track.file_info
         manifest = {
             "album": release.album,
-            "artist": release.first("album_artists"),
-            "artist_sort_name": release.first("album_artists_sort"),
-            "media": release.media[self._disc_number].first("formats"),
-            "genre": release.first("genres"),
+            "artist": release.album_artists.first,
+            "artist_sort_name": release.album_artists_sort.first,
+            "media": release.media[self._disc_number].formats.first,
+            "genre": release.genres.first,
             "disc_number": self._disc_number,
             "disc_total": self._disc_count,
             "original_year": release.original_year,
             "date": release.date,
             "musicbrainz_info": {
                 "albumid": release.musicbrainz_album_id,
-                "albumartistid": release.first("musicbrainz_album_artist_ids"),
+                "albumartistid": release.musicbrainz_album_artist_ids.first,
                 "releasegroupid": release.musicbrainz_release_group_id,
             },
             "source_info": {
@@ -360,7 +364,7 @@ class Base:
                 }
         else:
             source_dir = self._library_dir / "source"
-            artist_dir = text.get_filename(self._release.first("album_artists"))
+            artist_dir = text.get_filename(self._release.album_artists.first)
             album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
             manifest_filename = source_dir / artist_dir / album_dir / self._manifest_file
         with open(manifest_filename, "w") as manifest_file:

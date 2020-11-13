@@ -24,6 +24,7 @@ from unittest import TestCase
 from audiolibrarian.audiofile import open_
 from audiolibrarian.records import (
     FrontCover,
+    ListF,
     Medium,
     OneTrack,
     People,
@@ -96,27 +97,27 @@ class TestAudioFile(TestCase):
         info = OneTrack(
             release=Release(
                 album="Album",
-                album_artists=["Album Artist One", "Album Artist Two"],
-                album_artists_sort=["One, Album Artist", "Two, Album Artist"],
+                album_artists=ListF(["Album Artist One", "Album Artist Two"]),
+                album_artists_sort=ListF(["One, Album Artist", "Two, Album Artist"]),
                 asins=["ASIN 1", "ASIN 2"],
                 barcodes=["Barcode 1", "Barcode 2"],
                 catalog_numbers=["Catalog Number 1", "Catalog Number 2"],
                 date="2015-09-24",
                 front_cover=FrontCover(data=b"", desc="front", mime="image/jpg"),
-                genres=["Genre 1", "Genre 2"],
+                genres=ListF(["Genre 1", "Genre 2"]),
                 labels=["Label 1", "Label 2"],
                 media={
                     7: Medium(
-                        formats=["Media 1 Format"],
+                        formats=ListF(["Media 1 Format"]),
                         titles=["Disc title 1", "Disc title 2"],
                         track_count=10,
                         tracks={
                             3: Track(
                                 artist="Track Artist",
-                                artists=["Track Artist One", "Track Artist Two"],
+                                artists=ListF(["Track Artist One", "Track Artist Two"]),
                                 artists_sort=["One, Track Artist", "Two, Track Artist"],
                                 isrcs=["ISRCS 1", "ISRCS 2"],
-                                musicbrainz_artist_ids=["MB-Artist-ID-1", "MB-Artist-ID-2"],
+                                musicbrainz_artist_ids=ListF(["MB-Artist-ID-1", "MB-Artist-ID-2"]),
                                 musicbrainz_release_track_id="MB-Release-Track-ID",
                                 musicbrainz_track_id="MB-Track_ID",
                                 title="Track Title",

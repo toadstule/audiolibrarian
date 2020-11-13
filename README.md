@@ -14,5 +14,4 @@ audiolibrarian --help
 
 ## Todo ##
 
-* Reconvert from source
 * Create directories using artist sort order?

@@ -26,6 +26,7 @@ from audiolibrarian.records import (
     FileInfo,
     FileType,
     FrontCover,
+    ListF,
     Medium,
     OneTrack,
     People,
@@ -43,6 +44,11 @@ class FlacFile(AudioFile):
 
     def read_tags(self) -> OneTrack:
         """Reads the tags and returns a OneTrack object."""
+
+        def listf(lst: (List, None)) -> (ListF, None):
+            if lst is not None:
+                return ListF(lst)
+
         mut = self._mut_file
         front_cover = None
         if self._mut_file.pictures:
@@ -55,24 +61,24 @@ class FlacFile(AudioFile):
         release = (
             Release(
                 album=mut.get("album", [None])[0],
-                album_artists=mut.get("albumartist"),
-                album_artists_sort=mut.get("albumartistsort"),
+                album_artists=listf(mut.get("albumartist")),
+                album_artists_sort=listf(mut.get("albumartistsort")),
                 asins=mut.get("asin"),
                 barcodes=mut.get("barcode"),
                 catalog_numbers=mut.get("catalognumber"),
                 date=mut.get("date", [None])[0],
                 front_cover=front_cover,
-                genres=mut.get("genre"),
+                genres=listf(mut.get("genre")),
                 labels=mut.get("label"),
                 media={
                     medium_number: Medium(
-                        formats=mut.get("media"),
+                        formats=listf(mut.get("media")),
                         titles=mut.get("discsubtitle"),
                         track_count=track_count,
                         tracks={
                             track_number: Track(
                                 artist=mut.get("artist", [None])[0],
-                                artists=mut.get("artists"),
+                                artists=listf(mut.get("artists")),
                                 artists_sort=mut.get("artistsort"),
                                 file_info=FileInfo(
                                     bitrate=mut.info.bitrate // 1000,
@@ -81,7 +87,7 @@ class FlacFile(AudioFile):
                                     type=FileType.FLAC,
                                 ),
                                 isrcs=mut.get("isrc"),
-                                musicbrainz_artist_ids=mut.get("musicbrainz_artistid"),
+                                musicbrainz_artist_ids=listf(mut.get("musicbrainz_artistid")),
                                 musicbrainz_release_track_id=mut.get(
                                     "musicbrainz_releasetrackid", [None]
                                 )[0],
@@ -97,19 +103,23 @@ class FlacFile(AudioFile):
                 if medium_number
                 else None,
                 medium_count=medium_count,
-                musicbrainz_album_artist_ids=mut.get("musicbrainz_albumartistid"),
+                musicbrainz_album_artist_ids=listf(mut.get("musicbrainz_albumartistid")),
                 musicbrainz_album_id=mut.get("musicbrainz_albumid", [None])[0],
                 musicbrainz_release_group_id=mut.get("musicbrainz_releasegroupid", [None])[0],
                 original_date=mut.get("originaldate", [None])[0],
                 original_year=mut["originalyear"][0] if mut.get("originalyear") else None,
                 people=(
                     People(
+                        arrangers=mut.get("arranger"),
+                        composers=mut.get("composer"),
+                        conductors=mut.get("conductor"),
                         engineers=mut.get("engineer"),
                         lyricists=mut.get("lyricist"),
                         mixers=mut.get("mixer"),
                         performers=mut.get("performer")
                         and self._parse_performer_tag(mut["performer"]),
                         producers=mut.get("producer"),
+                        writers=mut.get("writer"),
                     )
                     or None
                 ),
@@ -131,12 +141,15 @@ class FlacFile(AudioFile):
             "album": [release.album],
             "albumartist": release.album_artists,
             "albumartistsort": release.album_artists_sort,
+            "arranger": release.people and release.people.arrangers,
             "artist": [track.artist],
             "artists": track.artists,
             "artistsort": track.artists_sort,
             "asin": release.asins,
             "barcode": release.barcodes,
             "catalognumber": release.catalog_numbers,
+            "composer": release.people and release.people.composers,
+            "conductor": release.people and release.people.conductors,
             "date": [release.date],
             "discnumber": [str(medium_number)],
             "discsubtitle": medium.titles,
@@ -167,6 +180,7 @@ class FlacFile(AudioFile):
             "totaltracks": [str(medium.track_count)],
             "tracknumber": [str(track_number)],
             "tracktotal": [str(medium.track_count)],
+            "writer": release.people and release.people.writers,
         }
         tags = Tags(tags)
         self._mut_file.delete()  # clear old tags

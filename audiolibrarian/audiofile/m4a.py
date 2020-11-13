@@ -26,6 +26,7 @@ from audiolibrarian.records import (
     FileInfo,
     FileType,
     FrontCover,
+    ListF,
     Medium,
     OneTrack,
     People,
@@ -52,11 +53,17 @@ class M4aFile(AudioFile):
                 return
             return mut.get(key)[0].decode("utf8")
 
-        def get_strl(key) -> (List[str], None):
+        def get_strl(key) -> (ListF, None):
             # Return all elements for a given key, utf8-decoded.
             if mut.get(key) is None:
                 return None
-            return [x.decode("utf8") for x in mut.get(key)]
+            return ListF([x.decode("utf8") for x in mut.get(key)])
+
+        def listf(key) -> (ListF, None):
+            # Return a ListF object for a given key.
+            if mut.get(key) is None:
+                return None
+            return ListF(mut.get(key))
 
         mut = self._mut_file
 
@@ -72,14 +79,14 @@ class M4aFile(AudioFile):
         release = (
             Release(
                 album=mut.get("\xa9alb", [None])[0],
-                album_artists=mut.get("aART"),
-                album_artists_sort=mut.get("soaa"),
+                album_artists=listf("aART"),
+                album_artists_sort=listf("soaa"),
                 asins=get_strl(f"{ITUNES}:ASIN"),
                 barcodes=get_strl(f"{ITUNES}:BARCODE"),
                 catalog_numbers=get_strl(f"{ITUNES}:CATALOGNUMBER"),
                 date=mut.get("\xa9day", [None])[0],
                 front_cover=front_cover,
-                genres=mut.get("\xa9gen"),
+                genres=listf("\xa9gen"),
                 labels=get_strl(f"{ITUNES}:LABEL"),
                 media={
                     medium_number: Medium(
@@ -121,11 +128,15 @@ class M4aFile(AudioFile):
                 original_year=get_str(f"{ITUNES}:originalyear") or None,
                 people=(
                     People(
+                        arrangers=get_strl(f"{ITUNES}:ARRANGER"),
+                        composers=get_strl(f"{ITUNES}:COMPOSER"),
+                        conductors=get_strl(f"{ITUNES}:CONDUCTOR"),
                         engineers=get_strl(f"{ITUNES}:ENGINEER"),
                         lyricists=get_strl(f"{ITUNES}:LYRICIST"),
                         mixers=get_strl(f"{ITUNES}:MIXER"),
                         producers=get_strl(f"{ITUNES}:PRODUCER"),
                         performers=None,
+                        writers=get_strl(f"{ITUNES}:WRITER"),
                     )
                     or None
                 ),
@@ -148,10 +159,10 @@ class M4aFile(AudioFile):
                 return
             return MP4FreeForm(bytes(str(s), "utf8"))
 
-        def ffl(list_: (List[str], None)) -> (List[bytes], None):
+        def ffl(list_: (List[str], None)) -> (ListF, None):
             if not list_:
                 return
-            return [ff(x) for x in list_]
+            return ListF([ff(x) for x in list_])
 
         # Note: We don't write "performers" to m4a files.
         release, medium_number, medium, track_number, track = self._get_tag_sources()
@@ -160,10 +171,13 @@ class M4aFile(AudioFile):
             image_format = AtomDataType.PNG if c.mime == "image/png" else AtomDataType.JPEG
             front_cover = [MP4Cover(c.data, imageformat=image_format)]
         tags = {
+            f"{ITUNES}:ARRANGER": ffl(release.people and release.people.arrangers),
             f"{ITUNES}:ARTISTS": ffl(track.artists),
             f"{ITUNES}:ASIN": ffl(release.asins),
             f"{ITUNES}:BARCODE": ffl(release.barcodes),
             f"{ITUNES}:CATALOGNUMBER": ffl(release.catalog_numbers),
+            f"{ITUNES}:COMPOSER": ffl(release.people and release.people.composers),
+            f"{ITUNES}:CONDUCTOR": ffl(release.people and release.people.conductors),
             f"{ITUNES}:DISCSUBTITLE": ffl(medium.titles),
             f"{ITUNES}:ENGINEER": ffl(release.people and release.people.engineers),
             f"{ITUNES}:ISRC": ffl(track.isrcs),
@@ -184,6 +198,7 @@ class M4aFile(AudioFile):
             f"{ITUNES}:originalyear": [ff(release.original_year)],
             f"{ITUNES}:PRODUCER": ffl(release.people and release.people.producers),
             f"{ITUNES}:SCRIPT": [ff(release.script)],
+            f"{ITUNES}:WRITER": ffl(release.people and release.people.writers),
             "\xa9alb": [release.album],
             "\xa9ART": [track.artist],
             "\xa9day": [release.date],
