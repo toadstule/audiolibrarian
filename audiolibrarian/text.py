@@ -74,7 +74,7 @@ def get_filename(title: str) -> str:
             result.extend("and")
         elif ch not in no_underscore_replace:
             result.append("_")
-    return "".join(result).rstrip("_")
+    return "".join(result).rstrip("_.")
 
 
 def get_uuid(text: str) -> (str, None):

@@ -109,9 +109,12 @@ class Track(Record):
     title: str = None
     track_number: int = None
 
-    def get_filename(self) -> str:
-        """Returns a sane filename based on track number and title."""
-        return str(self.track_number).zfill(2) + "__" + text.get_filename(self.title)
+    def get_filename(self, suffix: str = "") -> str:
+        """Returns a sane filename based on track number and title.
+
+        If suffix is included, it will be appended to the filename.
+        """
+        return str(self.track_number).zfill(2) + "__" + text.get_filename(self.title) + suffix
 
 
 # Combined Record Types (fields + other record types)

@@ -14,13 +14,13 @@
 # <https://www.gnu.org/licenses/>.
 #
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 import subprocess
 
-from audiolibrarian.commands import Convert, Genre, Manifest, Reconvert, Rip, Version
+from audiolibrarian.commands import Convert, Genre, Manifest, Reconvert, Rename, Rip, Version
 
-commands = (Convert, Genre, Manifest, Reconvert, Rip, Version)
+commands = (Convert, Genre, Manifest, Reconvert, Rename, Rip, Version)
 
 REQUIRED_EXE = (
     "cd-paranoia",
