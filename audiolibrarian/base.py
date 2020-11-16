@@ -34,7 +34,8 @@ from colors import color
 from filelock import FileLock
 
 from audiolibrarian import cmd, text
-from audiolibrarian.audiofile import open_
+from audiolibrarian.audiofile import extensions, open_
+from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.musicbrainz import Searcher
 from audiolibrarian.records import OneTrack
 from audiolibrarian.text import input_
@@ -120,6 +121,15 @@ class Base:
             self._make_m4a()
             self._make_mp3()
             self._move_files(move_source=make_source)
+
+    @staticmethod
+    def _find_audio_files(directories: List[str]) -> List[AudioFile]:
+        # Yields audiofile objects found in the given directories.
+        for directory in directories:
+            path = Path(directory)
+            for ext in extensions:
+                for filepath in path.glob(f"**/*{ext}"):
+                    yield open_(filepath)
 
     def _find_manifests(self, directories: List[str]) -> List[Path]:
         # Returns a sorted, unique list of manifest files anywhere in the given directories.
@@ -256,7 +266,7 @@ class Base:
     def _rename_wav(self) -> None:
         # Renames the wav files to a filename-sane representation of the track title.
         for track_number, old_path in enumerate(self._wav_filenames, 1):
-            title_filename = self._medium.tracks[track_number].get_filename() + ".wav"
+            title_filename = self._medium.tracks[track_number].get_filename(".wav")
             new_path = old_path.parent / title_filename
             if new_path.resolve() != old_path.resolve():
                 log.info(f"RENAMING: {old_path.name} --> {new_path.name}")

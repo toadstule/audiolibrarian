@@ -149,11 +149,42 @@ class Reconvert(_Command, Base):
 
     @staticmethod
     def validate_args(args: Namespace) -> bool:
-        for directory in args.directories:
-            if not Path(directory).is_dir():
-                print(f"Directory not found: {directory}")
-                return False
-        return True
+        return _validate_directories_arg(args)
+
+
+class Rename(_Command, Base):
+    """AudioLibrarian tool for renaming audio files based on their tags.
+
+    This class performs all of its tasks on instantiation and provides no public members or
+    methods.
+    """
+
+    command = "rename"
+    help = "rename files based on tags or MusicBrainz data"
+    parser = ArgumentParser()
+    parser.add_argument("directories", nargs="+", help="audio file directories")
+
+    def __init__(self, args: Namespace) -> None:
+        super().__init__(args)
+        self._source_is_cd = False
+        audio_files = self._find_audio_files(args.directories)
+        for audio_file in audio_files:
+            filepath = audio_file.filepath
+            if audio_file.one_track.track is None:
+                log.warning(f"{filepath} has no title")
+                continue
+            old_name = filepath.name
+            new_name = audio_file.one_track.track.get_filename(filepath.suffix)
+            if old_name != new_name:
+                print(f"Renaming {filepath}:")
+                print(f"  {old_name} -> {new_name}")
+                audio_file.filepath.rename(filepath.parent / new_name)
+            else:
+                log.debug(f"Not renaming {filepath}")
+
+    @staticmethod
+    def validate_args(args: Namespace) -> bool:
+        return _validate_directories_arg(args)
 
 
 class Rip(_Command, Base):
@@ -194,6 +225,14 @@ class Version(_Command):
     def __init__(self, args: Namespace) -> None:
         _ = args
         print(f"audiolibrarian {__version__}")
+
+
+def _validate_directories_arg(args: Namespace) -> bool:
+    for directory in args.directories:
+        if not Path(directory).is_dir():
+            print(f"Directory not found: {directory}")
+            return False
+    return True
 
 
 def _validate_disc_arg(args: Namespace) -> bool:

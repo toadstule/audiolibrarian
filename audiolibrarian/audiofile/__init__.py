@@ -14,4 +14,6 @@
 # <https://www.gnu.org/licenses/>.
 #
 
-from audiolibrarian.audiofile.base import open_
+from audiolibrarian.audiofile.base import _extensions, open_
+
+extensions = tuple(_extensions())

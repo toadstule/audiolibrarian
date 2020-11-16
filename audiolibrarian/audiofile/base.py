@@ -15,6 +15,7 @@
 #
 
 from pathlib import Path
+from typing import List
 
 from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.audiofile.flac import FlacFile
@@ -26,6 +27,14 @@ _audioFiles = [
     M4aFile,
     Mp3File,
 ]
+
+
+def _extensions() -> List[str]:
+    # Returns a sorted list of all filename extensions that can be opened by open_().
+    ext = []
+    for audioFile in _audioFiles:
+        ext.extend(audioFile.extensions)
+    return sorted(list(set(ext)))
 
 
 def open_(filename: (str, Path)) -> AudioFile:

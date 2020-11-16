@@ -33,6 +33,9 @@ class AudioFile(abc.ABC):
         self._mut_file = mutagen.File(self.filepath.absolute())
         self._one_track = self.read_tags()
 
+    def __repr__(self) -> str:
+        return f"AudioFile: {self.filepath}"
+
     @property
     def filepath(self) -> Path:
         return self._filepath
