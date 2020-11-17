@@ -77,6 +77,23 @@ def get_filename(title: str) -> str:
     return "".join(result).rstrip("_.")
 
 
+def get_numbers(text: str) -> List[int]:
+    """Get a list of all the numbers in the given string."""
+    return [int(x) for x in digit_regex.findall(text)]
+
+
+def get_track_number(filename: str) -> int:
+    """Get a track number from a filename or from the user."""
+
+    if n := get_numbers(filename):
+        return n[0]
+    while True:
+        try:
+            return int(input_(f"Enter the track number for: {filename}"))
+        except ValueError:
+            pass
+
+
 def get_uuid(text: str) -> (str, None):
     """Return the first UUID found within a given string."""
     match = uuid_regex.search(text)

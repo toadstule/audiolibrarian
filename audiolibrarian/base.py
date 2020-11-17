@@ -265,7 +265,8 @@ class Base:
 
     def _rename_wav(self) -> None:
         # Renames the wav files to a filename-sane representation of the track title.
-        for track_number, old_path in enumerate(self._wav_filenames, 1):
+        for old_path in self._wav_filenames:
+            track_number = text.get_track_number(str(old_path.name))
             title_filename = self._medium.tracks[track_number].get_filename(".wav")
             new_path = old_path.parent / title_filename
             if new_path.resolve() != old_path.resolve():
@@ -278,15 +279,15 @@ class Base:
         # The summary is a nicely formatted table showing the album, artist and track info.
         # The "ok" flag indicating issues will be true if:
         #   - the file count does not match the song count from the MusicBrainz database
+        # (https://jrgraphix.net/r/Unicode/2500-257F)
         lines = []
         ok = True
-        source_filenames = self._audio_source.get_source_filenames()
-        col1 = [f.stem for f in source_filenames]
+        no_match = "(no match)"
+        col1 = [f.stem if f else no_match for f in self._audio_source.source_list]
         col2 = [t.get_filename() for _, t in sorted(self._medium.tracks.items())]
         col3 = [f"{str(n).zfill(2)}: {t.title}" for n, t in sorted(self._medium.tracks.items())]
         min_total_w = 74  # make sure we've got enough width for MB Release URL
         w = 40
-        no_match = "(no match)"
         col1_w = min(w, max([len(x) for x in col1] + [len(no_match)]))
         col2_w = min(w, max([len(x) for x in col2] + [len(no_match)]))
         col3_w = min(w, max([len(x) for x in col3] + [len(no_match)]))

@@ -25,7 +25,7 @@ from typing import Dict, List
 
 import discid
 
-from audiolibrarian import cmd
+from audiolibrarian import cmd, text
 from audiolibrarian.audiofile import open_
 from audiolibrarian.records import FrontCover
 from audiolibrarian.text import alpha_numeric_key
@@ -36,10 +36,28 @@ log = getLogger(__name__)
 class AudioSource(abc.ABC):
     def __init__(self):
         self._temp_dir = Path(tempfile.mkdtemp())
+        self._source_list = None
 
     def __del__(self):
         if self._temp_dir.is_dir():
             shutil.rmtree(self._temp_dir)
+
+    @property
+    def source_list(self) -> List[Path]:
+        """Return a list with source file paths and blanks.
+
+        The list will be ordered by track number, with None in spaces where no
+        filename is present for that track number.
+        """
+        if self._source_list:
+            return self._source_list
+        source_filenames = self.get_source_filenames()
+        length = max([text.get_track_number(str(f.name)) for f in source_filenames])
+        result: List[(Path, None)] = [None] * length
+        for fn in source_filenames:
+            idx = text.get_track_number(str(fn.name))
+            result[idx - 1] = fn
+        return result
 
     def copy_wavs(self, dest_dir) -> None:
         for fn in self.get_wav_filenames():
@@ -54,15 +72,15 @@ class AudioSource(abc.ABC):
 
     @abc.abstractmethod
     def get_source_filenames(self) -> List[Path]:
-        pass
+        """Returns a list of the original source file paths."""
 
-    @abc.abstractmethod
     def get_wav_filenames(self) -> List[Path]:
-        pass
+        """Returns a list of the prepared wav file paths."""
+        return sorted(self._temp_dir.glob("*.wav"), key=alpha_numeric_key)
 
     @abc.abstractmethod
     def prepare_source(self) -> None:
-        pass
+        """Convert the source to wav files."""
 
 
 class CDAudioSource(AudioSource):
@@ -74,15 +92,18 @@ class CDAudioSource(AudioSource):
         return {"disc_id": self._cd.id, "disc_mcn": self._cd.mcn}
 
     def get_source_filenames(self) -> List[Path]:
+        """Returns a list of the original source file paths.
+
+        Since we're working with a CD, these files may not yet exists if they have not been
+        read from the disc.
+        """
         return [
             self._temp_dir / f"track{str(n + 1).zfill(2)}.cdda.wav"
             for n in range(self._cd.last_track_num)
         ]
 
-    def get_wav_filenames(self) -> List[Path]:
-        return self.get_source_filenames()
-
     def prepare_source(self) -> None:
+        """Pull audio from the CD to wav files."""
         cwd = Path.cwd()
         os.chdir(self._temp_dir)
         try:
@@ -137,40 +158,33 @@ class FilesAudioSource(AudioSource):
         return {}
 
     def get_source_filenames(self) -> List[Path]:
+        """Returns a list of the original source file paths."""
         return self._filenames
 
-    def get_wav_filenames(self) -> List[Path]:
-        return sorted(self._temp_dir.glob("*.wav"), key=alpha_numeric_key)
-
     def prepare_source(self) -> None:
+        """Convert the source files to wav files."""
         tmp_dir = self._temp_dir / "__tmp__"
         tmp_dir.mkdir(parents=True)
-        if self._file_type == "flac":
-            commands = [
-                ("flac", "--silent", "--decode", f"--output-prefix={tmp_dir}/", f)
-                for f in self.get_source_filenames()
-            ]
-        elif self._file_type == "m4a":
-            commands = [
-                ("faad", "-q", "-o", f"{tmp_dir}/{f.name.replace('.m4a', '.wav')}", f)
-                for f in self.get_source_filenames()
-            ]
-        elif self._file_type == "mp3":
-            commands = [
-                (
-                    "mpg123",
-                    "-q",
-                    "-w",
-                    f"{tmp_dir}/{f.name.replace('.mp3', '.wav')}",
-                    f,
-                )
-                for f in self.get_source_filenames()
-            ]
-        else:
-            raise Exception(f"Unsupported source file type: {self._file_type}")
+        file_type = self._file_type
+        commands = []
+        for track_number, file_path in enumerate(self.source_list, 1):
+            if file_path:
+                in_ = str(file_path)
+                out_path = tmp_dir / f"{str(track_number).zfill(2)}__.wav"
+                out = str(out_path)
+                if file_type == "flac":
+                    command = ("flac", "--silent", "--decode", f"--output-name={out}", in_)
+                elif file_type == "m4a":
+                    command = ("faad", "-q", "-o", out, in_)
+                elif file_type == "mp3":
+                    command = ("mpg123", "-q", "-w", out, in_)
+                else:
+                    raise Exception(f"Unsupported source file type: {self._file_type}")
+                commands.append(command)
+                log.info(f"DECODING: {file_path.name} -> {out_path.name}")
         cmd.parallel(f"Making {len(commands)} wav files...", commands)
         cmd.touch(tmp_dir.glob("*.wav"))
-        for f in tmp_dir.glob("*.wav"):
+        for f in sorted(tmp_dir.glob("*.wav"), key=alpha_numeric_key):
             r = subprocess.run(("sndfile-convert", "-pcm16", f, str(f).replace("/__tmp__/", "/")))
             r.check_returncode()
         shutil.rmtree(tmp_dir)
