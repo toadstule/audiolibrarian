@@ -55,8 +55,8 @@ class AudioSource(abc.ABC):
         length = max([text.get_track_number(str(f.name)) for f in source_filenames])
         result: List[(Path, None)] = [None] * length
         for fn in source_filenames:
-            idx = text.get_track_number(str(fn.name))
-            result[idx - 1] = fn
+            idx = text.get_track_number(str(fn.name)) - 1
+            result[idx] = fn
         return result
 
     def copy_wavs(self, dest_dir) -> None:
@@ -163,24 +163,24 @@ class FilesAudioSource(AudioSource):
 
     def prepare_source(self) -> None:
         """Convert the source files to wav files."""
+        decoders = {
+            "flac": lambda i, o: ("flac", "--silent", "--decode", f"--output-name={o}", i),
+            "m4a": lambda i, o: ("faad", "-q", "-o", o, i),
+            "mp3": lambda i, o: ("mpg123", "-q", "-w", o, i),
+        }
+        try:
+            decode = decoders[self._file_type]
+        except KeyError:
+            raise Exception(f"Unsupported source file type: {self._file_type}")
         tmp_dir = self._temp_dir / "__tmp__"
         tmp_dir.mkdir(parents=True)
-        file_type = self._file_type
         commands = []
         for track_number, file_path in enumerate(self.source_list, 1):
             if file_path:
                 in_ = str(file_path)
                 out_path = tmp_dir / f"{str(track_number).zfill(2)}__.wav"
                 out = str(out_path)
-                if file_type == "flac":
-                    command = ("flac", "--silent", "--decode", f"--output-name={out}", in_)
-                elif file_type == "m4a":
-                    command = ("faad", "-q", "-o", out, in_)
-                elif file_type == "mp3":
-                    command = ("mpg123", "-q", "-w", out, in_)
-                else:
-                    raise Exception(f"Unsupported source file type: {self._file_type}")
-                commands.append(command)
+                commands.append(decode(in_, out))
                 log.info(f"DECODING: {file_path.name} -> {out_path.name}")
         cmd.parallel(f"Making {len(commands)} wav files...", commands)
         cmd.touch(tmp_dir.glob("*.wav"))
