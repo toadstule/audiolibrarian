@@ -71,6 +71,14 @@ class TestText(TestCase):
         self.assertEqual("your_mom_and_me", text.get_filename("your mom & me"))
         self.assertEqual("e", text.get_filename("é"), "get_filename should drop accents")
 
+    def test__get_numbers(self):
+        self.assertEqual([], text.get_numbers(""))
+        self.assertEqual([1], text.get_numbers("1"))
+        self.assertEqual([1], text.get_numbers("01"))
+        self.assertEqual([2], text.get_numbers("your_mom_goes_2_college"))
+        self.assertEqual([1, 3], text.get_numbers("01__two3_four"))
+        self.assertEqual([1, 2, 3, 4], text.get_numbers("1a2b3c4d"))
+
     def test__get_uuid(self):
         input_ = "your mom"
         expected = None
