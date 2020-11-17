@@ -303,8 +303,10 @@ class Base:
         lines.append(f"\u2554{c1_line}\u2550{c2_line}\u2550{c3_line}\u2557")
         for x in (alb, art, mbr, med):
             lines.append(f"\u2551 {x} {' ' * (tab_w - len(x))}\u2551")
-        lines.append(f"\u2560{c1_line}\u2564{c2_line}\u2564{c3_line}\u2563")
         fmt = f"\u2551 {{c1: <{col1_w}}} \u2502 {{c2: <{col2_w}}} \u2502 {{c3: <{col3_w}}} \u2551"
+        lines.append(f"\u2560{c1_line}\u2564{c2_line}\u2564{c3_line}\u2563")
+        lines.append(fmt.format(c1="Source", c2="Destination", c3="Title"))
+        lines.append(f"\u2560{c1_line}\u256A{c2_line}\u256A{c3_line}\u2563")
         rows = max(len(col1), len(col2), len(col3))
         for i in range(rows):
             c1 = (
