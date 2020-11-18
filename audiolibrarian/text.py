@@ -74,7 +74,11 @@ def get_filename(title: str) -> str:
             result.extend("and")
         elif ch not in no_underscore_replace:
             result.append("_")
-    return "".join(result).rstrip("_.")
+    result = "".join(result).rstrip("_")
+    # strip tailing dots, unless we end with an upper-case letter, then put a dot back
+    if result.endswith(".") and result.rstrip(".")[-1].isupper():
+        return result.rstrip(".") + "."
+    return result.rstrip(".")
 
 
 def get_numbers(text: str) -> List[int]:
