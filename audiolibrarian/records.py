@@ -165,6 +165,16 @@ class Release(Record):
     script: str = None
     source: Source = None
 
+    def get_artist_album_path(self) -> Path:
+        """Returns a directory for the artist/album/disc combination.
+
+        Example:
+          -  the_artist/1969__the_album
+        """
+        artist_dir = Path(text.get_filename(self.album_artists.first))
+        album_dir = Path(text.get_filename(f"{self.original_year}__{self.album}"))
+        return artist_dir / album_dir
+
     def pp(self, medium_number: int) -> str:
         """Returns a string summary of the Release."""
         tracks = "\n".join(
@@ -201,3 +211,14 @@ class OneTrack(Record):
         """The Track object (or None)."""
         if self.medium and self.medium.tracks:
             return self.medium.tracks[self.track_number]
+
+    def get_artist_album_disc_path(self) -> Path:
+        """Returns a directory for the artist/album/disc combination.
+
+        Example:
+          - the_artist/1969__the_album
+          - the_artist/1969__the_album/disc2
+        """
+        if (self.medium_number, self.release.medium_count) == (1, 1):
+            return self.release.get_artist_album_path()
+        return self.release.get_artist_album_path() / f"disc{self.medium_number}"

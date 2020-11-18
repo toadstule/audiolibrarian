@@ -128,8 +128,11 @@ class Base:
         for directory in directories:
             path = Path(directory)
             for ext in extensions:
-                for filepath in path.glob(f"**/*{ext}"):
-                    yield open_(filepath)
+                try:
+                    for filepath in path.glob(f"**/*{ext}"):
+                        yield open_(filepath)
+                except FileNotFoundError:
+                    continue
 
     def _find_manifests(self, directories: List[str]) -> List[Path]:
         # Returns a sorted, unique list of manifest files anywhere in the given directories.
@@ -226,12 +229,11 @@ class Base:
 
     def _move_files(self, move_source: bool = True) -> None:
         # Moves converted/tagged files from the work directory into the library directory.
-        artist_dir = text.get_filename(self._release.album_artists.first)
-        album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
-        flac_dir = self._library_dir / "flac" / artist_dir / album_dir
-        m4a_dir = self._library_dir / "m4a" / artist_dir / album_dir
-        mp3_dir = self._library_dir / "mp3" / artist_dir / album_dir
-        source_dir = self._library_dir / "source" / artist_dir / album_dir
+        artist_album_dir = self._release.get_artist_album_path()
+        flac_dir = self._library_dir / "flac" / artist_album_dir
+        m4a_dir = self._library_dir / "m4a" / artist_album_dir
+        mp3_dir = self._library_dir / "mp3" / artist_album_dir
+        source_dir = self._library_dir / "source" / artist_album_dir
         if self._multi_disc:
             flac_dir /= f"disc{self._disc_number}"
             m4a_dir /= f"disc{self._disc_number}"
@@ -377,9 +379,8 @@ class Base:
                 }
         else:
             source_dir = self._library_dir / "source"
-            artist_dir = text.get_filename(self._release.album_artists.first)
-            album_dir = text.get_filename(f"{self._release.original_year}__{self._release.album}")
-            manifest_filename = source_dir / artist_dir / album_dir / self._manifest_file
+            artist_album_dir = self._release.get_artist_album_path()
+            manifest_filename = source_dir / artist_album_dir / self._manifest_file
         with open(manifest_filename, "w") as manifest_file:
             pyaml.dump(manifest, manifest_file)
         print(f"Wrote {manifest_filename}")
