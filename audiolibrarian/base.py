@@ -300,7 +300,7 @@ class Base:
         c2_line = (col2_w + 2) * "\u2550"
         c3_line = (col3_w + 2) * "\u2550"
         alb = f"Album:      {self._release.album}"
-        art = f"Artist(s):  {', '.join(self._release.album_artists)}"
+        art = f"Artist(s):  {', '.join(self._release.album_artists_sort)}"
         med = f"Disc:       {self._disc_number} of {self._disc_count}"
         mbr = f"MB Release: https://musicbrainz.org/release/{self._release.musicbrainz_album_id}"
         lines.append(f"\u2554{c1_line}\u2550{c2_line}\u2550{c3_line}\u2557")
