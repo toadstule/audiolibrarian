@@ -162,6 +162,7 @@ class Rename(_Command, Base):
     command = "rename"
     help = "rename files based on tags or MusicBrainz data"
     parser = ArgumentParser()
+    parser.add_argument("--dry-run", action="store_true", help="don't actually rename files")
     parser.add_argument("directories", nargs="+", help="audio file directories")
 
     def __init__(self, args: Namespace) -> None:
@@ -173,12 +174,30 @@ class Rename(_Command, Base):
             if audio_file.one_track.track is None:
                 log.warning(f"{filepath} has no title")
                 continue
-            old_name = filepath.name
-            new_name = audio_file.one_track.track.get_filename(filepath.suffix)
+            old_name = filepath
+            new_name = (
+                filepath.parents[3 if filepath.parent.name.startswith("disc") else 2]
+                / audio_file.one_track.get_artist_album_disc_path()
+                / audio_file.one_track.track.get_filename(filepath.suffix)
+            )
+            # new_name = audio_file.one_track.track.get_filename(filepath.suffix)
             if old_name != new_name:
-                print(f"Renaming {filepath}:")
-                print(f"  {old_name} -> {new_name}")
-                audio_file.filepath.rename(filepath.parent / new_name)
+                print(f"Renaming:\n  {old_name} -> \n  {new_name}")
+                if args.dry_run:
+                    continue
+                old_parent = old_name.parent
+                new_parent = new_name.parent
+                new_parent.mkdir(parents=True, exist_ok=True)
+                old_name.rename(new_name)
+                if not old_parent.samefile(new_parent):
+                    # move the Manifest if it's the only file left
+                    man = "Manifest.yaml"
+                    if [f.name for f in old_parent.glob("*")] == [man]:
+                        print(f"Renaming:\n  {old_parent / man} -> \n  {new_parent / man}")
+                        (old_parent / man).rename(new_parent / man)
+                    if not list(old_name.parent.glob("*")):
+                        old_name.parent.rmdir()
+
             else:
                 log.debug(f"Not renaming {filepath}")
 

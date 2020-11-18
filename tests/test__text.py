@@ -70,6 +70,8 @@ class TestText(TestCase):
         self.assertEqual("your__mom", text.get_filename("your [mom]"))
         self.assertEqual("your_mom_and_me", text.get_filename("your mom & me"))
         self.assertEqual("e", text.get_filename("é"), "get_filename should drop accents")
+        self.assertEqual("your_mom", text.get_filename("your_mom..."))
+        self.assertEqual("I.D.", text.get_filename("I.D."))
 
     def test__get_numbers(self):
         self.assertEqual([], text.get_numbers(""))

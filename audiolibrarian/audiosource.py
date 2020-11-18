@@ -175,13 +175,13 @@ class FilesAudioSource(AudioSource):
         tmp_dir = self._temp_dir / "__tmp__"
         tmp_dir.mkdir(parents=True)
         commands = []
-        for track_number, file_path in enumerate(self.source_list, 1):
-            if file_path:
-                in_ = str(file_path)
+        for track_number, filepath in enumerate(self.source_list, 1):
+            if filepath:
+                in_ = str(filepath)
                 out_path = tmp_dir / f"{str(track_number).zfill(2)}__.wav"
                 out = str(out_path)
                 commands.append(decode(in_, out))
-                log.info(f"DECODING: {file_path.name} -> {out_path.name}")
+                log.info(f"DECODING: {filepath.name} -> {out_path.name}")
         cmd.parallel(f"Making {len(commands)} wav files...", commands)
         cmd.touch(tmp_dir.glob("*.wav"))
         for f in sorted(tmp_dir.glob("*.wav"), key=alpha_numeric_key):
