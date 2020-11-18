@@ -168,15 +168,16 @@ class Rename(_Command, Base):
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._source_is_cd = False
-        audio_files = self._find_audio_files(args.directories)
-        for audio_file in audio_files:
+        print("Finding audio files...")
+        for audio_file in list(self._find_audio_files(args.directories)):
             filepath = audio_file.filepath
             if audio_file.one_track.track is None:
                 log.warning(f"{filepath} has no title")
                 continue
+            depth = 3 if filepath.parent.name.startswith("disc") else 2
             old_name = filepath
             new_name = (
-                filepath.parents[3 if filepath.parent.name.startswith("disc") else 2]
+                filepath.parents[depth]
                 / audio_file.one_track.get_artist_album_disc_path()
                 / audio_file.one_track.track.get_filename(filepath.suffix)
             )
@@ -195,8 +196,10 @@ class Rename(_Command, Base):
                     if [f.name for f in old_parent.glob("*")] == [man]:
                         print(f"Renaming:\n  {old_parent / man} -> \n  {new_parent / man}")
                         (old_parent / man).rename(new_parent / man)
-                    if not list(old_name.parent.glob("*")):
-                        old_name.parent.rmdir()
+                    for idx in range(depth):
+                        if not list(old_name.parents[idx].glob("*")):
+                            print(f"Removing: {old_name.parents[idx]}")
+                            old_name.parents[idx].rmdir()
 
             else:
                 log.debug(f"Not renaming {filepath}")

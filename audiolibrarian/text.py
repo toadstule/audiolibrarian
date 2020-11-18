@@ -15,7 +15,6 @@
 #
 
 import re
-import string
 import sys
 from typing import List
 
@@ -64,18 +63,20 @@ def fix(text: str) -> str:
 
 def get_filename(title: str) -> str:
     """Convert a title into a filename."""
-    allowed_chars = string.ascii_letters + string.digits + "_."
-    no_underscore_replace = ",!'\""
+    # allowed_chars = string.ascii_letters + string.digits + "_.,"
+    escape_required = "'!\"#$&'()*;<>?[]\\`{}|~\t\n); "
+    invalid = "/"
+    no_underscore_replace = "'!\""
     result = []
     for ch in replace_non_ascii(title):
-        if ch in allowed_chars:
-            result.append(ch)
-        elif ch == "&":
+        if ch == "&":
             result.extend("and")
+        elif ch.isascii() and ch not in escape_required and ch not in invalid:
+            result.append(ch)
         elif ch not in no_underscore_replace:
             result.append("_")
     result = "".join(result).rstrip("_")
-    # strip tailing dots, unless we end with an upper-case letter, then put a dot back
+    # strip tailing dots, unless we end with an upper-case letter, then put one dot back
     if result.endswith(".") and result.rstrip(".")[-1].isupper():
         return result.rstrip(".") + "."
     return result.rstrip(".")

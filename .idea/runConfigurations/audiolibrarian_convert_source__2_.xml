@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/audiolibrarian" />
-    <option name="PARAMETERS" value="convert &quot;/media/BlackBox/Music/source/a_ha/1986__Scoundrel_Days/disc1/&quot; -d 1/2" />
+    <option name="PARAMETERS" value="convert &quot;/media/BlackBox/Music/source/a-ha/1986__Scoundrel_Days/disc1/&quot; -d 1/2" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
