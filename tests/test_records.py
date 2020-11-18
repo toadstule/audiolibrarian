@@ -90,10 +90,10 @@ class TestOneTrack(TestCase):
 
     def test_get_artist_album_disc_path(self):
         self.assertEqual(
-            "Album_Artist_One/1992__Album/disc7", str(self.one_track.get_artist_album_disc_path())
+            "One,_Album_Artist/1992__Album/disc7", str(self.one_track.get_artist_album_disc_path())
         )
         self.one_track.medium_number = 1
         self.one_track.release.medium_count = 1
         self.assertEqual(
-            "Album_Artist_One/1992__Album", str(self.one_track.get_artist_album_disc_path())
+            "One,_Album_Artist/1992__Album", str(self.one_track.get_artist_album_disc_path())
         )

@@ -169,9 +169,9 @@ class Release(Record):
         """Returns a directory for the artist/album/disc combination.
 
         Example:
-          -  the_artist/1969__the_album
+          -  artist__the/1969__the_album
         """
-        artist_dir = Path(text.get_filename(self.album_artists.first))
+        artist_dir = Path(text.get_filename(self.album_artists_sort.first))
         album_dir = Path(text.get_filename(f"{self.original_year}__{self.album}"))
         return artist_dir / album_dir
 
@@ -216,8 +216,8 @@ class OneTrack(Record):
         """Returns a directory for the artist/album/disc combination.
 
         Example:
-          - the_artist/1969__the_album
-          - the_artist/1969__the_album/disc2
+          - artist__the/1969__the_album
+          - artist__the/1969__the_album/disc2
         """
         if (self.medium_number, self.release.medium_count) == (1, 1):
             return self.release.get_artist_album_path()
