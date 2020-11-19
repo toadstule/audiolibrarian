@@ -125,14 +125,20 @@ class Base:
     @staticmethod
     def _find_audio_files(directories: List[str]) -> List[AudioFile]:
         # Yields audiofile objects found in the given directories.
+        paths = []
+        # grab all of the paths first because thing may change as files are renamed
         for directory in directories:
             path = Path(directory)
             for ext in extensions:
-                try:
-                    for filepath in path.glob(f"**/*{ext}"):
-                        yield open_(filepath)
-                except FileNotFoundError:
-                    continue
+                paths.extend(path.rglob(f"*{ext}"))
+        paths = sorted(list(set(paths)))
+        # using yield rather than returning a list saves us from simultaneously storing
+        # potentially thousands of AudioFile objects in memory at the same time
+        for path in paths:
+            try:
+                yield open_(path)
+            except FileNotFoundError:
+                continue
 
     def _find_manifests(self, directories: List[str]) -> List[Path]:
         # Returns a sorted, unique list of manifest files anywhere in the given directories.

@@ -169,7 +169,7 @@ class Rename(_Command, Base):
         super().__init__(args)
         self._source_is_cd = False
         print("Finding audio files...")
-        for audio_file in list(self._find_audio_files(args.directories)):
+        for audio_file in self._find_audio_files(args.directories):
             filepath = audio_file.filepath
             if audio_file.one_track.track is None:
                 log.warning(f"{filepath} has no title")
