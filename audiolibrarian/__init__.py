@@ -1,4 +1,3 @@
-
 __version__ = "0.13.1"
 
 #  Copyright (c) 2020 Stephen Jibson
