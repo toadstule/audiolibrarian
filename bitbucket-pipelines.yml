@@ -5,18 +5,18 @@
 image: python:3.8
 
 pipelines:
-  default:
-    - step:
-        name: Deploy to test
-        deployment: test
-        max-time: 5
-        caches:
-          - pip
-        script:
-          - apt-get update
-          - apt-get install libdiscid0
-          - make clean requirements test
   branches:
+    develop:
+      - step:
+          name: Run tests
+          deployment: test
+          max-time: 5
+          caches:
+            - pip
+          script:
+            - apt-get update
+            - apt-get install libdiscid0
+            - make clean requirements test
     master:
       - step:
           name: Deploy to production
