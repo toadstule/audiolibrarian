@@ -29,6 +29,7 @@ function make_links {
   dst=$1
   src=$2
   pushd "$dst" > /dev/null || exit 1
+  find . -type l -exec rm -f {} \;
   for d in ../"$src"/*; do
     base=$(basename "$d")
     if [[ -d "../$src/$d" ]]; then
