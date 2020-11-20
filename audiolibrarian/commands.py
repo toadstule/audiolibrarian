@@ -260,6 +260,10 @@ def _validate_directories_arg(args: Namespace) -> bool:
 def _validate_disc_arg(args: Namespace) -> bool:
     if "disc" in args and args.disc:
         if not re.match(r"\d+/\d+", args.disc):
-            print("Invalid --disc specification; should be x/y")
+            print("Invalid --disc specification; should be 'x/y'")
+            return False
+        x, y = args.disc.split("/")
+        if int(x) > int(y) or int(x) < 1 or int(y) < 1:
+            print("Invalid --disc specification; should be 'x/y' where x <= y and x and y  >= 1")
             return False
     return True
