@@ -66,13 +66,6 @@ class Record:
         """Returns a dict version of the record."""
         return dataclasses.asdict(self)
 
-    def first(self, name):
-        """Returns the first element of a list-type field."""
-        try:
-            return getattr(self, name)[0]
-        except (TypeError, AttributeError):
-            return
-
 
 # Primitive Record Types
 @dataclass
