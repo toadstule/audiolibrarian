@@ -17,7 +17,7 @@
 import logging
 import os
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, skip, skipUnless
 
 from audiolibrarian.audiofile import open_
 from audiolibrarian.musicbrainz import MusicBrainzRelease
@@ -33,6 +33,7 @@ class TestMusicBrainzRelease(TestCase):
     maxDiff = None
     _blank_test_files = [p.resolve() for p in test_data_path.glob("00.*")]
 
+    @skipUnless(os.getenv("EXTERNAL_TESTS"), "EXTERNAL_TESTS not defined")
     def test__musicbrainz_release(self) -> None:
         """Verify that data we pull from MB service matches data from a picard-generated file."""
         extensions = (".flac", ".m4a", ".mp3")

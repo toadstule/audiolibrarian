@@ -92,7 +92,7 @@ def get_track_number(filename: str) -> int:
 
     if n := get_numbers(filename):
         return n[0]
-    while True:
+    while True:  # pragma: no cover
         try:
             return int(input_(f"Enter the track number for: {filename}"))
         except ValueError:
@@ -106,7 +106,7 @@ def get_uuid(text: str) -> (str, None):
         return match.group()
 
 
-def input_(prompt: str) -> str:
+def input_(prompt: str) -> str:  # pragma: no cover
     # terminal bell
     sys.stdout.write("\a")
     sys.stdout.flush()

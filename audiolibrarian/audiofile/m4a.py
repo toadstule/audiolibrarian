@@ -216,7 +216,7 @@ class M4aFile(AudioFile):
         for k, v in tags.items():
             try:
                 self._mut_file[k] = v
-            except Exception:
+            except Exception:  # pragma: no cover
                 log.critical("ERROR:", k, v)
                 raise
 

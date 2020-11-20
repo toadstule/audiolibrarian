@@ -86,10 +86,11 @@ class TestAudioFile(TestCase):
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
                 f = open_(test_file.name)
-                f._one_track = blank_info
+                f.one_track = blank_info
                 f.write_tags()
                 info = f.read_tags()
                 self.assertEqual(blank_info, info, f"Blank file modified for {src.suffix}")
+                self.assertTrue(f.__repr__().startswith("AudioFile: /"))
 
     def test__no_changes_wr(self) -> None:
         """Verify that a write/read cycle doesn't change any tags."""
@@ -170,6 +171,17 @@ class TestAudioFile(TestCase):
                 if src.suffix == ".mp3":
                     old_info.release.original_date = None  # mp3 doesn't save orig date
                 self.assertEqual(old_info, new_info, f"Write/Read failed for {src.suffix}")
+
+
+class TestAudioFileMisc(TestCase):
+    def test__file_not_found(self):
+        with self.assertRaises(FileNotFoundError):
+            open_("your_mom_goes_to_college.mp3")
+
+    def test__file_not_supported(self):
+        with self.assertRaises(NotImplementedError):
+            # the current file should always be around, and never be an audio file
+            open_(__file__)
 
 
 def _audio_file_copy(src_filepath):

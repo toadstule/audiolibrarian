@@ -21,3 +21,18 @@ sdist: requirements
 .PHONY: test
 test:
 	python -m unittest discover tests/
+
+.PHONY: test-coverage
+test-coverage:
+	rm -rf htmlconv
+	coverage run -m unittest discover tests/
+	coverage html
+	chromium htmlcov/index.html
+
+.PHONY: test-external
+test-external:
+	EXTERNAL_TESTS=1 make test
+
+.PHONY: test-external-coverage
+test-external-coverage:
+	EXTERNAL_TESTS=1 make test-coverage
