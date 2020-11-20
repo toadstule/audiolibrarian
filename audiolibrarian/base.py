@@ -25,6 +25,7 @@ from argparse import Namespace
 from logging import getLogger
 from pathlib import Path
 from typing import Dict, List, Tuple
+from warnings import warn
 
 import pyaml
 import yaml
@@ -110,6 +111,9 @@ class Base:
 
     def _convert(self, make_source: bool = True) -> None:
         # Performs all of the steps of ripping, normalizing, converting and moving the files.
+        if self._audio_source is None:
+            warn("Cannot convert; no audio_source is defined.", RuntimeWarning)
+            return
         self._audio_source.prepare_source()
         with self._lock:
             self._make_clean_workdirs()
@@ -146,12 +150,13 @@ class Base:
         for directory in directories:
             path = Path(directory)
             for manifest in path.glob(f"**/{self._manifest_file}"):
+                # for manifest in path.rglob(self._manifest_file):
                 manifests.add(manifest)
         return sorted(list(manifests))
 
     def _get_searcher(self) -> Searcher:
         # Returns a Searcher object populated with data from the audio source and cli args.
-        search_data = self._audio_source.get_search_data()
+        search_data = self._audio_source.get_search_data() if self._audio_source else {}
         searcher = Searcher(**search_data)
         searcher.disc_number = self._disc_number
         # override with user-provided info
@@ -181,7 +186,7 @@ class Base:
         if not ok:
             print(color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
-        if not skip_confirm and input_("Confirm [N,y]: ").lower() != "y":
+        if not skip_confirm and input_("Confirm [N,y]: ").lower() != "y":  # pragma: no cover
             sys.exit(1)
 
     def _make_clean_workdirs(self) -> None:
@@ -288,6 +293,9 @@ class Base:
         # The "ok" flag indicating issues will be true if:
         #   - the file count does not match the song count from the MusicBrainz database
         # (https://jrgraphix.net/r/Unicode/2500-257F)
+        if self._audio_source is None or self._release is None:
+            warn("Cannot provide summary; missing audio_source and/or release.", RuntimeWarning)
+            return "", False
         lines = []
         ok = True
         no_match = "(no match)"

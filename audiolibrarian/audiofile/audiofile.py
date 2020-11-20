@@ -51,11 +51,11 @@ class AudioFile(abc.ABC):
 
     @abc.abstractmethod
     def read_tags(self) -> OneTrack:
-        pass
+        """Reads the tags from the audio file and returns a populated OneTrack record."""
 
     @abc.abstractmethod
     def write_tags(self) -> None:
-        pass
+        """Write the tags to the audio file."""
 
     def _get_tag_sources(self) -> Tuple[Release, int, Medium, int, Track]:
         # Returns the objects and information required to generate tags.

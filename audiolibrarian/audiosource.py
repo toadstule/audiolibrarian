@@ -49,26 +49,27 @@ class AudioSource(abc.ABC):
         The list will be ordered by track number, with None in spaces where no
         filename is present for that track number.
         """
-        if self._source_list:
-            return self._source_list
-        source_filenames = self.get_source_filenames()
-        length = max([text.get_track_number(str(f.name)) for f in source_filenames])
-        result: List[(Path, None)] = [None] * length
-        for fn in source_filenames:
-            idx = text.get_track_number(str(fn.name)) - 1
-            result[idx] = fn
-        return result
+        if not self._source_list:
+            source_filenames = self.get_source_filenames()
+            length = max([text.get_track_number(str(f.name)) for f in source_filenames])
+            result: List[(Path, None)] = [None] * length
+            if length:
+                for fn in source_filenames:
+                    idx = text.get_track_number(str(fn.name)) - 1
+                    result[idx] = fn
+            self._source_list = result
+        return self._source_list
 
     def copy_wavs(self, dest_dir) -> None:
         for fn in self.get_wav_filenames():
             shutil.copy2(fn, dest_dir / fn.name)
 
     def get_front_cover(self) -> (FrontCover, None):
-        pass
+        """Returns a FrontCover record or None."""
 
     @abc.abstractmethod
     def get_search_data(self) -> Dict[str, str]:
-        pass
+        """Returns a dictionary of search data useful for doing a MusicBrainz search."""
 
     @abc.abstractmethod
     def get_source_filenames(self) -> List[Path]:
@@ -139,14 +140,16 @@ class FilesAudioSource(AudioSource):
             release = one_track.release
             track = one_track.track
 
-            artist = track.artist or track.artists.first or ""
-            album = release.album or ""
+            artist = track.artist or track.artists.first or "" if track else ""
+            album = release.album or "" if release else ""
             mb_artist_id = (
                 release.musicbrainz_album_artist_ids.first
-                or track.musicbrainz_artist_ids.first
-                or ""
+                if release
+                else "" or track.musicbrainz_artist_ids.first
+                if track
+                else "" or ""
             )
-            mb_release_id = release.musicbrainz_album_id or ""
+            mb_release_id = release.musicbrainz_album_id or "" if release else ""
             log.info(f"Artist from tags: {artist}")
             log.info(f"Album from tags: {album}")
             log.info(f"MB Artist ID from tags: {mb_artist_id}")
