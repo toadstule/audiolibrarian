@@ -4,6 +4,7 @@ Manifest.yaml
 
 *.jpg
 
+__pycache__/
 dist/
 htmlcov/
 library/
