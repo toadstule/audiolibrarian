@@ -1,0 +1,17 @@
+album: 'The Secret'
+artist: 'Alan Parsons'
+artist_sort_name: 'Parsons, Alan'
+date: 2019-04-26
+disc_number: 1
+disc_count: 1
+genre: 'Progressive Rock'
+media: CD
+musicbrainz_info:
+  albumartistid: 9774cfd1-8862-42bd-919e-156c31f079b4
+  albumid: 596fe41f-1aea-43b4-8b9a-ac1cdbd1cacd
+  releasegroupid: 16c163c6-dc9f-4127-9b01-7ab682c2d392
+original_year: 2019
+source_info:
+  bitrate: 760
+  bitrate_mode: VBR
+  type: FLAC
