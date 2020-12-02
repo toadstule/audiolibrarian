@@ -1,30 +1,30 @@
-# Copyright (C) 2020 Stephen Jibson
-#
-# This file is part of AudioLibrarian.
-#
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
-#
-
 """
 
 Useful stuff: https://help.mp3tag.de/main_tags.html
 """
+#  Copyright (c) 2020 Stephen Jibson
+#
+#  This file is part of audiolibrarian.
+#
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
+#
+
 import shutil
 import subprocess
 import sys
 from argparse import Namespace
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Tuple
+from warnings import warn
 
 import pyaml
 import yaml
@@ -79,17 +79,17 @@ class Base:
         self._source_example = None
 
     @property
-    def _flac_filenames(self) -> List[Path]:
+    def _flac_filenames(self) -> list[Path]:
         # Returns the current list of flac files in the work directory.
         return sorted(self._flac_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
-    def _m4a_filenames(self) -> List[Path]:
+    def _m4a_filenames(self) -> list[Path]:
         # Returns the current list of m4a files in the work directory.
         return sorted(self._m4a_dir.glob("*.m4a"), key=text.alpha_numeric_key)
 
     @property
-    def _mp3_filenames(self) -> List[Path]:
+    def _mp3_filenames(self) -> list[Path]:
         # Returns the current list of mp3 files in the work directory.
         return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
 
@@ -99,17 +99,20 @@ class Base:
         return (self._disc_number, self._disc_count) != (1, 1)
 
     @property
-    def _source_filenames(self) -> List[Path]:
+    def _source_filenames(self) -> list[Path]:
         # Returns the current list of source files in the work directory.
         return sorted(self._source_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
-    def _wav_filenames(self) -> List[Path]:
+    def _wav_filenames(self) -> list[Path]:
         # Returns the current list of wav files in the work directory.
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
     def _convert(self, make_source: bool = True) -> None:
         # Performs all of the steps of ripping, normalizing, converting and moving the files.
+        if self._audio_source is None:
+            warn("Cannot convert; no audio_source is defined.", RuntimeWarning)
+            return
         self._audio_source.prepare_source()
         with self._lock:
             self._make_clean_workdirs()
@@ -123,7 +126,7 @@ class Base:
             self._move_files(move_source=make_source)
 
     @staticmethod
-    def _find_audio_files(directories: List[str]) -> List[AudioFile]:
+    def _find_audio_files(directories: list[str]) -> list[AudioFile]:
         # Yields audiofile objects found in the given directories.
         paths = []
         # grab all of the paths first because thing may change as files are renamed
@@ -140,18 +143,18 @@ class Base:
             except FileNotFoundError:
                 continue
 
-    def _find_manifests(self, directories: List[str]) -> List[Path]:
+    def _find_manifests(self, directories: list[str]) -> list[Path]:
         # Returns a sorted, unique list of manifest files anywhere in the given directories.
         manifests = set()
         for directory in directories:
             path = Path(directory)
-            for manifest in path.glob(f"**/{self._manifest_file}"):
+            for manifest in path.rglob(self._manifest_file):
                 manifests.add(manifest)
         return sorted(list(manifests))
 
     def _get_searcher(self) -> Searcher:
         # Returns a Searcher object populated with data from the audio source and cli args.
-        search_data = self._audio_source.get_search_data()
+        search_data = self._audio_source.get_search_data() if self._audio_source else {}
         searcher = Searcher(**search_data)
         searcher.disc_number = self._disc_number
         # override with user-provided info
@@ -181,7 +184,7 @@ class Base:
         if not ok:
             print(color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
-        if not skip_confirm and input_("Confirm [N,y]: ").lower() != "y":
+        if not skip_confirm and input_("Confirm [N,y]: ").lower() != "y":  # pragma: no cover
             sys.exit(1)
 
     def _make_clean_workdirs(self) -> None:
@@ -267,7 +270,7 @@ class Base:
         r.check_returncode()
 
     @staticmethod
-    def _read_manifest(manifest_path: Path) -> Dict:
+    def _read_manifest(manifest_path: Path) -> dict:
         with open(manifest_path, "r") as manifest_file:
             return yaml.safe_load(manifest_file)
 
@@ -281,13 +284,16 @@ class Base:
                 log.info(f"RENAMING: {old_path.name} --> {new_path.name}")
                 old_path.rename(new_path)
 
-    def _summary(self) -> Tuple[str, bool]:
+    def _summary(self) -> tuple[str, bool]:
         # Returns a summary of the conversion/tagging process and an "ok" flag indicating issues.
         #
         # The summary is a nicely formatted table showing the album, artist and track info.
         # The "ok" flag indicating issues will be true if:
         #   - the file count does not match the song count from the MusicBrainz database
         # (https://jrgraphix.net/r/Unicode/2500-257F)
+        if self._audio_source is None or self._release is None:
+            warn("Cannot provide summary; missing audio_source and/or release.", RuntimeWarning)
+            return "", False
         lines = []
         ok = True
         no_match = "(no match)"
@@ -339,7 +345,7 @@ class Base:
         lines.append(f"\u255A{c1_line}\u2567{c2_line}\u2567{c3_line}\u255D")
         return "\n".join(lines), ok
 
-    def _tag_files(self, filenames: List[Path]) -> None:
+    def _tag_files(self, filenames: list[Path]) -> None:
         # Tags the given list of files.
         for f in filenames:
             song = open_(f)

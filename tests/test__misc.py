@@ -13,23 +13,22 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+from unittest import TestCase
 
-import pprint
-import sys
+import audiolibrarian
 
-import mutagen
 
-if __name__ == "__main__":
-    assert len(sys.argv) == 3
-    filename1, filename2 = sys.argv[1:3]
+class TestMisc(TestCase):
+    def setUp(self) -> None:
+        self._required_exe = audiolibrarian.REQUIRED_EXE[:]
 
-    song1 = mutagen.File(filename1)
-    pprint.pp(dict(song1.tags))
+    def tearDown(self) -> None:
+        audiolibrarian.REQUIRED_EXE = self._required_exe[:]
 
-    song2 = mutagen.File(filename2)
-    pprint.pp(dict(song2.tags))
+    def test__check_deps_true(self) -> None:
+        audiolibrarian.REQUIRED_EXE = ["ls", "ps"]
+        self.assertTrue(audiolibrarian.check_deps())
 
-    # pprint.pp(sorted(list(set(song1.tags) - set(song2.tags))))
-    # pprint.pp(sorted(list(set(song2.tags) - set(song1.tags))))
-    print(sorted(list(set(song1.tags) - set(song2.tags))))
-    print(sorted(list(set(song2.tags) - set(song1.tags))))
+    def test__check_deps_false(self) -> None:
+        audiolibrarian.REQUIRED_EXE = ["your_mom_goes_to_college"]
+        self.assertFalse(audiolibrarian.check_deps())

@@ -1,20 +1,20 @@
-# Copyright (C) 2020 Stephen Jibson
-#
-# This file is part of AudioLibrarian.
-#
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
-#
-
 """Record (dataclass) definitions."""
+
+#  Copyright (c) 2020 Stephen Jibson
+#
+#  This file is part of audiolibrarian.
+#
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
+#
 
 # Useful field reference: https://github.com/metabrainz/picard/blob/master/picard/util/tags.py
 
@@ -22,7 +22,6 @@ import dataclasses
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List
 
 from audiolibrarian import text
 
@@ -62,16 +61,9 @@ class Record:
     def __bool__(self):
         return bool([x for x in asdict(self).values() if x is not None])
 
-    def asdict(self) -> Dict:
+    def asdict(self) -> dict:
         """Returns a dict version of the record."""
         return dataclasses.asdict(self)
-
-    def first(self, name):
-        """Returns the first element of a list-type field."""
-        try:
-            return getattr(self, name)[0]
-        except (TypeError, AttributeError):
-            return
 
 
 # Primitive Record Types
@@ -100,9 +92,9 @@ class Performer(Record):
 class Track(Record):
     artist: str = None
     artists: ListF = None
-    artists_sort: List[str] = None
+    artists_sort: list[str] = None
     file_info: FileInfo = None
-    isrcs: List[str] = None
+    isrcs: list[str] = None
     musicbrainz_artist_ids: ListF = None
     musicbrainz_release_track_id: str = None
     musicbrainz_track_id: str = None
@@ -121,22 +113,22 @@ class Track(Record):
 @dataclass
 class Medium(Record):
     formats: ListF = None
-    titles: List[str] = None
+    titles: list[str] = None
     track_count: int = None
-    tracks: Dict[int, Track] = None
+    tracks: dict[int, Track] = None
 
 
 @dataclass
 class People(Record):
-    arrangers: List[str] = None
-    composers: List[str] = None
-    conductors: List[str] = None
-    engineers: List[str] = None
-    lyricists: List[str] = None
-    mixers: List[str] = None
-    performers: (List[Performer], None) = None
-    producers: List[str] = None
-    writers: List[str] = None
+    arrangers: list[str] = None
+    composers: list[str] = None
+    conductors: list[str] = None
+    engineers: list[str] = None
+    lyricists: list[str] = None
+    mixers: list[str] = None
+    performers: (list[Performer], None) = None
+    producers: list[str] = None
+    writers: list[str] = None
 
 
 @dataclass
@@ -144,14 +136,14 @@ class Release(Record):
     album: str = None
     album_artists: ListF = None
     album_artists_sort: ListF = None
-    asins: List[str] = None
-    barcodes: List[str] = None
-    catalog_numbers: List[str] = None
+    asins: list[str] = None
+    barcodes: list[str] = None
+    catalog_numbers: list[str] = None
     date: str = None
     front_cover: (FrontCover, None) = field(default=None, repr=False)
     genres: ListF = None
-    labels: List[str] = None
-    media: Dict[int, Medium] = None
+    labels: list[str] = None
+    media: dict[int, Medium] = None
     medium_count: int = None
     musicbrainz_album_artist_ids: ListF = None
     musicbrainz_album_id: str = None
@@ -159,9 +151,9 @@ class Release(Record):
     original_date: str = None
     original_year: str = None
     people: People = None
-    release_countries: List[str] = None
-    release_statuses: List[str] = None
-    release_types: List[str] = None
+    release_countries: list[str] = None
+    release_statuses: list[str] = None
+    release_types: list[str] = None
     script: str = None
     source: Source = None
 

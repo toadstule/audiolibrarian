@@ -1,17 +1,17 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
 
 import pprint
@@ -20,7 +20,6 @@ import webbrowser
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from logging import DEBUG, getLogger
-from typing import Dict, List, Tuple
 
 import musicbrainzngs as mb
 import requests
@@ -184,7 +183,7 @@ class MusicBrainzRelease:
             return [g["name"] for g in reversed(sorted(at["genres"], key=lambda x: x["count"]))][0]
         return input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
-    def _get_media(self) -> (Dict[int, Medium], None):
+    def _get_media(self) -> (dict[int, Medium], None):
         # Returns a dict of Media objects, keyed on number or position (or None).
         media = {}
         for medium in self._release.get("medium-list", []):
@@ -309,7 +308,7 @@ class MusicBrainzRelease:
             source=Source.MUSICBRAINZ,
         )
 
-    def _get_tracks(self, medium_number: int = 1) -> (Dict[int, Track], None):
+    def _get_tracks(self, medium_number: int = 1) -> (dict[int, Track], None):
         # Returns a dict of Track objects, keyed on track number.
         tracks = {}
         for medium in self._release.get("medium-list", []):
@@ -335,7 +334,7 @@ class MusicBrainzRelease:
         return tracks or None
 
     @staticmethod
-    def _process_artist_credit(artist_credit: list) -> Tuple[str, ListF, str, ListF]:
+    def _process_artist_credit(artist_credit: list) -> tuple[str, ListF, str, ListF]:
         # Returns artist info from an artist-credit list.
         artist_names_str = ""
         artist_names_list = ListF()
@@ -395,7 +394,7 @@ class Searcher:
 
         return MusicBrainzRelease(release_id).get_release()
 
-    def _get_release_group_ids(self) -> List[str]:
+    def _get_release_group_ids(self) -> list[str]:
         # Returns release groups that fuzzy-match the search criteria.
         artist_l = self.artist.lower()
         album_l = self.album.lower()
@@ -418,7 +417,7 @@ class Searcher:
             if rg.get("primary-type") == "Album" and fuzz.ratio(album_l, rg["title"].lower()) > 80
         ]
 
-    def _prompt_release_id(self, release_group_ids: List[str]) -> str:
+    def _prompt_release_id(self, release_group_ids: list[str]) -> str:
         # Prompt for, and return a MusicBrainz release ID.
         print(
             "\n\nWe found the following release group(s). Use the link(s) below to "

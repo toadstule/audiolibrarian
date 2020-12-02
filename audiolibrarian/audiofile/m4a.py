@@ -1,21 +1,20 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
 
 from logging import getLogger
-from typing import List
 
 from mutagen.mp4 import AtomDataType, MP4Cover, MP4FreeForm
 
@@ -159,7 +158,7 @@ class M4aFile(AudioFile):
                 return
             return MP4FreeForm(bytes(str(s), "utf8"))
 
-        def ffl(list_: (List[str], None)) -> (ListF, None):
+        def ffl(list_: (list[str], None)) -> (ListF, None):
             if not list_:
                 return
             return ListF([ff(x) for x in list_])
@@ -216,7 +215,7 @@ class M4aFile(AudioFile):
         for k, v in tags.items():
             try:
                 self._mut_file[k] = v
-            except Exception:
+            except Exception:  # pragma: no cover
                 log.critical("ERROR:", k, v)
                 raise
 

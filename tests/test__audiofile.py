@@ -1,17 +1,17 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
 
 import contextlib
@@ -86,10 +86,11 @@ class TestAudioFile(TestCase):
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
                 f = open_(test_file.name)
-                f._one_track = blank_info
+                f.one_track = blank_info
                 f.write_tags()
                 info = f.read_tags()
                 self.assertEqual(blank_info, info, f"Blank file modified for {src.suffix}")
+                self.assertTrue(f.__repr__().startswith("AudioFile: /"))
 
     def test__no_changes_wr(self) -> None:
         """Verify that a write/read cycle doesn't change any tags."""
@@ -170,6 +171,17 @@ class TestAudioFile(TestCase):
                 if src.suffix == ".mp3":
                     old_info.release.original_date = None  # mp3 doesn't save orig date
                 self.assertEqual(old_info, new_info, f"Write/Read failed for {src.suffix}")
+
+
+class TestAudioFileMisc(TestCase):
+    def test__file_not_found(self):
+        with self.assertRaises(FileNotFoundError):
+            open_("your_mom_goes_to_college.mp3")
+
+    def test__file_not_supported(self):
+        with self.assertRaises(NotImplementedError):
+            # the current file should always be around, and never be an audio file
+            open_(__file__)
 
 
 def _audio_file_copy(src_filepath):

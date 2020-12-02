@@ -1,23 +1,23 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
 
 import logging
 import os
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, skip, skipUnless
 
 from audiolibrarian.audiofile import open_
 from audiolibrarian.musicbrainz import MusicBrainzRelease
@@ -33,6 +33,7 @@ class TestMusicBrainzRelease(TestCase):
     maxDiff = None
     _blank_test_files = [p.resolve() for p in test_data_path.glob("00.*")]
 
+    @skipUnless(os.getenv("EXTERNAL_TESTS"), "EXTERNAL_TESTS not defined")
     def test__musicbrainz_release(self) -> None:
         """Verify that data we pull from MB service matches data from a picard-generated file."""
         extensions = (".flac", ".m4a", ".mp3")

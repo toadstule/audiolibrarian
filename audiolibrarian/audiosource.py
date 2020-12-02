@@ -1,17 +1,17 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
 
 import abc
@@ -21,7 +21,6 @@ import subprocess
 import tempfile
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List
 
 import discid
 
@@ -43,38 +42,39 @@ class AudioSource(abc.ABC):
             shutil.rmtree(self._temp_dir)
 
     @property
-    def source_list(self) -> List[Path]:
+    def source_list(self) -> list[Path]:
         """Return a list with source file paths and blanks.
 
         The list will be ordered by track number, with None in spaces where no
         filename is present for that track number.
         """
-        if self._source_list:
-            return self._source_list
-        source_filenames = self.get_source_filenames()
-        length = max([text.get_track_number(str(f.name)) for f in source_filenames])
-        result: List[(Path, None)] = [None] * length
-        for fn in source_filenames:
-            idx = text.get_track_number(str(fn.name)) - 1
-            result[idx] = fn
-        return result
+        if not self._source_list:
+            source_filenames = self.get_source_filenames()
+            length = max([text.get_track_number(str(f.name)) for f in source_filenames])
+            result: list[(Path, None)] = [None] * length
+            if length:
+                for fn in source_filenames:
+                    idx = text.get_track_number(str(fn.name)) - 1
+                    result[idx] = fn
+            self._source_list = result
+        return self._source_list
 
     def copy_wavs(self, dest_dir) -> None:
         for fn in self.get_wav_filenames():
             shutil.copy2(fn, dest_dir / fn.name)
 
     def get_front_cover(self) -> (FrontCover, None):
-        pass
+        """Returns a FrontCover record or None."""
 
     @abc.abstractmethod
-    def get_search_data(self) -> Dict[str, str]:
-        pass
+    def get_search_data(self) -> dict[str, str]:
+        """Returns a dictionary of search data useful for doing a MusicBrainz search."""
 
     @abc.abstractmethod
-    def get_source_filenames(self) -> List[Path]:
+    def get_source_filenames(self) -> list[Path]:
         """Returns a list of the original source file paths."""
 
-    def get_wav_filenames(self) -> List[Path]:
+    def get_wav_filenames(self) -> list[Path]:
         """Returns a list of the prepared wav file paths."""
         return sorted(self._temp_dir.glob("*.wav"), key=alpha_numeric_key)
 
@@ -88,10 +88,10 @@ class CDAudioSource(AudioSource):
         super().__init__()
         self._cd = discid.read(features=["mcn"])
 
-    def get_search_data(self) -> Dict[str, str]:
+    def get_search_data(self) -> dict[str, str]:
         return {"disc_id": self._cd.id, "disc_mcn": self._cd.mcn}
 
-    def get_source_filenames(self) -> List[Path]:
+    def get_source_filenames(self) -> list[Path]:
         """Returns a list of the original source file paths.
 
         Since we're working with a CD, these files may not yet exists if they have not been
@@ -115,7 +115,7 @@ class CDAudioSource(AudioSource):
 
 
 class FilesAudioSource(AudioSource):
-    def __init__(self, filenames: List[Path]):
+    def __init__(self, filenames: list[Path]):
         super().__init__()
         self._filenames = filenames
         if len(filenames) == 1 and filenames[0].is_dir():
@@ -133,20 +133,22 @@ class FilesAudioSource(AudioSource):
             if release.front_cover:
                 return release.front_cover
 
-    def get_search_data(self) -> Dict[str, str]:
+    def get_search_data(self) -> dict[str, str]:
         for filename in self._filenames:
             one_track = open_(filename).one_track
             release = one_track.release
             track = one_track.track
 
-            artist = track.artist or track.artists.first or ""
-            album = release.album or ""
+            artist = track.artist or track.artists.first or "" if track else ""
+            album = release.album or "" if release else ""
             mb_artist_id = (
                 release.musicbrainz_album_artist_ids.first
-                or track.musicbrainz_artist_ids.first
-                or ""
+                if release
+                else "" or track.musicbrainz_artist_ids.first
+                if track
+                else "" or ""
             )
-            mb_release_id = release.musicbrainz_album_id or ""
+            mb_release_id = release.musicbrainz_album_id or "" if release else ""
             log.info(f"Artist from tags: {artist}")
             log.info(f"Album from tags: {album}")
             log.info(f"MB Artist ID from tags: {mb_artist_id}")
@@ -157,7 +159,7 @@ class FilesAudioSource(AudioSource):
                 return {"artist": artist, "album": album}
         return {}
 
-    def get_source_filenames(self) -> List[Path]:
+    def get_source_filenames(self) -> list[Path]:
         """Returns a list of the original source file paths."""
         return self._filenames
 

@@ -1,22 +1,21 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
 
 import re
 import sys
-from typing import List
 
 from audiolibrarian.picard_src import (
     replace_non_ascii,
@@ -44,7 +43,7 @@ def alpha_numeric_key(x):
     return [int(x) if x.isdigit() else x for x in digit_regex.split(str(x))]
 
 
-def join(strings: List[str], joiner: str = ", ", word: str = "and") -> str:
+def join(strings: list[str], joiner: str = ", ", word: str = "and") -> str:
     if not strings:
         return ""
     if len(strings) == 1:
@@ -82,7 +81,7 @@ def get_filename(title: str) -> str:
     return result.rstrip(".")
 
 
-def get_numbers(text: str) -> List[int]:
+def get_numbers(text: str) -> list[int]:
     """Get a list of all the numbers in the given string."""
     return [int(x) for x in digit_regex.findall(text)]
 
@@ -92,7 +91,7 @@ def get_track_number(filename: str) -> int:
 
     if n := get_numbers(filename):
         return n[0]
-    while True:
+    while True:  # pragma: no cover
         try:
             return int(input_(f"Enter the track number for: {filename}"))
         except ValueError:
@@ -106,7 +105,7 @@ def get_uuid(text: str) -> (str, None):
         return match.group()
 
 
-def input_(prompt: str) -> str:
+def input_(prompt: str) -> str:  # pragma: no cover
     # terminal bell
     sys.stdout.write("\a")
     sys.stdout.flush()

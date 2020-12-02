@@ -1,22 +1,22 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
+
 
 import abc
 from pathlib import Path
-from typing import Tuple
 
 import mutagen
 
@@ -50,13 +50,13 @@ class AudioFile(abc.ABC):
 
     @abc.abstractmethod
     def read_tags(self) -> OneTrack:
-        pass
+        """Reads the tags from the audio file and returns a populated OneTrack record."""
 
     @abc.abstractmethod
     def write_tags(self) -> None:
-        pass
+        """Write the tags to the audio file."""
 
-    def _get_tag_sources(self) -> Tuple[Release, int, Medium, int, Track]:
+    def _get_tag_sources(self) -> tuple[Release, int, Medium, int, Track]:
         # Returns the objects and information required to generate tags.
         release = self.one_track.release or Release()
         medium_number = self.one_track.medium_number

@@ -1,17 +1,17 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
 
 from unittest import TestCase
@@ -88,12 +88,19 @@ class TestOneTrack(TestCase):
         track_number=3,
     )
 
-    def test_get_artist_album_disc_path(self):
+    def test__record_class(self):
+        self.assertEqual("Album Artist One", self.one_track.release.album_artists.first)
+        self.assertEqual("Track Artist", self.one_track.track.asdict().get("artist"))
+        self.assertEqual("03__Track_Title", self.one_track.track.get_filename())
+
+    def test__get_artist_album_disc_path(self):
         self.assertEqual(
             "One,_Album_Artist/1992__Album/disc7", str(self.one_track.get_artist_album_disc_path())
         )
+        num, cnt = self.one_track.medium_number, self.one_track.release.medium_count
         self.one_track.medium_number = 1
         self.one_track.release.medium_count = 1
         self.assertEqual(
             "One,_Album_Artist/1992__Album", str(self.one_track.get_artist_album_disc_path())
         )
+        self.one_track.medium_number, self.one_track.release.medium_count = num, cnt

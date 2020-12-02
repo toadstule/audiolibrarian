@@ -13,23 +13,19 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+import time
+from unittest import TestCase
 
-import pprint
-import sys
+from audiolibrarian.output import Dots
+from tests.helpers import captured_output
 
-import mutagen
 
-if __name__ == "__main__":
-    assert len(sys.argv) == 3
-    filename1, filename2 = sys.argv[1:3]
-
-    song1 = mutagen.File(filename1)
-    pprint.pp(dict(song1.tags))
-
-    song2 = mutagen.File(filename2)
-    pprint.pp(dict(song2.tags))
-
-    # pprint.pp(sorted(list(set(song1.tags) - set(song2.tags))))
-    # pprint.pp(sorted(list(set(song2.tags) - set(song1.tags))))
-    print(sorted(list(set(song1.tags) - set(song2.tags))))
-    print(sorted(list(set(song2.tags) - set(song1.tags))))
+class TestDots(TestCase):
+    def test__dots(self):
+        with captured_output() as (out, err):
+            with Dots("Please wait") as d:
+                for _ in range(5):
+                    time.sleep(0.01)
+                    d.dot()
+            output = out.getvalue().strip()
+            self.assertEqual("Please wait.....", output)

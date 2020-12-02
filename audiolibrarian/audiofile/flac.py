@@ -1,21 +1,20 @@
-# Copyright (C) 2020 Stephen Jibson
+#  Copyright (c) 2020 Stephen Jibson
 #
-# This file is part of AudioLibrarian.
+#  This file is part of audiolibrarian.
 #
-# AudioLibrarian is free software: you can redistribute it and/or modify it under the terms of the
-# GNU General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
 #
-# AudioLibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-# the GNU General Public License for more details.
+#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with Foobar.  If not, see
-# <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
 #
 
 import re
-from typing import List
 
 import mutagen.flac
 
@@ -45,7 +44,7 @@ class FlacFile(AudioFile):
     def read_tags(self) -> OneTrack:
         """Reads the tags and returns a OneTrack object."""
 
-        def listf(lst: (List, None)) -> (ListF, None):
+        def listf(lst: (list, None)) -> (ListF, None):
             if lst is not None:
                 return ListF(lst)
 
@@ -198,13 +197,13 @@ class FlacFile(AudioFile):
         self._mut_file.save()
 
     @staticmethod
-    def _make_performer_tag(performers: List[Performer]) -> List[str]:
+    def _make_performer_tag(performers: list[Performer]) -> list[str]:
         # Returns a list of performer tag strings "name (instrument)".
         if performers:
             return [f"{p.name} ({p.instrument})" for p in performers]
 
     @staticmethod
-    def _parse_performer_tag(performers_tag: List[str]) -> List[Performer]:
+    def _parse_performer_tag(performers_tag: list[str]) -> list[Performer]:
         # Parses a list of performer tags and returns a list of Performer objects.
         performer_re = re.compile(r"(?P<name>.*)\((?P<instrument>.*)\)")
         performers = []
