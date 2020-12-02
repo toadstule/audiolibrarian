@@ -16,7 +16,6 @@
 
 import re
 import sys
-from typing import List
 
 from audiolibrarian.picard_src import (
     replace_non_ascii,
@@ -44,7 +43,7 @@ def alpha_numeric_key(x):
     return [int(x) if x.isdigit() else x for x in digit_regex.split(str(x))]
 
 
-def join(strings: List[str], joiner: str = ", ", word: str = "and") -> str:
+def join(strings: list[str], joiner: str = ", ", word: str = "and") -> str:
     if not strings:
         return ""
     if len(strings) == 1:
@@ -82,7 +81,7 @@ def get_filename(title: str) -> str:
     return result.rstrip(".")
 
 
-def get_numbers(text: str) -> List[int]:
+def get_numbers(text: str) -> list[int]:
     """Get a list of all the numbers in the given string."""
     return [int(x) for x in digit_regex.findall(text)]
 

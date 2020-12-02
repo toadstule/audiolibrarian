@@ -24,7 +24,6 @@ import sys
 from argparse import Namespace
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Tuple
 from warnings import warn
 
 import pyaml
@@ -80,17 +79,17 @@ class Base:
         self._source_example = None
 
     @property
-    def _flac_filenames(self) -> List[Path]:
+    def _flac_filenames(self) -> list[Path]:
         # Returns the current list of flac files in the work directory.
         return sorted(self._flac_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
-    def _m4a_filenames(self) -> List[Path]:
+    def _m4a_filenames(self) -> list[Path]:
         # Returns the current list of m4a files in the work directory.
         return sorted(self._m4a_dir.glob("*.m4a"), key=text.alpha_numeric_key)
 
     @property
-    def _mp3_filenames(self) -> List[Path]:
+    def _mp3_filenames(self) -> list[Path]:
         # Returns the current list of mp3 files in the work directory.
         return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
 
@@ -100,12 +99,12 @@ class Base:
         return (self._disc_number, self._disc_count) != (1, 1)
 
     @property
-    def _source_filenames(self) -> List[Path]:
+    def _source_filenames(self) -> list[Path]:
         # Returns the current list of source files in the work directory.
         return sorted(self._source_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
-    def _wav_filenames(self) -> List[Path]:
+    def _wav_filenames(self) -> list[Path]:
         # Returns the current list of wav files in the work directory.
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
@@ -127,7 +126,7 @@ class Base:
             self._move_files(move_source=make_source)
 
     @staticmethod
-    def _find_audio_files(directories: List[str]) -> List[AudioFile]:
+    def _find_audio_files(directories: list[str]) -> list[AudioFile]:
         # Yields audiofile objects found in the given directories.
         paths = []
         # grab all of the paths first because thing may change as files are renamed
@@ -144,13 +143,12 @@ class Base:
             except FileNotFoundError:
                 continue
 
-    def _find_manifests(self, directories: List[str]) -> List[Path]:
+    def _find_manifests(self, directories: list[str]) -> list[Path]:
         # Returns a sorted, unique list of manifest files anywhere in the given directories.
         manifests = set()
         for directory in directories:
             path = Path(directory)
-            for manifest in path.glob(f"**/{self._manifest_file}"):
-                # for manifest in path.rglob(self._manifest_file):
+            for manifest in path.rglob(self._manifest_file):
                 manifests.add(manifest)
         return sorted(list(manifests))
 
@@ -272,7 +270,7 @@ class Base:
         r.check_returncode()
 
     @staticmethod
-    def _read_manifest(manifest_path: Path) -> Dict:
+    def _read_manifest(manifest_path: Path) -> dict:
         with open(manifest_path, "r") as manifest_file:
             return yaml.safe_load(manifest_file)
 
@@ -286,7 +284,7 @@ class Base:
                 log.info(f"RENAMING: {old_path.name} --> {new_path.name}")
                 old_path.rename(new_path)
 
-    def _summary(self) -> Tuple[str, bool]:
+    def _summary(self) -> tuple[str, bool]:
         # Returns a summary of the conversion/tagging process and an "ok" flag indicating issues.
         #
         # The summary is a nicely formatted table showing the album, artist and track info.
@@ -347,7 +345,7 @@ class Base:
         lines.append(f"\u255A{c1_line}\u2567{c2_line}\u2567{c3_line}\u255D")
         return "\n".join(lines), ok
 
-    def _tag_files(self, filenames: List[Path]) -> None:
+    def _tag_files(self, filenames: list[Path]) -> None:
         # Tags the given list of files.
         for f in filenames:
             song = open_(f)

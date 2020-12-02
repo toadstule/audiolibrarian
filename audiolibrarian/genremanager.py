@@ -18,7 +18,6 @@ import pickle
 import webbrowser
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List
 
 import mutagen
 import mutagen.flac
@@ -87,7 +86,7 @@ class GenreManager:
             if i != "s":
                 webbrowser.open(f"https://musicbrainz.org/artist/{artist_id}/tags")
 
-    def _get_all_paths(self) -> List[Path]:
+    def _get_all_paths(self) -> list[Path]:
         # Returns a list of paths (pathlib.Path objects) for all files in the directories
         # specified in the args
         paths = []
@@ -95,7 +94,7 @@ class GenreManager:
             paths.extend([p for p in list(Path(directory).glob("**/*")) if p.is_file()])
         return paths
 
-    def _get_paths_by_artist(self) -> Dict[str, List[Path]]:
+    def _get_paths_by_artist(self) -> dict[str, list[Path]]:
         # Returns a dict mapping Musicbrainz-artist-ID to a list of paths (pathlib.Path objects)
         # representing audio files by that artist.
         artists = {}
@@ -123,7 +122,7 @@ class GenreManager:
                 artists[artist_id].append(path)
         return artists
 
-    def _get_genres_by_artist(self) -> (Dict[str, str], Dict[str, List[Dict]]):
+    def _get_genres_by_artist(self) -> tuple[dict[str, str], dict[str, dict[str, (int, str)]]]:
         # Returns two dicts mapping Musicbrainz-artist-ID to:
         # user: a single genre, set in Musicbrainz by this app's user
         # community: a list genre records (dicts) set in Musicbrainz by the community

@@ -17,7 +17,6 @@
 
 import abc
 from pathlib import Path
-from typing import Tuple
 
 import mutagen
 
@@ -57,7 +56,7 @@ class AudioFile(abc.ABC):
     def write_tags(self) -> None:
         """Write the tags to the audio file."""
 
-    def _get_tag_sources(self) -> Tuple[Release, int, Medium, int, Track]:
+    def _get_tag_sources(self) -> tuple[Release, int, Medium, int, Track]:
         # Returns the objects and information required to generate tags.
         release = self.one_track.release or Release()
         medium_number = self.one_track.medium_number

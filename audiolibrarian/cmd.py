@@ -15,12 +15,11 @@
 #
 
 import subprocess
-from typing import List, Tuple
 
 from audiolibrarian.output import Dots
 
 
-def parallel(message: str, commands: List[Tuple]):
+def parallel(message: str, commands: list[tuple]):
     """Execute commands in parallel."""
     with Dots(message) as d:
         for p in [subprocess.Popen(c) for c in commands]:

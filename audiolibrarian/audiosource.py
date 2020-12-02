@@ -21,7 +21,6 @@ import subprocess
 import tempfile
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List
 
 import discid
 
@@ -43,7 +42,7 @@ class AudioSource(abc.ABC):
             shutil.rmtree(self._temp_dir)
 
     @property
-    def source_list(self) -> List[Path]:
+    def source_list(self) -> list[Path]:
         """Return a list with source file paths and blanks.
 
         The list will be ordered by track number, with None in spaces where no
@@ -52,7 +51,7 @@ class AudioSource(abc.ABC):
         if not self._source_list:
             source_filenames = self.get_source_filenames()
             length = max([text.get_track_number(str(f.name)) for f in source_filenames])
-            result: List[(Path, None)] = [None] * length
+            result: list[(Path, None)] = [None] * length
             if length:
                 for fn in source_filenames:
                     idx = text.get_track_number(str(fn.name)) - 1
@@ -68,14 +67,14 @@ class AudioSource(abc.ABC):
         """Returns a FrontCover record or None."""
 
     @abc.abstractmethod
-    def get_search_data(self) -> Dict[str, str]:
+    def get_search_data(self) -> dict[str, str]:
         """Returns a dictionary of search data useful for doing a MusicBrainz search."""
 
     @abc.abstractmethod
-    def get_source_filenames(self) -> List[Path]:
+    def get_source_filenames(self) -> list[Path]:
         """Returns a list of the original source file paths."""
 
-    def get_wav_filenames(self) -> List[Path]:
+    def get_wav_filenames(self) -> list[Path]:
         """Returns a list of the prepared wav file paths."""
         return sorted(self._temp_dir.glob("*.wav"), key=alpha_numeric_key)
 
@@ -89,10 +88,10 @@ class CDAudioSource(AudioSource):
         super().__init__()
         self._cd = discid.read(features=["mcn"])
 
-    def get_search_data(self) -> Dict[str, str]:
+    def get_search_data(self) -> dict[str, str]:
         return {"disc_id": self._cd.id, "disc_mcn": self._cd.mcn}
 
-    def get_source_filenames(self) -> List[Path]:
+    def get_source_filenames(self) -> list[Path]:
         """Returns a list of the original source file paths.
 
         Since we're working with a CD, these files may not yet exists if they have not been
@@ -116,7 +115,7 @@ class CDAudioSource(AudioSource):
 
 
 class FilesAudioSource(AudioSource):
-    def __init__(self, filenames: List[Path]):
+    def __init__(self, filenames: list[Path]):
         super().__init__()
         self._filenames = filenames
         if len(filenames) == 1 and filenames[0].is_dir():
@@ -134,7 +133,7 @@ class FilesAudioSource(AudioSource):
             if release.front_cover:
                 return release.front_cover
 
-    def get_search_data(self) -> Dict[str, str]:
+    def get_search_data(self) -> dict[str, str]:
         for filename in self._filenames:
             one_track = open_(filename).one_track
             release = one_track.release
@@ -160,7 +159,7 @@ class FilesAudioSource(AudioSource):
                 return {"artist": artist, "album": album}
         return {}
 
-    def get_source_filenames(self) -> List[Path]:
+    def get_source_filenames(self) -> list[Path]:
         """Returns a list of the original source file paths."""
         return self._filenames
 

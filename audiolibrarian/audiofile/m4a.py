@@ -15,7 +15,6 @@
 #
 
 from logging import getLogger
-from typing import List
 
 from mutagen.mp4 import AtomDataType, MP4Cover, MP4FreeForm
 
@@ -159,7 +158,7 @@ class M4aFile(AudioFile):
                 return
             return MP4FreeForm(bytes(str(s), "utf8"))
 
-        def ffl(list_: (List[str], None)) -> (ListF, None):
+        def ffl(list_: (list[str], None)) -> (ListF, None):
             if not list_:
                 return
             return ListF([ff(x) for x in list_])

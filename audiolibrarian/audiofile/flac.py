@@ -15,7 +15,6 @@
 #
 
 import re
-from typing import List
 
 import mutagen.flac
 
@@ -45,7 +44,7 @@ class FlacFile(AudioFile):
     def read_tags(self) -> OneTrack:
         """Reads the tags and returns a OneTrack object."""
 
-        def listf(lst: (List, None)) -> (ListF, None):
+        def listf(lst: (list, None)) -> (ListF, None):
             if lst is not None:
                 return ListF(lst)
 
@@ -198,13 +197,13 @@ class FlacFile(AudioFile):
         self._mut_file.save()
 
     @staticmethod
-    def _make_performer_tag(performers: List[Performer]) -> List[str]:
+    def _make_performer_tag(performers: list[Performer]) -> list[str]:
         # Returns a list of performer tag strings "name (instrument)".
         if performers:
             return [f"{p.name} ({p.instrument})" for p in performers]
 
     @staticmethod
-    def _parse_performer_tag(performers_tag: List[str]) -> List[Performer]:
+    def _parse_performer_tag(performers_tag: list[str]) -> list[Performer]:
         # Parses a list of performer tags and returns a list of Performer objects.
         performer_re = re.compile(r"(?P<name>.*)\((?P<instrument>.*)\)")
         performers = []
