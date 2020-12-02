@@ -148,7 +148,7 @@ class Base:
         manifests = set()
         for directory in directories:
             path = Path(directory)
-            for manifest in path.rglob(self._manifest_file):
+            for manifest in path.glob(f"**/{self._manifest_file}"):
                 manifests.add(manifest)
         return sorted(list(manifests))
 
