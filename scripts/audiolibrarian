@@ -22,16 +22,17 @@ PYTHONPATH=$(pwd) scripts/audiolibrarian /media/BlackBox/Music/flac/some_file
 
 import argparse
 import logging
+import pathlib
 import sys
-from pathlib import Path
 
-from audiolibrarian import check_deps, commands
+import audiolibrarian
 
 log = logging.getLogger("audiolibrarian")
 
 
 # noinspection PyProtectedMember
 def parse_args():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Audio Librarian")
 
     # global options
@@ -45,9 +46,10 @@ def parse_args():
 
     # add sub-commands and args for sub_commands
     subparsers = parser.add_subparsers(title="commands", dest="command")
-    for cmd_ in commands:
+    for cmd_ in audiolibrarian.commands:
         # this is a total hack because argparse won't allow you to add an already
         # existing ArgumentParser as a sub-parser.
+        # pylint: disable=protected-access
         if cmd_.parser:
             cmd_.parser.prog = f"{subparsers._prog_prefix} {cmd_.command}"
             subparsers._choices_actions.append(
@@ -65,14 +67,14 @@ if __name__ == "__main__":
     logging.captureWarnings(True)
     log.info(f"ARGS: {args}")
 
-    if not check_deps():
+    if not audiolibrarian.check_deps():
         sys.exit(1)
 
-    for cmd in commands:
+    for cmd in audiolibrarian.commands:
         if args.command == cmd.command:
             if not cmd.validate_args(args):
                 sys.exit(2)
             cmd(args)
             break
     if args.log_level == logging.DEBUG:
-        print(Path("/proc/self/status").read_text())
+        print(pathlib.Path("/proc/self/status").read_text())

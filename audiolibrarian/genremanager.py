@@ -1,3 +1,4 @@
+"""GenreManager"""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -30,7 +31,9 @@ from audiolibrarian.text import input_
 log = getLogger(__name__)
 
 
-class GenreManager:
+class GenreManager:  # pylint: disable=too-few-public-methods
+    """Manage genres."""
+
     def __init__(self, args):
         self._args = args
         self._mb = MusicBrainzSession()
@@ -131,8 +134,8 @@ class GenreManager:
         user_modified = False
         cache_file = Path.home() / ".cache" / "audiolibrarian" / "user-genres.pickle"
         if cache_file.exists():
-            with cache_file.open(mode="rb") as cf:
-                user = pickle.load(cf)
+            with cache_file.open(mode="rb") as cache_file_obj:
+                user = pickle.load(cache_file_obj)
         for artist_id in self._paths_by_artist:
             if artist_id in user:
                 log.debug(f"Cache hit: {artist_id} {user[artist_id]}")
@@ -149,6 +152,6 @@ class GenreManager:
                 }
         if user_modified:
             cache_file.parent.mkdir(exist_ok=True)
-            with cache_file.open(mode="wb") as cf:
-                pickle.dump(user, cf)
+            with cache_file.open(mode="wb") as cache_file_obj:
+                pickle.dump(user, cache_file_obj)
         return user, community

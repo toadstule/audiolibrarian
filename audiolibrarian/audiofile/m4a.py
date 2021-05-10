@@ -1,3 +1,4 @@
+"""AudioFile support for m4a files."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -49,7 +50,7 @@ class M4aFile(AudioFile):
         def get_str(key) -> (str, None):
             # Return first element for the given key, utf8-decoded.
             if mut.get(key) is None:
-                return
+                return None
             return mut.get(key)[0].decode("utf8")
 
         def get_strl(key) -> (ListF, None):
@@ -69,6 +70,7 @@ class M4aFile(AudioFile):
         front_cover = None
         if mut.get("covr"):
             cover = mut["covr"][0]
+            # noinspection PyUnresolvedReferences
             mime = "image/png" if cover.imageformat == AtomDataType.PNG else "image/jpg"
             front_cover = FrontCover(data=bytes(cover), mime=mime)
         medium_count = int(mut["disk"][0][1]) if mut.get("disk") else None
@@ -153,22 +155,23 @@ class M4aFile(AudioFile):
     def write_tags(self) -> None:
         """Writes the tags."""
 
-        def ff(s: (str, int, None)) -> (bytes, None):
-            if s is None:
-                return
-            return MP4FreeForm(bytes(str(s), "utf8"))
+        def ff(text: (str, int, None)) -> (bytes, None):  # pylint: disable=invalid-name
+            if text is None:
+                return None
+            return MP4FreeForm(bytes(str(text), "utf8"))
 
-        def ffl(list_: (list[str], None)) -> (ListF, None):
+        def ffl(list_: (list[str], None)) -> (ListF, None):  # pylint: disable=invalid-name
             if not list_:
-                return
+                return None
             return ListF([ff(x) for x in list_])
 
         # Note: We don't write "performers" to m4a files.
         release, medium_number, medium, track_number, track = self._get_tag_sources()
         front_cover = None
-        if (c := release.front_cover) is not None:
-            image_format = AtomDataType.PNG if c.mime == "image/png" else AtomDataType.JPEG
-            front_cover = [MP4Cover(c.data, imageformat=image_format)]
+        if (cover := release.front_cover) is not None:
+            # noinspection PyUnresolvedReferences
+            image_format = AtomDataType.PNG if cover.mime == "image/png" else AtomDataType.JPEG
+            front_cover = [MP4Cover(cover.data, imageformat=image_format)]
         tags = {
             f"{ITUNES}:ARRANGER": ffl(release.people and release.people.arrangers),
             f"{ITUNES}:ARTISTS": ffl(track.artists),
@@ -212,11 +215,11 @@ class M4aFile(AudioFile):
         }
         tags = Tags(tags)
 
-        for k, v in tags.items():
+        for key, value in tags.items():
             try:
-                self._mut_file[k] = v
+                self._mut_file[key] = value
             except Exception:  # pragma: no cover
-                log.critical("ERROR:", k, v)
+                log.critical("ERROR: %s %s", key, value)
                 raise
 
         self._mut_file.save()

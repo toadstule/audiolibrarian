@@ -1,3 +1,4 @@
+"""AudioFile support for flac files."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -15,6 +16,7 @@
 #
 
 import re
+from typing import Optional
 
 import mutagen.flac
 
@@ -47,6 +49,7 @@ class FlacFile(AudioFile):
         def listf(lst: (list, None)) -> (ListF, None):
             if lst is not None:
                 return ListF(lst)
+            return None
 
         mut = self._mut_file
         front_cover = None
@@ -197,18 +200,19 @@ class FlacFile(AudioFile):
         self._mut_file.save()
 
     @staticmethod
-    def _make_performer_tag(performers: list[Performer]) -> list[str]:
+    def _make_performer_tag(performers: Optional[list[Performer]]) -> Optional[list[str]]:
         # Returns a list of performer tag strings "name (instrument)".
-        if performers:
-            return [f"{p.name} ({p.instrument})" for p in performers]
+        if performers is None:
+            return None
+        return [f"{p.name} ({p.instrument})" for p in performers]
 
     @staticmethod
     def _parse_performer_tag(performers_tag: list[str]) -> list[Performer]:
         # Parses a list of performer tags and returns a list of Performer objects.
         performer_re = re.compile(r"(?P<name>.*)\((?P<instrument>.*)\)")
         performers = []
-        for p in performers_tag:
-            if match := performer_re.match(p):
+        for tag in performers_tag:
+            if match := performer_re.match(tag):
                 name = match.groupdict()["name"].strip()
                 instrument = match.groupdict()["instrument"].strip()
                 performers.append(Performer(name=name, instrument=instrument))

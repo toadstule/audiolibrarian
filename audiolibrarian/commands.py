@@ -1,3 +1,4 @@
+"""Command line commands."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -35,6 +36,7 @@ class _Command:
 
     @staticmethod
     def validate_args(args: Namespace) -> bool:
+        """Validate command line arguments."""
         _ = args
         return True
 
@@ -262,7 +264,7 @@ def _validate_disc_arg(args: Namespace) -> bool:
         if not re.match(r"\d+/\d+", args.disc):
             print("Invalid --disc specification; should be 'x/y'")
             return False
-        x, y = args.disc.split("/")
+        x, y = args.disc.split("/")  # pylint: disable=invalid-name
         if int(x) > int(y) or int(x) < 1 or int(y) < 1:
             print("Invalid --disc specification; should be 'x/y' where x <= y and x and y  >= 1")
             return False

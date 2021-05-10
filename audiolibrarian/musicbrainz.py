@@ -1,3 +1,4 @@
+"""Access the MusicBrainz service."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -40,9 +41,9 @@ from audiolibrarian.records import (
 from audiolibrarian.text import fix, get_uuid, input_, join
 
 log = getLogger(__name__)
-_user_agent_name = "audiolibrarian"
-_user_agent_contact = "audiolibrarian@jibson.com"
-mb.set_useragent(_user_agent_name, __version__, _user_agent_contact)
+_USER_AGENT_NAME = "audiolibrarian"
+_USER_AGENT_CONTACT = "audiolibrarian@jibson.com"
+mb.set_useragent(_USER_AGENT_NAME, __version__, _USER_AGENT_CONTACT)
 
 
 class MusicBrainzSession:
@@ -67,7 +68,7 @@ class MusicBrainzSession:
             self.__session = requests.Session()
             self._session.auth = HTTPDigestAuth("toadstule", "***REMOVED***")
             self._session.headers.update(
-                {"User-Agent": f"{_user_agent_name}/{__version__} ({_user_agent_contact})"}
+                {"User-Agent": f"{_USER_AGENT_NAME}/{__version__} ({_USER_AGENT_CONTACT})"}
             )
         return self.__session
 
@@ -77,13 +78,13 @@ class MusicBrainzSession:
         url = f"https://musicbrainz.org/ws/2/{path}"
         params["fmt"] = "json"
         self.sleep()
-        r = self._session.get(url, params=params)
-        while r.status_code == 503:
+        result = self._session.get(url, params=params)
+        while result.status_code == 503:
             log.warning("Waiting due to throttling...")
             time.sleep(10)
-            r = self._session.get(url, params=params)
-        assert r.status_code == 200, f"{r.status_code} - {url}"
-        return r.json()
+            result = self._session.get(url, params=params)
+        assert result.status_code == 200, f"{result.status_code} - {url}"
+        return result.json()
 
     def get_artist_by_id(self, artist_id: str, includes=None):
         """Returns artist for the given musicbrainz-artist ID."""
@@ -157,6 +158,7 @@ class MusicBrainzRelease:
                 mb.musicbrainz.ResponseError,
             ) as err:
                 log.warning(f"Error getting front cover: {err}")
+        return None
 
     def _get_genre(self, release_group_id: str, artist_id: str) -> str:
         # Try to find the genre using the following methods (in order):
@@ -167,20 +169,25 @@ class MusicBrainzRelease:
         # - user input
 
         # user-genres and genres are not supported with the python library
-        rg = self._session.get_release_group_by_id(
+        release_group = self._session.get_release_group_by_id(
             release_group_id, includes=["genres", "user-genres"]
         )
-        log.info(f"RELEASE_GROUP_GENRES: {rg}")
-        at = self._session.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
-        log.info(f"ARTIST_GENRES: {at}")
-        if rg["user-genres"]:
-            return rg["user-genres"][0]["name"]
-        if at["user-genres"]:
-            return at["user-genres"][0]["name"]
-        if rg["genres"]:
-            return [g["name"] for g in reversed(sorted(rg["genres"], key=lambda x: x["count"]))][0]
-        if at["genres"]:
-            return [g["name"] for g in reversed(sorted(at["genres"], key=lambda x: x["count"]))][0]
+        log.info(f"RELEASE_GROUP_GENRES: {release_group}")
+        artist = self._session.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
+        log.info(f"ARTIST_GENRES: {artist}")
+        if release_group["user-genres"]:
+            return release_group["user-genres"][0]["name"]
+        if artist["user-genres"]:
+            return artist["user-genres"][0]["name"]
+        if release_group["genres"]:
+            return [
+                g["name"]
+                for g in reversed(sorted(release_group["genres"], key=lambda x: x["count"]))
+            ][0]
+        if artist["genres"]:
+            return [
+                g["name"] for g in reversed(sorted(artist["genres"], key=lambda x: x["count"]))
+            ][0]
         return input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
     def _get_media(self) -> (dict[int, Medium], None):
@@ -196,16 +203,16 @@ class MusicBrainzRelease:
             )
         return media
 
-    def _get_people(self) -> (People, None):
+    def _get_people(self) -> (People, None):  # pylint: disable=too-many-branches
         # Returns a People object (or None).
         arrangers, composers, conductors, engineers, lyricists = [], [], [], [], []
         mixers, performers, producers, writers = [], [], [], []
-        for r in self._release.get("artist-relation-list", []):
+        for relation in self._release.get("artist-relation-list", []):
             if log.getEffectiveLevel() == DEBUG:
                 pprint.pp("== ARTIST-RELATION-LIST ===================")
-                pprint.pp(r)
-            name = fix(r["artist"]["name"])
-            type_ = r["type"].lower()
+                pprint.pp(relation)
+            name = fix(relation["artist"]["name"])
+            type_ = relation["type"].lower()
             if type_ == "arranger":
                 arrangers.append(name)
             elif type_ == "composer":
@@ -219,10 +226,12 @@ class MusicBrainzRelease:
             elif type_ == "mix":
                 mixers.append(name)
             elif type_ == "instrument":
-                performers.append(Performer(name=name, instrument=fix(join(r["attribute-list"]))))
+                performers.append(
+                    Performer(name=name, instrument=fix(join(relation["attribute-list"])))
+                )
             elif type_ == "vocal":
                 performers.append(Performer(name=name, instrument="lead vocals"))
-                if attrs := r.get("attribute-list"):
+                if attrs := relation.get("attribute-list"):
                     if attrs := [x for x in attrs if x != "lead vocals"]:
                         performers.append(Performer(name=name, instrument=fix(join(attrs))))
                 else:
@@ -233,7 +242,7 @@ class MusicBrainzRelease:
                 writers.append(name)
             else:
                 log.warning(f"Unknown artist-relation type: {type_}")
-        if (
+        if (  # pylint: disable=too-many-boolean-expressions
             engineers
             or arrangers
             or composers
@@ -255,6 +264,7 @@ class MusicBrainzRelease:
                 producers=producers or None,
                 writers=writers or None,
             )
+        return None
 
     def _get_release(self) -> Release:
         # Returns the Release object.
@@ -313,11 +323,11 @@ class MusicBrainzRelease:
         tracks = {}
         for medium in self._release.get("medium-list", []):
             if int(medium["position"]) == medium_number:
-                for t in medium["track-list"]:
-                    track_number = int(t["position"])
-                    recording = t["recording"]
+                for track in medium["track-list"]:
+                    track_number = int(track["position"])
+                    recording = track["recording"]
                     artist, artist_list, artist_sort, artist_ids = self._process_artist_credit(
-                        t.get("artist-credit") or recording["artist-credit"]
+                        track.get("artist-credit") or recording["artist-credit"]
                     )
                     tracks[track_number] = Track(
                         artist=artist,
@@ -325,9 +335,9 @@ class MusicBrainzRelease:
                         artists_sort=[artist_sort],
                         isrcs=recording.get("isrc-list"),
                         musicbrainz_artist_ids=artist_ids,
-                        musicbrainz_release_track_id=t["id"],
+                        musicbrainz_release_track_id=track["id"],
                         musicbrainz_track_id=recording["id"],
-                        title=fix(t.get("title") or recording["title"]),
+                        title=fix(track.get("title") or recording["title"]),
                         track_number=track_number,
                     )
                 break
@@ -340,15 +350,15 @@ class MusicBrainzRelease:
         artist_names_list = ListF()
         artist_sort_names = ""
         artist_ids = ListF()
-        for a in artist_credit:
-            if isinstance(a, dict):
-                artist_names_str += fix(a.get("name") or a["artist"]["name"])
-                artist_names_list.append(fix(a.get("name") or a["artist"]["name"]))
-                artist_sort_names += fix(a["artist"]["sort-name"])
-                artist_ids.append(fix(a["artist"]["id"]))
+        for credit in artist_credit:
+            if isinstance(credit, dict):
+                artist_names_str += fix(credit.get("name") or credit["artist"]["name"])
+                artist_names_list.append(fix(credit.get("name") or credit["artist"]["name"]))
+                artist_sort_names += fix(credit["artist"]["sort-name"])
+                artist_ids.append(fix(credit["artist"]["id"]))
             else:
-                artist_names_str += fix(a)
-                artist_sort_names += fix(a)
+                artist_names_str += fix(credit)
+                artist_sort_names += fix(credit)
         return artist_names_str, artist_names_list, artist_sort_names, artist_ids
 
 
@@ -372,7 +382,7 @@ class Searcher:
         return self.__mb_session
 
     def find_music_brains_release(self) -> (Release, None):
-        # Returns a Release object (or None) based on a search.
+        """Return a Release object (or None) based on a search."""
         release_id = self.mb_release_id
         if not release_id and self.disc_id:
             self._mb_session.sleep()
@@ -395,7 +405,7 @@ class Searcher:
         return MusicBrainzRelease(release_id).get_release()
 
     def _get_release_group_ids(self) -> list[str]:
-        # Returns release groups that fuzzy-match the search criteria.
+        # Return release groups that fuzzy-match the search criteria.
         artist_l = self.artist.lower()
         album_l = self.album.lower()
         self._mb_session.sleep()

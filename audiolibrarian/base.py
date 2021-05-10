@@ -43,7 +43,7 @@ from audiolibrarian.text import input_
 log = getLogger(__name__)
 
 
-class Base:
+class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """AudioLibrarian base class.
 
     This class should be sub-classed for various sub_commands.
@@ -118,7 +118,8 @@ class Base:
             self._make_clean_workdirs()
             self._audio_source.copy_wavs(self._wav_dir)
             self._rename_wav()
-            self._make_source() if make_source else None
+            if make_source:
+                self._make_source()
             self._normalize()
             self._make_flac()
             self._make_m4a()
@@ -176,12 +177,12 @@ class Base:
         print("Finding MusicBrainz release information...")
         self._release = searcher.find_music_brains_release()
         self._medium = self._release.media[int(self._disc_number)]
-        if fc := not self._release.front_cover and self._audio_source.get_front_cover():
+        if cover := not self._release.front_cover and self._audio_source.get_front_cover():
             log.info("Using front-cover image from source file")
-            self._release.front_cover = fc
-        summary, ok = self._summary()
+            self._release.front_cover = cover
+        summary, okay = self._summary()
         print(summary)
-        if not ok:
+        if not okay:
             print(color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
         if not skip_confirm and input_("Confirm [N,y]: ").lower() != "y":  # pragma: no cover
@@ -191,8 +192,8 @@ class Base:
         # Erases everything from the workdir and creates the empty directory structure.
         if self._work_dir.is_dir():
             shutil.rmtree(self._work_dir)
-        for d in self._flac_dir, self._m4a_dir, self._mp3_dir, self._source_dir, self._wav_dir:
-            d.mkdir(parents=True)
+        for path in self._flac_dir, self._m4a_dir, self._mp3_dir, self._source_dir, self._wav_dir:
+            path.mkdir(parents=True)
 
     def _make_flac(self, source: bool = False) -> None:
         # Converts the wav files into flac files; tags them.
@@ -211,9 +212,9 @@ class Base:
     def _make_m4a(self) -> None:
         # Converts the wav files into m4a files; tags them.
         commands = []
-        for f in self._wav_filenames:
-            dst_file = self._m4a_dir / f.name.replace(".wav", ".m4a")
-            commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", dst_file, f))
+        for filename in self._wav_filenames:
+            dst_file = self._m4a_dir / filename.name.replace(".wav", ".m4a")
+            commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", dst_file, filename))
         cmd.parallel(f"Making {len(commands)} m4a files...", commands)
         cmd.touch(self._m4a_filenames)
         self._tag_files(self._m4a_filenames)
@@ -221,9 +222,9 @@ class Base:
     def _make_mp3(self) -> None:
         # Converts the wav files into mp3 files; tags them.
         commands = []
-        for f in self._wav_filenames:
-            dst_file = self._mp3_dir / f.name.replace(".wav", ".mp3")
-            commands.append(("lame", "--silent", "-h", "-b", "192", f, dst_file))
+        for filename in self._wav_filenames:
+            dst_file = self._mp3_dir / filename.name.replace(".wav", ".mp3")
+            commands.append(("lame", "--silent", "-h", "-b", "192", filename, dst_file))
         cmd.parallel(f"Making {len(commands)} mp3 files...", commands)
         cmd.touch(self._mp3_filenames)
         self._tag_files(self._mp3_filenames)
@@ -248,14 +249,19 @@ class Base:
             m4a_dir /= f"disc{self._disc_number}"
             mp3_dir /= f"disc{self._disc_number}"
             source_dir /= f"disc{self._disc_number}"
-        for d in [flac_dir, m4a_dir, mp3_dir] + ([source_dir] if move_source else []):
-            if d.is_dir():
-                shutil.rmtree(d)
-            d.mkdir(parents=True)
-        [f.rename(flac_dir / f.name) for f in self._flac_filenames]
-        [f.rename(m4a_dir / f.name) for f in self._m4a_filenames]
-        [f.rename(mp3_dir / f.name) for f in self._mp3_filenames]
-        [f.rename(source_dir / f.name) for f in self._source_filenames] if move_source else None
+        for path in [flac_dir, m4a_dir, mp3_dir] + ([source_dir] if move_source else []):
+            if path.is_dir():
+                shutil.rmtree(path)
+            path.mkdir(parents=True)
+        for path in self._flac_filenames:
+            path.rename(flac_dir / path.name)
+        for path in self._m4a_filenames:
+            path.rename(m4a_dir / path.name)
+        for path in self._mp3_filenames:
+            path.rename(mp3_dir / path.name)
+        if move_source:
+            for path in self._source_filenames:
+                path.rename(source_dir / path.name)
 
     def _normalize(self) -> None:
         # Normalizes the wav files using wavegain.
@@ -263,11 +269,11 @@ class Base:
         # sub_command = ["wavegain", "--album", "--apply"]
         command = ["wavegain", "--radio", "--gain=5", "--apply"]
         command.extend(self._wav_filenames)
-        r = subprocess.run(command, capture_output=True)
-        for line in str(r.stderr).split(r"\n"):
+        result = subprocess.run(command, capture_output=True, check=False)
+        for line in str(result.stderr).split(r"\n"):
             line_trunc = line[:137] + "..." if len(line) > 140 else line
             log.info(f"WAVEGAIN: {line_trunc}")
-        r.check_returncode()
+        result.check_returncode()
 
     @staticmethod
     def _read_manifest(manifest_path: Path) -> dict:
@@ -284,7 +290,7 @@ class Base:
                 log.info(f"RENAMING: {old_path.name} --> {new_path.name}")
                 old_path.rename(new_path)
 
-    def _summary(self) -> tuple[str, bool]:
+    def _summary(self) -> tuple[str, bool]:  # pylint: disable=too-many-locals
         # Returns a summary of the conversion/tagging process and an "ok" flag indicating issues.
         #
         # The summary is a nicely formatted table showing the album, artist and track info.
@@ -295,16 +301,16 @@ class Base:
             warn("Cannot provide summary; missing audio_source and/or release.", RuntimeWarning)
             return "", False
         lines = []
-        ok = True
+        okay = True
         no_match = "(no match)"
         col1 = [f.stem if f else no_match for f in self._audio_source.source_list]
         col2 = [t.get_filename() for _, t in sorted(self._medium.tracks.items())]
         col3 = [f"{str(n).zfill(2)}: {t.title}" for n, t in sorted(self._medium.tracks.items())]
         min_total_w = 74  # make sure we've got enough width for MB Release URL
-        w = 40
-        col1_w = min(w, max([len(x) for x in col1] + [len(no_match)]))
-        col2_w = min(w, max([len(x) for x in col2] + [len(no_match)]))
-        col3_w = min(w, max([len(x) for x in col3] + [len(no_match)]))
+        width = 40
+        col1_w = min(width, max([len(x) for x in col1] + [len(no_match)]))
+        col2_w = min(width, max([len(x) for x in col2] + [len(no_match)]))
+        col3_w = min(width, max([len(x) for x in col3] + [len(no_match)]))
         if col1_w + col2_w + col3_w < min_total_w:
             col3_w = min_total_w - (col1_w + col2_w)
         tab_w = col1_w + col2_w + col3_w + 6
@@ -316,43 +322,43 @@ class Base:
         med = f"Disc:       {self._disc_number} of {self._disc_count}"
         mbr = f"MB Release: https://musicbrainz.org/release/{self._release.musicbrainz_album_id}"
         lines.append(f"\u2554{c1_line}\u2550{c2_line}\u2550{c3_line}\u2557")
-        for x in (alb, art, mbr, med):
-            lines.append(f"\u2551 {x} {' ' * (tab_w - len(x))}\u2551")
+        for line in (alb, art, mbr, med):
+            lines.append(f"\u2551 {line} {' ' * (tab_w - len(line))}\u2551")
         fmt = f"\u2551 {{c1: <{col1_w}}} \u2502 {{c2: <{col2_w}}} \u2502 {{c3: <{col3_w}}} \u2551"
         lines.append(f"\u2560{c1_line}\u2564{c2_line}\u2564{c3_line}\u2563")
         lines.append(fmt.format(c1="Source", c2="Destination", c3="Title"))
         lines.append(f"\u2560{c1_line}\u256A{c2_line}\u256A{c3_line}\u2563")
         rows = max(len(col1), len(col2), len(col3))
         for i in range(rows):
-            c1 = (
-                ((col1[i][: w - 3] + "...") if len(col1[i]) > w else col1[i])
+            col1_ = (
+                ((col1[i][: width - 3] + "...") if len(col1[i]) > width else col1[i])
                 if len(col1) > i
                 else no_match
             )
-            c2 = (
-                ((col2[i][: w - 3] + "...") if len(col2[i]) > w else col2[i])
+            col2_ = (
+                ((col2[i][: width - 3] + "...") if len(col2[i]) > width else col2[i])
                 if len(col2) > i
                 else no_match
             )
-            c3 = (
-                ((col3[i][: w - 3] + "...") if len(col3[i]) > w else col3[i])
+            col3_ = (
+                ((col3[i][: width - 3] + "...") if len(col3[i]) > width else col3[i])
                 if len(col3) > i
                 else no_match
             )
-            lines.append(fmt.format(c1=c1, c2=c2, c3=c3))
-            if no_match in (c1, c2, c3):
-                ok = False
+            lines.append(fmt.format(c1=col1_, c2=col2_, c3=col3_))
+            if no_match in (col1_, col2_, col3_):
+                okay = False
         lines.append(f"\u255A{c1_line}\u2567{c2_line}\u2567{c3_line}\u255D")
-        return "\n".join(lines), ok
+        return "\n".join(lines), okay
 
     def _tag_files(self, filenames: list[Path]) -> None:
         # Tags the given list of files.
-        for f in filenames:
-            song = open_(f)
+        for filename in filenames:
+            song = open_(filename)
             song.one_track = OneTrack(
                 release=self._release,
                 medium_number=self._disc_number,
-                track_number=int(f.name.split("__")[0]),
+                track_number=int(filename.name.split("__")[0]),
             )
             song.write_tags()
 

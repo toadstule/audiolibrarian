@@ -22,17 +22,22 @@ import dataclasses
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import Any, Optional
 
 from audiolibrarian import text
 
 
 class BitrateMode(Enum):
+    """Bitrate modes."""
+
     UNKNOWN = 0
     CBR = 1
     VBR = 2
 
 
 class FileType(Enum):
+    """Audio file types."""
+
     UNKNOWN = 0
     AAC = 1
     FLAC = 2
@@ -41,22 +46,29 @@ class FileType(Enum):
 
 
 class Source(Enum):
+    """Information source."""
+
     MUSICBRAINZ = 1
     TAGS = 2
 
 
 class ListF(list):
+    """A list, with a first property."""
+
     @property
-    def first(self):
-        if len(self):
+    def first(self) -> Optional[Any]:
+        """Return the first element in the list (or None, if the list is empty)."""
+        if self:
             return self[0]
+        return None
 
 
 @dataclass
 class Record:
     """Base class for records.
 
-    Overrides true/false test for records returning false if all fields are None."""
+    Overrides true/false test for records returning false if all fields are None.
+    """
 
     def __bool__(self):
         return bool([x for x in asdict(self).values() if x is not None])
@@ -69,6 +81,8 @@ class Record:
 # Primitive Record Types
 @dataclass
 class FileInfo(Record):
+    """File information."""
+
     bitrate: int = None
     bitrate_mode: BitrateMode = None
     path: Path = None
@@ -77,6 +91,8 @@ class FileInfo(Record):
 
 @dataclass
 class FrontCover(Record):
+    """A front cover."""
+
     data: bytes = None
     desc: str = None
     mime: str = None
@@ -84,12 +100,16 @@ class FrontCover(Record):
 
 @dataclass
 class Performer(Record):
+    """A performer with an instrument."""
+
     name: str = None
     instrument: str = None
 
 
 @dataclass
 class Track(Record):
+    """A track."""
+
     artist: str = None
     artists: ListF = None
     artists_sort: list[str] = None
@@ -112,6 +132,8 @@ class Track(Record):
 # Combined Record Types (fields + other record types)
 @dataclass
 class Medium(Record):
+    """A medium."""
+
     formats: ListF = None
     titles: list[str] = None
     track_count: int = None
@@ -120,6 +142,8 @@ class Medium(Record):
 
 @dataclass
 class People(Record):
+    """People."""
+
     arrangers: list[str] = None
     composers: list[str] = None
     conductors: list[str] = None
@@ -132,7 +156,9 @@ class People(Record):
 
 
 @dataclass
-class Release(Record):
+class Release(Record):  # pylint: disable=too-many-instance-attributes
+    """A release."""
+
     album: str = None
     album_artists: ListF = None
     album_artists_sort: ListF = None
@@ -167,7 +193,7 @@ class Release(Record):
         album_dir = Path(text.get_filename(f"{self.original_year}__{self.album}"))
         return artist_dir / album_dir
 
-    def pp(self, medium_number: int) -> str:
+    def pp(self, medium_number: int) -> str:  # pylint: disable=invalid-name
         """Returns a string summary of the Release."""
         tracks = "\n".join(
             (
@@ -188,6 +214,8 @@ class Release(Record):
 
 @dataclass
 class OneTrack(Record):
+    """A single track."""
+
     release: Release = None
     medium_number: int = None
     track_number: int = None
@@ -197,12 +225,14 @@ class OneTrack(Record):
         """The Medium object (or None)."""
         if self.release and self.release.media:
             return self.release.media[self.medium_number]
+        return None
 
     @property
     def track(self) -> (Track, None):
         """The Track object (or None)."""
         if self.medium and self.medium.tracks:
             return self.medium.tracks[self.track_number]
+        return None
 
     def get_artist_album_disc_path(self) -> Path:
         """Returns a directory for the artist/album/disc combination.

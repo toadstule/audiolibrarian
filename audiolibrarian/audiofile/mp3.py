@@ -1,3 +1,4 @@
+"""AudioFile support for mp3 files."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -148,11 +149,12 @@ class Mp3File(AudioFile):
             release.source = Source.TAGS
         return OneTrack(release=release, medium_number=medium_number, track_number=track_number)
 
+    # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     def write_tags(self) -> None:
         """Writes the tags."""
 
-        def slash(x):
-            return "/".join(x)
+        def slash(text):
+            return "/".join(text)
 
         release, medium_number, medium, track_number, track = self._get_tag_sources()
         tipl_people = (
@@ -166,76 +168,80 @@ class Mp3File(AudioFile):
             + [["writer", x] for x in release.people and release.people.writers or []]
         )
         tags = []
-        if t := release.album:
-            tags.append(mutagen.id3.TALB(encoding=1, text=t))
-        if t := release.people and release.people.composers:
-            tags.append(mutagen.id3.TCOM(encoding=1, text=slash(t)))
-        if t := release.genres:
-            tags.append(mutagen.id3.TCON(encoding=3, text=slash(t)))
-        if t := release.original_year:
-            tags.append(mutagen.id3.TDOR(encoding=0, text=str(t)))
-        if t := release.date:
-            tags.append(mutagen.id3.TDRC(encoding=0, text=t))
-        if t := release.people and release.people.lyricists:
-            tags.append(mutagen.id3.TEXT(encoding=1, text=slash(t)))
-        if p := tipl_people:
-            tags.append(mutagen.id3.TIPL(encoding=1, people=p))
-        if t := track.title:
-            tags.append(mutagen.id3.TIT2(encoding=1, text=t))
-        if t := medium.formats:
-            tags.append(mutagen.id3.TMED(encoding=1, text=slash(t)))
-        if t := track.artist:
-            tags.append(mutagen.id3.TPE1(encoding=1, text=t))
-        if t := release.album_artists:
-            tags.append(mutagen.id3.TPE2(encoding=1, text=slash(t)))
-        if t := release.people and release.people.conductors:
-            tags.append(mutagen.id3.TPE3(encoding=1, text=slash(t)))
-        if (n := medium_number) and (t := release.medium_count):
-            tags.append(mutagen.id3.TPOS(encoding=0, text=f"{n}/{t}"))
-        if t := release.labels:
-            tags.append(mutagen.id3.TPUB(encoding=1, text=slash(t)))
-        if (n := track_number) and (t := medium.track_count):
-            tags.append(mutagen.id3.TRCK(encoding=0, text=f"{n}/{t}"))
-        if t := release.album_artists_sort:
-            tags.append(mutagen.id3.TSO2(encoding=1, text=slash(t)))
-        if t := track.artists_sort:
-            tags.append(mutagen.id3.TSOP(encoding=1, text=slash(t)))
-        if t := track.isrcs:
-            tags.append(mutagen.id3.TSRC(encoding=1, text=slash(t)))
-        if t := medium.titles:
-            tags.append(mutagen.id3.TSST(encoding=1, text=slash(t)))
-        if t := track.artists:
-            tags.append(TXXX(encoding=1, desc="ARTISTS", text=slash(t)))
-        if t := release.asins:
-            tags.append(TXXX(encoding=1, desc="ASIN", text=slash(t)))
-        if t := release.barcodes:
-            tags.append(TXXX(encoding=1, desc="BARCODE", text=slash(t)))
-        if t := release.catalog_numbers:
-            tags.append(TXXX(encoding=1, desc="CATALOGNUMBER", text=slash(t)))
-        if t := release.musicbrainz_album_artist_ids:
-            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Artist Id", text=slash(t)))
-        if t := release.musicbrainz_album_id:
-            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Id", text=t))
-        if t := release.release_countries:
-            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Release Country", text=slash(t)))
-        if t := release.release_statuses:
-            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Status", text=slash(t)))
-        if t := release.release_types:
-            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Type", text=slash(t)))
-        if t := track.musicbrainz_artist_ids:
-            tags.append(TXXX(encoding=1, desc="MusicBrainz Artist Id", text=slash(t)))
-        if t := release.musicbrainz_release_group_id:
-            tags.append(TXXX(encoding=1, desc="MusicBrainz Release Group Id", text=t))
-        if t := track.musicbrainz_release_track_id:
-            tags.append(TXXX(encoding=1, desc="MusicBrainz Release Track Id", text=t))
-        if t := release.script:
-            tags.append(TXXX(encoding=1, desc="SCRIPT", text=t))
-        if t := release.original_year:
-            tags.append(TXXX(encoding=1, desc="originalyear", text=str(t)))
-        if d := track.musicbrainz_track_id:
-            tags.append(UFID(owner=MB_UFID, data=bytes(d, "utf8")))
-        if (c := release.front_cover) is not None:
-            tags.append(APIC(encoding=0, mime=c.mime, type=3, desc=c.desc, data=c.data))
+        if tag := release.album:
+            tags.append(mutagen.id3.TALB(encoding=1, text=tag))
+        if tag := release.people and release.people.composers:
+            tags.append(mutagen.id3.TCOM(encoding=1, text=slash(tag)))
+        if tag := release.genres:
+            tags.append(mutagen.id3.TCON(encoding=3, text=slash(tag)))
+        if tag := release.original_year:
+            tags.append(mutagen.id3.TDOR(encoding=0, text=str(tag)))
+        if tag := release.date:
+            tags.append(mutagen.id3.TDRC(encoding=0, text=tag))
+        if tag := release.people and release.people.lyricists:
+            tags.append(mutagen.id3.TEXT(encoding=1, text=slash(tag)))
+        if people := tipl_people:
+            tags.append(mutagen.id3.TIPL(encoding=1, people=people))
+        if tag := track.title:
+            tags.append(mutagen.id3.TIT2(encoding=1, text=tag))
+        if tag := medium.formats:
+            tags.append(mutagen.id3.TMED(encoding=1, text=slash(tag)))
+        if tag := track.artist:
+            tags.append(mutagen.id3.TPE1(encoding=1, text=tag))
+        if tag := release.album_artists:
+            tags.append(mutagen.id3.TPE2(encoding=1, text=slash(tag)))
+        if tag := release.people and release.people.conductors:
+            tags.append(mutagen.id3.TPE3(encoding=1, text=slash(tag)))
+        if (num := medium_number) and (tag := release.medium_count):
+            tags.append(mutagen.id3.TPOS(encoding=0, text=f"{num}/{tag}"))
+        if tag := release.labels:
+            tags.append(mutagen.id3.TPUB(encoding=1, text=slash(tag)))
+        if (num := track_number) and (tag := medium.track_count):
+            tags.append(mutagen.id3.TRCK(encoding=0, text=f"{num}/{tag}"))
+        if tag := release.album_artists_sort:
+            tags.append(mutagen.id3.TSO2(encoding=1, text=slash(tag)))
+        if tag := track.artists_sort:
+            tags.append(mutagen.id3.TSOP(encoding=1, text=slash(tag)))
+        if tag := track.isrcs:
+            tags.append(mutagen.id3.TSRC(encoding=1, text=slash(tag)))
+        if tag := medium.titles:
+            tags.append(mutagen.id3.TSST(encoding=1, text=slash(tag)))
+        if tag := track.artists:
+            tags.append(TXXX(encoding=1, desc="ARTISTS", text=slash(tag)))
+        if tag := release.asins:
+            tags.append(TXXX(encoding=1, desc="ASIN", text=slash(tag)))
+        if tag := release.barcodes:
+            tags.append(TXXX(encoding=1, desc="BARCODE", text=slash(tag)))
+        if tag := release.catalog_numbers:
+            tags.append(TXXX(encoding=1, desc="CATALOGNUMBER", text=slash(tag)))
+        if tag := release.musicbrainz_album_artist_ids:
+            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Artist Id", text=slash(tag)))
+        if tag := release.musicbrainz_album_id:
+            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Id", text=tag))
+        if tag := release.release_countries:
+            tags.append(
+                TXXX(encoding=1, desc="MusicBrainz Album Release Country", text=slash(tag))
+            )
+        if tag := release.release_statuses:
+            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Status", text=slash(tag)))
+        if tag := release.release_types:
+            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Type", text=slash(tag)))
+        if tag := track.musicbrainz_artist_ids:
+            tags.append(TXXX(encoding=1, desc="MusicBrainz Artist Id", text=slash(tag)))
+        if tag := release.musicbrainz_release_group_id:
+            tags.append(TXXX(encoding=1, desc="MusicBrainz Release Group Id", text=tag))
+        if tag := track.musicbrainz_release_track_id:
+            tags.append(TXXX(encoding=1, desc="MusicBrainz Release Track Id", text=tag))
+        if tag := release.script:
+            tags.append(TXXX(encoding=1, desc="SCRIPT", text=tag))
+        if tag := release.original_year:
+            tags.append(TXXX(encoding=1, desc="originalyear", text=str(tag)))
+        if id_ := track.musicbrainz_track_id:
+            tags.append(UFID(owner=MB_UFID, data=bytes(id_, "utf8")))
+        if (cover := release.front_cover) is not None:
+            tags.append(
+                APIC(encoding=0, mime=cover.mime, type=3, desc=cover.desc, data=cover.data)
+            )
 
         try:
             id3 = mutagen.id3.ID3(self.filepath)

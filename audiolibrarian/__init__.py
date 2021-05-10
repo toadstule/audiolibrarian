@@ -1,3 +1,4 @@
+"""The audiolibrarian package."""
 __version__ = "0.14.0"
 
 #  Copyright (c) 2020 Stephen Jibson
@@ -42,8 +43,11 @@ def check_deps() -> bool:
     """
     missing = []
     for exe in REQUIRED_EXE:
-        r = subprocess.run(("which", exe), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if r.returncode:
+        try:
+            subprocess.run(
+                ("which", exe), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True
+            )
+        except subprocess.CalledProcessError:
             missing.append(exe)
     if missing:
         print(f"\nMissing required executable(s): {', '.join(missing)}\n")

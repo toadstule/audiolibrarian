@@ -1,3 +1,4 @@
+"""Audio file library."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -38,14 +39,17 @@ class AudioFile(abc.ABC):
 
     @property
     def filepath(self) -> Path:
+        """Return the audio file's path."""
         return self._filepath
 
     @property
     def one_track(self) -> OneTrack:
+        """Return the OneTrack representation of the audio file."""
         return self._one_track
 
     @one_track.setter
     def one_track(self, one_track: OneTrack) -> None:
+        """Set the OneTrack representation of the audio file."""
         self._one_track = one_track
 
     @abc.abstractmethod
@@ -57,7 +61,7 @@ class AudioFile(abc.ABC):
         """Write the tags to the audio file."""
 
     def _get_tag_sources(self) -> tuple[Release, int, Medium, int, Track]:
-        # Returns the objects and information required to generate tags.
+        # Return the objects and information required to generate tags.
         release = self.one_track.release or Release()
         medium_number = self.one_track.medium_number
         medium = self.one_track.medium or Medium()

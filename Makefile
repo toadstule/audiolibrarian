@@ -7,6 +7,10 @@ clean:
 format:
 	black scripts/audiolibrarian .
 
+.PHONY: lint
+lint: format
+	pylint audiolibrarian
+
 .PHONY: requirements
 requirements:
 	python -m pip install -r requirements_base.txt
@@ -20,7 +24,7 @@ sdist: requirements
 
 .PHONY: test
 test:
-	python -m unittest discover tests/
+	python -X dev -m unittest discover tests/
 
 .PHONY: test-coverage
 test-coverage:

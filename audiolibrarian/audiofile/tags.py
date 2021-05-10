@@ -1,3 +1,4 @@
+"""Manage tags."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -14,6 +15,7 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 
+
 # noinspection PyMissingConstructor
 class Tags(dict):
     """A dict-like object that silently drops keys with None in their values.
@@ -24,17 +26,17 @@ class Tags(dict):
     * its value is a dict with None in its values
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # pylint: disable=super-init-not-called
         self.update(*args, **kwargs)
 
     def __setitem__(self, k, v):
         if not (
             v is None
-            or (type(v) is list and (None in v or "None" in v))
-            or (type(v) is dict and (None in v.values() or "None" in v.values()))
+            or (isinstance(v, list) and (None in v or "None" in v))
+            or (isinstance(v, dict) and (None in v.values() or "None" in v.values()))
         ):
             super().__setitem__(k, v)
 
     def update(self, *args, **kwargs):
-        for k, v in dict(*args, **kwargs).items():
-            self[k] = v
+        for key, value in dict(*args, **kwargs).items():
+            self[key] = value
