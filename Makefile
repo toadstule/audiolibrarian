@@ -17,9 +17,9 @@ lint: format
 
 .PHONY: requirements
 requirements:
-	python -m pip install -r requirements_base.txt
+	python -m pip install -r requirements-base.txt
 
-requirements.txt: requirements_base.txt requirements
+requirements.txt: requirements-base.txt requirements
 	python -m pip freeze > $@
 
 .PHONY: sdist
