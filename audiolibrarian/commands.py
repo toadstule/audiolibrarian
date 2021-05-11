@@ -59,6 +59,7 @@ class Convert(_Command, Base):
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
     def __init__(self, args: Namespace) -> None:
+        """Initialize a Convert command handler."""
         super().__init__(args)
         self._source_is_cd = False
         self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
@@ -68,6 +69,7 @@ class Convert(_Command, Base):
 
     @staticmethod
     def validate_args(args: Namespace) -> bool:
+        """Validate command line arguments."""
         return _validate_disc_arg(args)
 
 
@@ -89,6 +91,7 @@ class Genre(_Command):
     parser_action.add_argument("--update", action="store_true", help="update Musicbrainz")
 
     def __init__(self, args: Namespace) -> None:
+        """Initialize a Genre command handler."""
         GenreManager(args)
 
 
@@ -111,6 +114,7 @@ class Manifest(_Command, Base):
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
     def __init__(self, args: Namespace) -> None:
+        """Initialize a Manifest command handler."""
         super().__init__(args)
         self._source_is_cd = args.cd
         self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
@@ -121,6 +125,7 @@ class Manifest(_Command, Base):
 
     @staticmethod
     def validate_args(args: Namespace) -> bool:
+        """Validate command line arguments."""
         return _validate_disc_arg(args)
 
 
@@ -137,6 +142,7 @@ class Reconvert(_Command, Base):
     parser.add_argument("directories", nargs="+", help="source directories")
 
     def __init__(self, args: Namespace) -> None:
+        """Initialize a Reconvert command handler."""
         super().__init__(args)
         self._source_is_cd = False
         manifest_paths = self._find_manifests(args.directories)
@@ -151,6 +157,7 @@ class Reconvert(_Command, Base):
 
     @staticmethod
     def validate_args(args: Namespace) -> bool:
+        """Validate command line arguments."""
         return _validate_directories_arg(args)
 
 
@@ -168,6 +175,7 @@ class Rename(_Command, Base):
     parser.add_argument("directories", nargs="+", help="audio file directories")
 
     def __init__(self, args: Namespace) -> None:
+        """Initialize a Rename command handler."""
         super().__init__(args)
         self._source_is_cd = False
         print("Finding audio files...")
@@ -208,6 +216,7 @@ class Rename(_Command, Base):
 
     @staticmethod
     def validate_args(args: Namespace) -> bool:
+        """Validate command line arguments."""
         return _validate_directories_arg(args)
 
 
@@ -228,6 +237,7 @@ class Rip(_Command, Base):
     parser.add_argument("--disc", "-d", help="x/y: disc x of y; multi-disc release")
 
     def __init__(self, args: Namespace) -> None:
+        """Initialize a Rip command handler."""
         super().__init__(args)
         self._source_is_cd = True
         self._audio_source = CDAudioSource()
@@ -237,6 +247,7 @@ class Rip(_Command, Base):
 
     @staticmethod
     def validate_args(args: Namespace) -> bool:
+        """Validate command line arguments."""
         return _validate_disc_arg(args)
 
 
@@ -247,6 +258,7 @@ class Version(_Command):
     help = "display the program version"
 
     def __init__(self, args: Namespace) -> None:
+        """Initialize a Version command handler."""
         _ = args
         print(f"audiolibrarian {__version__}")
 
@@ -269,3 +281,6 @@ def _validate_disc_arg(args: Namespace) -> bool:
             print("Invalid --disc specification; should be 'x/y' where x <= y and x and y  >= 1")
             return False
     return True
+
+
+commands = (Convert, Genre, Manifest, Reconvert, Rename, Rip, Version)

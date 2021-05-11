@@ -1,4 +1,4 @@
-"""
+"""AudioLibrarian base class.
 
 Useful stuff: https://help.mp3tag.de/main_tags.html
 """
@@ -18,29 +18,26 @@ Useful stuff: https://help.mp3tag.de/main_tags.html
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 
+import argparse
+import logging
+import pathlib
 import shutil
 import subprocess
 import sys
-from argparse import Namespace
-from logging import getLogger
-from pathlib import Path
-from warnings import warn
+import warnings
+from collections.abc import Iterable
+from typing import Union
 
+import filelock
 import pyaml
 import yaml
 
 # noinspection PyPackageRequirements
 from colors import color
-from filelock import FileLock
 
-from audiolibrarian import cmd, text
-from audiolibrarian.audiofile import extensions, open_
-from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.musicbrainz import Searcher
-from audiolibrarian.records import OneTrack
-from audiolibrarian.text import input_
+from audiolibrarian import audiofile, cmd, musicbrainz, records, text
 
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
@@ -51,7 +48,8 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
 
     command = None
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
+        """Initialize the base."""
         # Pull in stuff from args
         search_keys = ("album", "artist", "mb_artist_id", "mb_release_id")
         self._provided_search_data = {k: v for k, v in vars(args).items() if k in search_keys}
@@ -61,15 +59,15 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             self._disc_number, self._disc_count = 1, 1
 
         # directories
-        self._library_dir = Path("library").resolve()
-        self._work_dir = Path("/var/tmp/audiolibrarian")
+        self._library_dir = pathlib.Path("library").resolve()
+        self._work_dir = pathlib.Path("/var/tmp/audiolibrarian")
         self._flac_dir = self._work_dir / "flac"
         self._m4a_dir = self._work_dir / "m4a"
         self._mp3_dir = self._work_dir / "mp3"
         self._source_dir = self._work_dir / "source"
         self._wav_dir = self._work_dir / "wav"
         self._manifest_file = "Manifest.yaml"
-        self._lock = FileLock(str(self._work_dir) + ".lock")
+        self._lock = filelock.FileLock(str(self._work_dir) + ".lock")
 
         # initialize stuff that will be defined later
         self._audio_source = None
@@ -79,39 +77,39 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._source_example = None
 
     @property
-    def _flac_filenames(self) -> list[Path]:
-        # Returns the current list of flac files in the work directory.
+    def _flac_filenames(self) -> list[pathlib.Path]:
+        # Return the current list of flac files in the work directory.
         return sorted(self._flac_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
-    def _m4a_filenames(self) -> list[Path]:
-        # Returns the current list of m4a files in the work directory.
+    def _m4a_filenames(self) -> list[pathlib.Path]:
+        # Return the current list of m4a files in the work directory.
         return sorted(self._m4a_dir.glob("*.m4a"), key=text.alpha_numeric_key)
 
     @property
-    def _mp3_filenames(self) -> list[Path]:
-        # Returns the current list of mp3 files in the work directory.
+    def _mp3_filenames(self) -> list[pathlib.Path]:
+        # Return the current list of mp3 files in the work directory.
         return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
 
     @property
     def _multi_disc(self) -> bool:
-        # Returns True if this is part of a multi-disc set.
+        # Return True if this is part of a multi-disc set.
         return (self._disc_number, self._disc_count) != (1, 1)
 
     @property
-    def _source_filenames(self) -> list[Path]:
-        # Returns the current list of source files in the work directory.
+    def _source_filenames(self) -> list[pathlib.Path]:
+        # Return the current list of source files in the work directory.
         return sorted(self._source_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
-    def _wav_filenames(self) -> list[Path]:
-        # Returns the current list of wav files in the work directory.
+    def _wav_filenames(self) -> list[pathlib.Path]:
+        # Return the current list of wav files in the work directory.
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
     def _convert(self, make_source: bool = True) -> None:
         # Performs all of the steps of ripping, normalizing, converting and moving the files.
         if self._audio_source is None:
-            warn("Cannot convert; no audio_source is defined.", RuntimeWarning)
+            warnings.warn("Cannot convert; no audio_source is defined.", RuntimeWarning)
             return
         self._audio_source.prepare_source()
         with self._lock:
@@ -127,36 +125,38 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             self._move_files(move_source=make_source)
 
     @staticmethod
-    def _find_audio_files(directories: list[str]) -> list[AudioFile]:
+    def _find_audio_files(
+        directories: list[Union[str, pathlib.Path]]
+    ) -> Iterable[audiofile.AudioFile]:
         # Yields audiofile objects found in the given directories.
         paths = []
         # grab all of the paths first because thing may change as files are renamed
         for directory in directories:
-            path = Path(directory)
-            for ext in extensions:
+            path = pathlib.Path(directory)
+            for ext in audiofile.extensions:
                 paths.extend(path.rglob(f"*{ext}"))
         paths = sorted(list(set(paths)))
         # using yield rather than returning a list saves us from simultaneously storing
         # potentially thousands of AudioFile objects in memory at the same time
         for path in paths:
             try:
-                yield open_(path)
+                yield audiofile.open_(path)
             except FileNotFoundError:
                 continue
 
-    def _find_manifests(self, directories: list[str]) -> list[Path]:
-        # Returns a sorted, unique list of manifest files anywhere in the given directories.
+    def _find_manifests(self, directories: list[Union[str, pathlib.Path]]) -> list[pathlib.Path]:
+        # Return a sorted, unique list of manifest files anywhere in the given directories.
         manifests = set()
         for directory in directories:
-            path = Path(directory)
+            path = pathlib.Path(directory)
             for manifest in path.rglob(self._manifest_file):
                 manifests.add(manifest)
         return sorted(list(manifests))
 
-    def _get_searcher(self) -> Searcher:
-        # Returns a Searcher object populated with data from the audio source and cli args.
+    def _get_searcher(self) -> musicbrainz.Searcher:
+        # Return a Searcher object populated with data from the audio source and cli args.
         search_data = self._audio_source.get_search_data() if self._audio_source else {}
-        searcher = Searcher(**search_data)
+        searcher = musicbrainz.Searcher(**search_data)
         searcher.disc_number = self._disc_number
         # override with user-provided info
         if value := self._provided_search_data.get("artist"):
@@ -185,7 +185,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         if not okay:
             print(color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
-        if not skip_confirm and input_("Confirm [N,y]: ").lower() != "y":  # pragma: no cover
+        if not skip_confirm and text.input_("Confirm [N,y]: ").lower() != "y":  # pragma: no cover
             sys.exit(1)
 
     def _make_clean_workdirs(self) -> None:
@@ -235,7 +235,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         # The files are defined by the audio source; they could be wav files from a CD
         # or another type of audio file.
         self._make_flac(source=True)
-        self._source_example = open_(self._source_filenames[0]).read_tags()
+        self._source_example = audiofile.open_(self._source_filenames[0]).read_tags()
 
     def _move_files(self, move_source: bool = True) -> None:
         # Moves converted/tagged files from the work directory into the library directory.
@@ -276,7 +276,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         result.check_returncode()
 
     @staticmethod
-    def _read_manifest(manifest_path: Path) -> dict:
+    def _read_manifest(manifest_path: pathlib.Path) -> dict:
         with open(manifest_path, "r") as manifest_file:
             return yaml.safe_load(manifest_file)
 
@@ -291,14 +291,16 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
                 old_path.rename(new_path)
 
     def _summary(self) -> tuple[str, bool]:  # pylint: disable=too-many-locals
-        # Returns a summary of the conversion/tagging process and an "ok" flag indicating issues.
+        # Return a summary of the conversion/tagging process and an "ok" flag indicating issues.
         #
         # The summary is a nicely formatted table showing the album, artist and track info.
         # The "ok" flag indicating issues will be true if:
         #   - the file count does not match the song count from the MusicBrainz database
         # (https://jrgraphix.net/r/Unicode/2500-257F)
         if self._audio_source is None or self._release is None:
-            warn("Cannot provide summary; missing audio_source and/or release.", RuntimeWarning)
+            warnings.warn(
+                "Cannot provide summary; missing audio_source and/or release.", RuntimeWarning
+            )
             return "", False
         lines = []
         okay = True
@@ -351,11 +353,11 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         lines.append(f"\u255A{c1_line}\u2567{c2_line}\u2567{c3_line}\u255D")
         return "\n".join(lines), okay
 
-    def _tag_files(self, filenames: list[Path]) -> None:
+    def _tag_files(self, filenames: list[pathlib.Path]) -> None:
         # Tags the given list of files.
         for filename in filenames:
-            song = open_(filename)
-            song.one_track = OneTrack(
+            song = audiofile.open_(filename)
+            song.one_track = records.OneTrack(
                 release=self._release,
                 medium_number=self._disc_number,
                 track_number=int(filename.name.split("__")[0]),

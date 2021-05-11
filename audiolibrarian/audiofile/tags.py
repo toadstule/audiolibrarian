@@ -27,9 +27,11 @@ class Tags(dict):
     """
 
     def __init__(self, *args, **kwargs):  # pylint: disable=super-init-not-called
+        """Initialize a Tags object."""
         self.update(*args, **kwargs)
 
     def __setitem__(self, k, v):
+        """Set an item only if should not be dropped."""
         if not (
             v is None
             or (isinstance(v, list) and (None in v or "None" in v))
@@ -38,5 +40,6 @@ class Tags(dict):
             super().__setitem__(k, v)
 
     def update(self, *args, **kwargs):
+        """See base class."""
         for key, value in dict(*args, **kwargs).items():
             self[key] = value

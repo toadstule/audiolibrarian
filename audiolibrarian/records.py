@@ -19,15 +19,14 @@
 # Useful field reference: https://github.com/metabrainz/picard/blob/master/picard/util/tags.py
 
 import dataclasses
-from dataclasses import asdict, dataclass, field
-from enum import Enum
-from pathlib import Path
+import enum
+import pathlib
 from typing import Any, Optional
 
 from audiolibrarian import text
 
 
-class BitrateMode(Enum):
+class BitrateMode(enum.Enum):
     """Bitrate modes."""
 
     UNKNOWN = 0
@@ -35,7 +34,7 @@ class BitrateMode(Enum):
     VBR = 2
 
 
-class FileType(Enum):
+class FileType(enum.Enum):
     """Audio file types."""
 
     UNKNOWN = 0
@@ -45,7 +44,7 @@ class FileType(Enum):
     WAV = 4
 
 
-class Source(Enum):
+class Source(enum.Enum):
     """Information source."""
 
     MUSICBRAINZ = 1
@@ -63,7 +62,7 @@ class ListF(list):
         return None
 
 
-@dataclass
+@dataclasses.dataclass
 class Record:
     """Base class for records.
 
@@ -71,58 +70,59 @@ class Record:
     """
 
     def __bool__(self):
-        return bool([x for x in asdict(self).values() if x is not None])
+        """Return a boolean representation of the Record."""
+        return bool([x for x in dataclasses.asdict(self).values() if x is not None])
 
     def asdict(self) -> dict:
-        """Returns a dict version of the record."""
+        """Return a dict version of the record."""
         return dataclasses.asdict(self)
 
 
 # Primitive Record Types
-@dataclass
+@dataclasses.dataclass
 class FileInfo(Record):
     """File information."""
 
-    bitrate: int = None
-    bitrate_mode: BitrateMode = None
-    path: Path = None
-    type: FileType = None
+    bitrate: Optional[int] = None
+    bitrate_mode: Optional[BitrateMode] = None
+    path: Optional[pathlib.Path] = None
+    type: Optional[FileType] = None
 
 
-@dataclass
+@dataclasses.dataclass
 class FrontCover(Record):
     """A front cover."""
 
-    data: bytes = None
-    desc: str = None
-    mime: str = None
+    data: Optional[bytes] = None
+    desc: Optional[str] = None
+    mime: Optional[str] = None
 
 
-@dataclass
+@dataclasses.dataclass
 class Performer(Record):
     """A performer with an instrument."""
 
-    name: str = None
-    instrument: str = None
+    name: Optional[str] = None
+    instrument: Optional[str] = None
 
 
-@dataclass
+@dataclasses.dataclass
 class Track(Record):
     """A track."""
 
-    artist: str = None
-    artists: ListF = None
-    artists_sort: list[str] = None
-    file_info: FileInfo = None
-    isrcs: list[str] = None
-    musicbrainz_artist_ids: ListF = None
-    musicbrainz_release_track_id: str = None
-    musicbrainz_track_id: str = None
-    title: str = None
-    track_number: int = None
+    artist: Optional[str] = None
+    artists: Optional[ListF] = None
+    artists_sort: Optional[list[str]] = None
+    file_info: Optional[FileInfo] = None
+    isrcs: Optional[list[str]] = None
+    musicbrainz_artist_ids: Optional[ListF] = None
+    musicbrainz_release_track_id: Optional[str] = None
+    musicbrainz_track_id: Optional[str] = None
+    title: Optional[str] = None
+    track_number: Optional[int] = None
 
     def get_filename(self, suffix: str = "") -> str:
-        """Returns a sane filename based on track number and title.
+        """Return a sane filename based on track number and title.
 
         If suffix is included, it will be appended to the filename.
         """
@@ -130,71 +130,71 @@ class Track(Record):
 
 
 # Combined Record Types (fields + other record types)
-@dataclass
+@dataclasses.dataclass
 class Medium(Record):
     """A medium."""
 
-    formats: ListF = None
-    titles: list[str] = None
-    track_count: int = None
-    tracks: dict[int, Track] = None
+    formats: Optional[ListF] = None
+    titles: Optional[list[str]] = None
+    track_count: Optional[int] = None
+    tracks: Optional[dict[int, Track]] = None
 
 
-@dataclass
+@dataclasses.dataclass
 class People(Record):
     """People."""
 
-    arrangers: list[str] = None
-    composers: list[str] = None
-    conductors: list[str] = None
-    engineers: list[str] = None
-    lyricists: list[str] = None
-    mixers: list[str] = None
-    performers: (list[Performer], None) = None
-    producers: list[str] = None
-    writers: list[str] = None
+    arrangers: Optional[list[str]] = None
+    composers: Optional[list[str]] = None
+    conductors: Optional[list[str]] = None
+    engineers: Optional[list[str]] = None
+    lyricists: Optional[list[str]] = None
+    mixers: Optional[list[str]] = None
+    performers: Optional[list[Performer]] = None
+    producers: Optional[list[str]] = None
+    writers: Optional[list[str]] = None
 
 
-@dataclass
+@dataclasses.dataclass
 class Release(Record):  # pylint: disable=too-many-instance-attributes
     """A release."""
 
-    album: str = None
-    album_artists: ListF = None
-    album_artists_sort: ListF = None
-    asins: list[str] = None
-    barcodes: list[str] = None
-    catalog_numbers: list[str] = None
-    date: str = None
-    front_cover: (FrontCover, None) = field(default=None, repr=False)
-    genres: ListF = None
-    labels: list[str] = None
-    media: dict[int, Medium] = None
-    medium_count: int = None
-    musicbrainz_album_artist_ids: ListF = None
-    musicbrainz_album_id: str = None
-    musicbrainz_release_group_id: str = None
-    original_date: str = None
-    original_year: str = None
-    people: People = None
-    release_countries: list[str] = None
-    release_statuses: list[str] = None
-    release_types: list[str] = None
-    script: str = None
-    source: Source = None
+    album: Optional[str] = None
+    album_artists: Optional[ListF] = None
+    album_artists_sort: Optional[ListF] = None
+    asins: Optional[list[str]] = None
+    barcodes: Optional[list[str]] = None
+    catalog_numbers: Optional[list[str]] = None
+    date: Optional[str] = None
+    front_cover: Optional[FrontCover] = dataclasses.field(default=None, repr=False)
+    genres: Optional[ListF] = None
+    labels: Optional[list[str]] = None
+    media: Optional[dict[int, Medium]] = None
+    medium_count: Optional[int] = None
+    musicbrainz_album_artist_ids: Optional[ListF] = None
+    musicbrainz_album_id: Optional[str] = None
+    musicbrainz_release_group_id: Optional[str] = None
+    original_date: Optional[str] = None
+    original_year: Optional[str] = None
+    people: Optional[People] = None
+    release_countries: Optional[list[str]] = None
+    release_statuses: Optional[list[str]] = None
+    release_types: Optional[list[str]] = None
+    script: Optional[str] = None
+    source: Optional[Source] = None
 
-    def get_artist_album_path(self) -> Path:
-        """Returns a directory for the artist/album/disc combination.
+    def get_artist_album_path(self) -> pathlib.Path:
+        """Return a directory for the artist/album/disc combination.
 
         Example:
           -  artist__the/1969__the_album
         """
-        artist_dir = Path(text.get_filename(self.album_artists_sort.first))
-        album_dir = Path(text.get_filename(f"{self.original_year}__{self.album}"))
+        artist_dir = pathlib.Path(text.get_filename(self.album_artists_sort.first))
+        album_dir = pathlib.Path(text.get_filename(f"{self.original_year}__{self.album}"))
         return artist_dir / album_dir
 
     def pp(self, medium_number: int) -> str:  # pylint: disable=invalid-name
-        """Returns a string summary of the Release."""
+        """Return a string summary of the Release."""
         tracks = "\n".join(
             (
                 f"  {str(n).zfill(2)}: {t.title}"
@@ -212,30 +212,30 @@ class Release(Record):  # pylint: disable=too-many-instance-attributes
         )
 
 
-@dataclass
+@dataclasses.dataclass
 class OneTrack(Record):
     """A single track."""
 
-    release: Release = None
-    medium_number: int = None
-    track_number: int = None
+    release: Optional[Release] = None
+    medium_number: Optional[int] = None
+    track_number: Optional[int] = None
 
     @property
-    def medium(self) -> (Medium, None):
-        """The Medium object (or None)."""
+    def medium(self) -> Optional[Medium]:
+        """Return the Medium object (or None)."""
         if self.release and self.release.media:
             return self.release.media[self.medium_number]
         return None
 
     @property
-    def track(self) -> (Track, None):
-        """The Track object (or None)."""
+    def track(self) -> Optional[Track]:
+        """Return the Track object (or None)."""
         if self.medium and self.medium.tracks:
             return self.medium.tracks[self.track_number]
         return None
 
-    def get_artist_album_disc_path(self) -> Path:
-        """Returns a directory for the artist/album/disc combination.
+    def get_artist_album_disc_path(self) -> pathlib.Path:
+        """Return a directory for the artist/album/disc combination.
 
         Example:
           - artist__the/1969__the_album

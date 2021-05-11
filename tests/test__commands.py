@@ -18,7 +18,7 @@ from pathlib import Path
 from unittest import TestCase
 
 # noinspection PyProtectedMember
-from audiolibrarian.commands import Version, _validate_directories_arg, _validate_disc_arg
+from audiolibrarian import commands
 from tests.helpers import captured_output
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
@@ -29,33 +29,39 @@ class TestCommands(TestCase):
         from audiolibrarian import __version__
 
         with captured_output() as (out, err):
-            Version(Namespace())
+            commands.Version(Namespace())
             output = out.getvalue().strip()
             self.assertEqual(f"audiolibrarian {__version__}", output)
 
 
 class TestValidateArgs(TestCase):
     def test__validate_disc(self):
-        self.assertTrue(_validate_disc_arg(Namespace(disc="")))
-        self.assertTrue(_validate_disc_arg(Namespace(disc="1/2")))
-        self.assertTrue(_validate_disc_arg(Namespace(disc="1/1")))
-        self.assertTrue(_validate_disc_arg(Namespace(disc="2/9")))
-        self.assertTrue(_validate_disc_arg(Namespace(disc="4/50")))
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="")))
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="1/2")))
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="1/1")))
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="2/9")))
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="4/50")))
 
-        self.assertFalse(_validate_disc_arg(Namespace(disc="1")))
-        self.assertFalse(_validate_disc_arg(Namespace(disc="a")))
-        self.assertFalse(_validate_disc_arg(Namespace(disc="a/2")))
-        self.assertFalse(_validate_disc_arg(Namespace(disc="5/4")))
-        self.assertFalse(_validate_disc_arg(Namespace(disc="0/1")))
-        self.assertFalse(_validate_disc_arg(Namespace(disc="-5/-4")))
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="1")))
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="a")))
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="a/2")))
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="5/4")))
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="0/1")))
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="-5/-4")))
 
     def test__validate_dirs(self):
         exist = str(test_data_path)
         not_exist = "/does/not/exist/"
-        self.assertTrue(_validate_directories_arg(Namespace(directories=[])))
-        self.assertTrue(_validate_directories_arg(Namespace(directories=[str(test_data_path)])))
-        self.assertTrue(_validate_directories_arg(Namespace(directories=[exist, "/"])))
+        self.assertTrue(commands._validate_directories_arg(Namespace(directories=[])))
+        self.assertTrue(
+            commands._validate_directories_arg(Namespace(directories=[str(test_data_path)]))
+        )
+        self.assertTrue(commands._validate_directories_arg(Namespace(directories=[exist, "/"])))
 
-        self.assertFalse(_validate_directories_arg(Namespace(directories=[not_exist])))
-        self.assertFalse(_validate_directories_arg(Namespace(directories=[exist, not_exist])))
-        self.assertFalse(_validate_directories_arg(Namespace(directories=[__file__, "/"])))
+        self.assertFalse(commands._validate_directories_arg(Namespace(directories=[not_exist])))
+        self.assertFalse(
+            commands._validate_directories_arg(Namespace(directories=[exist, not_exist]))
+        )
+        self.assertFalse(
+            commands._validate_directories_arg(Namespace(directories=[__file__, "/"]))
+        )

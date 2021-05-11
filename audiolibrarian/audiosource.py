@@ -16,36 +16,36 @@
 #
 
 import abc
+import logging
 import os
+import pathlib
 import shutil
 import subprocess
 import tempfile
-from logging import getLogger
-from pathlib import Path
+from typing import Optional
 
 import discid
 
-from audiolibrarian import cmd, text
-from audiolibrarian.audiofile import open_
-from audiolibrarian.records import FrontCover
-from audiolibrarian.text import alpha_numeric_key
+from audiolibrarian import audiofile, cmd, records, text
 
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class AudioSource(abc.ABC):
     """An abstract base class for AudioSource classes."""
 
     def __init__(self):
-        self._temp_dir = Path(tempfile.mkdtemp())
+        """Initialize an AudioSource."""
+        self._temp_dir = pathlib.Path(tempfile.mkdtemp())
         self._source_list = None
 
     def __del__(self):
+        """Remove any temp files."""
         if self._temp_dir.is_dir():
             shutil.rmtree(self._temp_dir)
 
     @property
-    def source_list(self) -> list[Path]:
+    def source_list(self) -> list[Optional[pathlib.Path]]:
         """Return a list with source file paths and blanks.
 
         The list will be ordered by track number, with None in spaces where no
@@ -54,7 +54,7 @@ class AudioSource(abc.ABC):
         if not self._source_list:
             source_filenames = self.get_source_filenames()
             length = max([text.get_track_number(str(f.name)) for f in source_filenames])
-            result: list[(Path, None)] = [None] * length
+            result: list[Optional[pathlib.Path]] = [None] * length
             if length:
                 for filename in source_filenames:
                     idx = text.get_track_number(str(filename.name)) - 1
@@ -67,7 +67,7 @@ class AudioSource(abc.ABC):
         for filename in self.get_wav_filenames():
             shutil.copy2(filename, dest_dir / filename.name)
 
-    def get_front_cover(self) -> (FrontCover, None):
+    def get_front_cover(self) -> Optional[records.FrontCover]:
         """Return a FrontCover record or None."""
 
     @abc.abstractmethod
@@ -75,12 +75,12 @@ class AudioSource(abc.ABC):
         """Return a dictionary of search data useful for doing a MusicBrainz search."""
 
     @abc.abstractmethod
-    def get_source_filenames(self) -> list[Path]:
+    def get_source_filenames(self) -> list[pathlib.Path]:
         """Return a list of the original source file paths."""
 
-    def get_wav_filenames(self) -> list[Path]:
+    def get_wav_filenames(self) -> list[pathlib.Path]:
         """Return a list of the prepared wav file paths."""
-        return sorted(self._temp_dir.glob("*.wav"), key=alpha_numeric_key)
+        return sorted(self._temp_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
     @abc.abstractmethod
     def prepare_source(self) -> None:
@@ -91,13 +91,15 @@ class CDAudioSource(AudioSource):
     """AudioSource from a compact disc."""
 
     def __init__(self):
+        """Initialize a CDAudioSource."""
         super().__init__()
         self._cd = discid.read(features=["mcn"])
 
     def get_search_data(self) -> dict[str, str]:
+        """See base class."""
         return {"disc_id": self._cd.id, "disc_mcn": self._cd.mcn}
 
-    def get_source_filenames(self) -> list[Path]:
+    def get_source_filenames(self) -> list[pathlib.Path]:
         """Return a list of the original source file paths.
 
         Since we're working with a CD, these files may not yet exists if they have not been
@@ -110,7 +112,7 @@ class CDAudioSource(AudioSource):
 
     def prepare_source(self) -> None:
         """Pull audio from the CD to wav files."""
-        cwd = Path.cwd()
+        cwd = pathlib.Path.cwd()
         os.chdir(self._temp_dir)
         try:
             subprocess.run(("cd-paranoia", "-B"), check=True)
@@ -122,28 +124,31 @@ class CDAudioSource(AudioSource):
 class FilesAudioSource(AudioSource):
     """AudioSource from local files."""
 
-    def __init__(self, filenames: list[Path]):
+    def __init__(self, filenames: list[pathlib.Path]):
+        """Initialize a FilesAudioSource."""
         super().__init__()
         self._filenames = filenames
         if len(filenames) == 1 and filenames[0].is_dir():
             # if we're given a directory, figure out what's in there
             for file_type in ("flac", "wav", "m4a", "mp3"):
-                if fns := sorted(filenames[0].glob(f"*.{file_type}"), key=alpha_numeric_key):
+                if fns := sorted(filenames[0].glob(f"*.{file_type}"), key=text.alpha_numeric_key):
                     self._filenames = list(fns)
                     break
         self._file_type = self._filenames[0].suffix.lstrip(".")
 
-    def get_front_cover(self) -> (FrontCover, None):
+    def get_front_cover(self) -> Optional[records.FrontCover]:
+        """See base class."""
         for filename in self._filenames:
-            one_track = open_(filename).one_track
+            one_track = audiofile.open_(filename).one_track
             release = one_track.release
             if release.front_cover:
                 return release.front_cover
         return None
 
     def get_search_data(self) -> dict[str, str]:
+        """See base class."""
         for filename in self._filenames:
-            one_track = open_(filename).one_track
+            one_track = audiofile.open_(filename).one_track
             release = one_track.release
             track = one_track.track
 
@@ -167,8 +172,8 @@ class FilesAudioSource(AudioSource):
                 return {"artist": artist, "album": album}
         return {}
 
-    def get_source_filenames(self) -> list[Path]:
-        """Returns a list of the original source file paths."""
+    def get_source_filenames(self) -> list[pathlib.Path]:
+        """Return a list of the original source file paths."""
         return self._filenames
 
     def prepare_source(self) -> None:
@@ -194,7 +199,7 @@ class FilesAudioSource(AudioSource):
                 log.info(f"DECODING: {filepath.name} -> {out_path.name}")
         cmd.parallel(f"Making {len(commands)} wav files...", commands)
         cmd.touch(tmp_dir.glob("*.wav"))
-        for filename in sorted(tmp_dir.glob("*.wav"), key=alpha_numeric_key):
+        for filename in sorted(tmp_dir.glob("*.wav"), key=text.alpha_numeric_key):
             subprocess.run(
                 ("sndfile-convert", "-pcm16", filename, str(filename).replace("/__tmp__/", "/")),
                 check=True,

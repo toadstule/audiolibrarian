@@ -1,4 +1,3 @@
-# pylint: skip-file
 # -*- coding: utf-8 -*-
 #
 # Picard, the next-generation MusicBrainz tagger
@@ -79,8 +78,8 @@
 # transliteration plugins to be added.
 
 import codecs
-from functools import partial
 import unicodedata
+from functools import partial
 
 # STJ # from picard.util import sanitize_filename
 

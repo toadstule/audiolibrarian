@@ -28,12 +28,12 @@ if __name__ == "__main__":
     setup(
         name="audiolibrarian",
         version=get_version(),
-        packages=["audiolibrarian", "audiolibrarian.audiofile", "audiolibrarian.picard_src"],
+        packages=["audiolibrarian", "audiolibrarian.audiofile", "picard_src"],
         url="https://bitbucket.org/toadstule/audiolibrarian/",
         license="GNU General Public License v3.0",
         author="Steve Jibson",
         author_email="audiolibrarian@jibson.com",
         description="Audio library utilities",
         scripts=["scripts/audiolibrarian"],
-        install_requires=[line.strip() for line in open("requirements_base.txt")],
+        install_requires=[line.strip() for line in open("requirements-base.txt")],
     )

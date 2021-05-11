@@ -1,5 +1,4 @@
-# pylint: skip-file
-from audiolibrarian.picard_src.textencoding import (
+from picard_src.textencoding import (
     replace_non_ascii,
     unicode_simplify_accents,
     unicode_simplify_combinations,

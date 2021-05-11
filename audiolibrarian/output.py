@@ -29,12 +29,15 @@ class Dots:
     """
 
     def __init__(self, message: str):
+        """Initialize a Dots object."""
         self._out(message)
 
     def __enter__(self):
+        """Enter the context manager."""
         return self
 
     def __exit__(self, _, __, ___):
+        """Exit the context manager."""
         self._out("\n")
 
     def dot(self) -> None:

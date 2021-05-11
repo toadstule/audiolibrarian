@@ -1,3 +1,4 @@
+PKG_FILES := scripts/audiolibrarian audiolibrarian
 
 .PHONY: clean
 clean:
@@ -5,11 +6,14 @@ clean:
 
 .PHONY: format
 format:
-	black scripts/audiolibrarian .
+	black $(PKG_FILES) tests
+	isort $(PKG_FILES) tests
 
 .PHONY: lint
 lint: format
 	pylint audiolibrarian
+	pydocstyle $(PKG_FILES) tests
+	pytype --jobs=auto --keep-going $(PKG_FILES) tests
 
 .PHONY: requirements
 requirements:

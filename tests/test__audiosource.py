@@ -32,8 +32,10 @@ class TestAudioSource(TestCase):
     def test__front_cover(self):
         audio_source = FilesAudioSource([test_data_path / "09.flac"])
         front_cover = audio_source.get_front_cover()
-        self.assertEqual("image/jpeg", front_cover.mime)
-        self.assertIs(bytes, type(front_cover.data), "cover data should be of type: bytes")
+        self.assertIsNotNone(front_cover)
+        if front_cover:
+            self.assertEqual("image/jpeg", front_cover.mime)
+            self.assertIs(bytes, type(front_cover.data), "cover data should be of type: bytes")
 
     def test__get_search_data(self):
         audio_source = FilesAudioSource([test_data_path / "00.mp3"])

@@ -1,4 +1,4 @@
-"""GenreManager"""
+"""Genre Manager."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -14,29 +14,29 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-
+import logging
+import pathlib
 import pickle
 import webbrowser
-from logging import getLogger
-from pathlib import Path
+from typing import Any
 
 import mutagen
 import mutagen.flac
 import mutagen.id3
 import mutagen.mp4
 
-from audiolibrarian.musicbrainz import MusicBrainzSession
-from audiolibrarian.text import input_
+from audiolibrarian import musicbrainz, text
 
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class GenreManager:  # pylint: disable=too-few-public-methods
     """Manage genres."""
 
     def __init__(self, args):
+        """Initialize a GenreManager."""
         self._args = args
-        self._mb = MusicBrainzSession()
+        self._mb = musicbrainz.MusicBrainzSession()
         self._paths = self._get_all_paths()
         self._paths_by_artist = self._get_paths_by_artist()
         _u, _c = self._get_genres_by_artist()
@@ -83,22 +83,26 @@ class GenreManager:  # pylint: disable=too-few-public-methods
             self._community_genres_by_artist.items(), key=lambda x: x[1]["name"]
         ):
             artist_name = artist["name"]
-            i = input_(f"Continue with {artist_name} (YES, no, skip)[Y, n, s]: ").lower().strip()
+            i = (
+                text.input_(f"Continue with {artist_name} (YES, no, skip)[Y, n, s]: ")
+                .lower()
+                .strip()
+            )
             if i == "n":
                 break
             if i != "s":
                 webbrowser.open(f"https://musicbrainz.org/artist/{artist_id}/tags")
 
-    def _get_all_paths(self) -> list[Path]:
-        # Returns a list of paths (pathlib.Path objects) for all files in the directories
+    def _get_all_paths(self) -> list[pathlib.Path]:
+        # Return a list of paths (pathlib.Path objects) for all files in the directories
         # specified in the args
         paths = []
         for directory in self._args.directory:
-            paths.extend([p for p in list(Path(directory).glob("**/*")) if p.is_file()])
+            paths.extend([p for p in list(pathlib.Path(directory).glob("**/*")) if p.is_file()])
         return paths
 
-    def _get_paths_by_artist(self) -> dict[str, list[Path]]:
-        # Returns a dict mapping Musicbrainz-artist-ID to a list of paths (pathlib.Path objects)
+    def _get_paths_by_artist(self) -> dict[str, list[pathlib.Path]]:
+        # Return a dict mapping Musicbrainz-artist-ID to a list of paths (pathlib.Path objects)
         # representing audio files by that artist.
         artists = {}
         for path in self._paths:
@@ -125,14 +129,17 @@ class GenreManager:  # pylint: disable=too-few-public-methods
                 artists[artist_id].append(path)
         return artists
 
-    def _get_genres_by_artist(self) -> tuple[dict[str, str], dict[str, dict[str, (int, str)]]]:
-        # Returns two dicts mapping Musicbrainz-artist-ID to:
+    def _get_genres_by_artist(
+        self,
+    ) -> tuple[dict[str, str], dict[str, dict[str, Any]]]:
+        # Return two dicts mapping Musicbrainz-artist-ID to:
         # user: a single genre, set in Musicbrainz by this app's user
         # community: a list genre records (dicts) set in Musicbrainz by the community
         #            with "name" and "count" fields
-        user, community = {}, {}
+        user: dict[str, str] = {}
+        community: dict[str, dict[str, Any]] = {}
         user_modified = False
-        cache_file = Path.home() / ".cache" / "audiolibrarian" / "user-genres.pickle"
+        cache_file = pathlib.Path.home() / ".cache" / "audiolibrarian" / "user-genres.pickle"
         if cache_file.exists():
             with cache_file.open(mode="rb") as cache_file_obj:
                 user = pickle.load(cache_file_obj)

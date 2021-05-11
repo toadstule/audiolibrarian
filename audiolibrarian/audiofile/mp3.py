@@ -14,25 +14,13 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+from typing import Optional
 
 import mutagen
 import mutagen.id3
 
-from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.records import (
-    BitrateMode,
-    FileInfo,
-    FileType,
-    FrontCover,
-    ListF,
-    Medium,
-    OneTrack,
-    People,
-    Performer,
-    Release,
-    Source,
-    Track,
-)
+from audiolibrarian import records
+from audiolibrarian.audiofile import audiofile
 
 APIC = mutagen.id3.APIC
 TXXX = mutagen.id3.TXXX
@@ -40,25 +28,25 @@ UFID = mutagen.id3.UFID
 MB_UFID = "http://musicbrainz.org"
 
 
-class Mp3File(AudioFile):
+class Mp3File(audiofile.AudioFile):
     """AudioFile for MP3 files."""
 
     extensions = (".mp3",)
 
-    def read_tags(self) -> OneTrack:
-        """Reads the tags and returns a OneTrack object."""
+    def read_tags(self) -> records.OneTrack:
+        """Read the tags and returns a OneTrack object."""
 
-        def get_l(key) -> (ListF, None):
+        def get_l(key) -> Optional[records.ListF]:
             if (value := mut.get(key)) is None:
                 return None
             if "/" in str(value):
-                return ListF(str(value).split("/"))
-            return ListF(value)
+                return records.ListF(str(value).split("/"))
+            return records.ListF(value)
 
         mut = self._mut_file
         front_cover = None
         if apic := mut.get("APIC:front cover", mut.get("APIC:front", mut.get("APIC:"))):
-            front_cover = FrontCover(data=apic.data, desc=apic.desc, mime=apic.mime)
+            front_cover = records.FrontCover(data=apic.data, desc=apic.desc, mime=apic.mime)
         tipl = mut["TIPL"].people if mut.get("TIPL") else []
         roles = ("arranger", "composer", "conductor", "engineer", "mix", "producer", "writer")
         medium_count = int(mut["TPOS"][0].split("/")[1]) if mut.get("TPOS") else None
@@ -66,12 +54,12 @@ class Mp3File(AudioFile):
         track_count = int(mut["TRCK"][0].split("/")[1]) if mut.get("TRCK") else None
         track_number = int(mut["TRCK"][0].split("/")[0]) if mut.get("TRCK") else None
         bitrate = mut.info.bitrate // 1000
-        bitrate_mode = BitrateMode.__members__[str(mut.info.bitrate_mode).split(".")[-1]]
+        bitrate_mode = records.BitrateMode.__members__[str(mut.info.bitrate_mode).split(".")[-1]]
         # Hack for common CBRs
-        if bitrate_mode == BitrateMode.UNKNOWN and bitrate in (128, 160, 192, 320):
-            bitrate_mode = BitrateMode.CBR
+        if bitrate_mode == records.BitrateMode.UNKNOWN and bitrate in (128, 160, 192, 320):
+            bitrate_mode = records.BitrateMode.CBR
         release = (
-            Release(
+            records.Release(
                 album=mut.get("TALB", [None])[0],
                 album_artists=get_l("TPE2"),
                 album_artists_sort=get_l("TSO2"),
@@ -83,20 +71,20 @@ class Mp3File(AudioFile):
                 genres=get_l("TCON"),
                 labels=get_l("TPUB"),
                 media={
-                    medium_number: Medium(
+                    medium_number: records.Medium(
                         formats=get_l("TMED"),
                         titles=get_l("TSST"),
                         track_count=track_count,
                         tracks={
-                            track_number: Track(
+                            track_number: records.Track(
                                 artist=mut.get("TPE1", [None])[0],
                                 artists=get_l("TXXX:ARTISTS"),
                                 artists_sort=get_l("TSOP"),
-                                file_info=FileInfo(
+                                file_info=records.FileInfo(
                                     bitrate=bitrate,
                                     bitrate_mode=bitrate_mode,
                                     path=self.filepath,
-                                    type=FileType.MP3,
+                                    type=records.FileType.MP3,
                                 ),
                                 isrcs=get_l("TSRC"),
                                 musicbrainz_artist_ids=get_l("TXXX:MusicBrainz Artist Id"),
@@ -125,7 +113,7 @@ class Mp3File(AudioFile):
                 ],
                 original_year=str((mut["TDOR"][0]).year) if mut.get("TDOR") else None,
                 people=(
-                    People(
+                    records.People(
                         arrangers=[name for role, name in tipl if role == "arranger"] or None,
                         composers=[name for role, name in tipl if role == "composer"] or None,
                         conductors=[name for role, name in tipl if role == "conductor"] or None,
@@ -133,7 +121,8 @@ class Mp3File(AudioFile):
                         lyricists=get_l("TEXT"),
                         mixers=[name for role, name in tipl if role == "mix"] or None,
                         producers=[name for role, name in tipl if role == "producer"] or None,
-                        performers=[Performer(n, r) for r, n in tipl if r not in roles] or None,
+                        performers=[records.Performer(n, r) for r, n in tipl if r not in roles]
+                        or None,
                         writers=[name for role, name in tipl if role == "writer"] or None,
                     )
                     or None
@@ -146,12 +135,14 @@ class Mp3File(AudioFile):
             or None
         )
         if release:
-            release.source = Source.TAGS
-        return OneTrack(release=release, medium_number=medium_number, track_number=track_number)
+            release.source = records.Source.TAGS
+        return records.OneTrack(
+            release=release, medium_number=medium_number, track_number=track_number
+        )
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     def write_tags(self) -> None:
-        """Writes the tags."""
+        """Write the tags."""
 
         def slash(text):
             return "/".join(text)

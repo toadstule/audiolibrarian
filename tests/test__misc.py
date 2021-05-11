@@ -15,20 +15,22 @@
 #
 from unittest import TestCase
 
-import audiolibrarian
+from audiolibrarian import cli
 
 
 class TestMisc(TestCase):
-    def setUp(self) -> None:
-        self._required_exe = audiolibrarian.REQUIRED_EXE[:]
-
-    def tearDown(self) -> None:
-        audiolibrarian.REQUIRED_EXE = self._required_exe[:]
-
+    # def setUp(self) -> None:
+    #     self._required_exe = cli.CommandLineInterface.required_exe[:]
+    #
+    # def tearDown(self) -> None:
+    #     cli.CommandLineInterface.required_exe = self._required_exe[:]
+    #
     def test__check_deps_true(self) -> None:
-        audiolibrarian.REQUIRED_EXE = ["ls", "ps"]
-        self.assertTrue(audiolibrarian.check_deps())
+        cli_ = cli.CommandLineInterface(parse_args=False)
+        cli_.required_exe = ["ls", "ps"]
+        self.assertTrue(cli_._check_deps())
 
     def test__check_deps_false(self) -> None:
-        audiolibrarian.REQUIRED_EXE = ["your_mom_goes_to_college"]
-        self.assertFalse(audiolibrarian.check_deps())
+        cli_ = cli.CommandLineInterface(parse_args=False)
+        cli_.required_exe = ["your_mom_goes_to_college"]
+        self.assertFalse(cli_._check_deps())

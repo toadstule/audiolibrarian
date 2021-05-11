@@ -17,20 +17,16 @@
 
 import re
 import sys
+from typing import Optional
 
-from audiolibrarian.picard_src import (
-    replace_non_ascii,
-    unicode_simplify_combinations,
-    unicode_simplify_compatibility,
-    unicode_simplify_punctuation,
-)
+import picard_src
 
 digit_regex = re.compile(r"([0-9]+)")
 uuid_regex = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.I)
 
 
 def alpha_numeric_key(text):
-    """A key that can be used for sorting alpha-numeric strings numerically.
+    """Return a key that can be used for sorting alpha-numeric strings numerically.
 
     Example:
         from audiolibrarian import text
@@ -60,10 +56,10 @@ def join(strings: list[str], joiner: str = ", ", word: str = "and") -> str:
 
 def fix(text: str) -> str:
     """Replace some special characters."""
-    text = unicode_simplify_combinations(text)
+    text = picard_src.unicode_simplify_combinations(text)
     # text = unicode_simplify_accents(text)
-    text = unicode_simplify_punctuation(text)
-    text = unicode_simplify_compatibility(text)
+    text = picard_src.unicode_simplify_punctuation(text)
+    text = picard_src.unicode_simplify_compatibility(text)
     return text
 
 
@@ -74,7 +70,7 @@ def get_filename(title: str) -> str:
     invalid = "/"
     no_underscore_replace = "'!\""
     result = []
-    for char in replace_non_ascii(title):
+    for char in picard_src.replace_non_ascii(title):
         if char == "&":
             result.extend("and")
         elif char.isascii() and char not in escape_required and char not in invalid:
@@ -95,7 +91,6 @@ def get_numbers(text: str) -> list[int]:
 
 def get_track_number(filename: str) -> int:
     """Get a track number from a filename or from the user."""
-
     if numbers := get_numbers(filename):
         return numbers[0]
     while True:  # pragma: no cover
@@ -105,7 +100,7 @@ def get_track_number(filename: str) -> int:
             pass
 
 
-def get_uuid(text: str) -> (str, None):
+def get_uuid(text: str) -> Optional[str]:
     """Return the first UUID found within a given string."""
     if (match := uuid_regex.search(text)) is not None:
         return match.group()

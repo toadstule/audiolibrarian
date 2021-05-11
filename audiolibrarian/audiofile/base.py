@@ -16,6 +16,7 @@
 #
 
 from pathlib import Path
+from typing import Union
 
 from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.audiofile.flac import FlacFile
@@ -29,23 +30,27 @@ _audioFiles = [
 ]
 
 
-def _extensions() -> list[str]:
-    # Returns a sorted list of all filename extensions that can be opened by open_().
+def extensions() -> list[str]:
+    """Return a sorted list of all filename extensions that can be opened by open_()."""
     ext = []
     for audioFile in _audioFiles:
         ext.extend(audioFile.extensions)
     return sorted(list(set(ext)))
 
 
-def open_(filename: (str, Path)) -> AudioFile:
-    """Factory function that returns an AudioFile object based on the filename extension.
+def open_(filename: Union[str, Path]) -> AudioFile:
+    """Return an AudioFile object based on the filename extension (factory function).
 
-    :param filename: filename of a supported audio file
-    :return: an AudioFile object
-    :raise FileNotFoundError: if the file cannot be found or is not a file
-    :raise NotImplementedError: if the type of the file is not supported
+    Args:
+        filename: The filename of a supported audio file.
+
+    Returns:
+        AudioFile: And AudioFile object.
+
+    Raises:
+        FileNotFoundError: If the file cannot be found or is not a file.
+        NotImplementedError: If the type of the file is not supported.
     """
-
     filepath = Path(filename).resolve()
     if not filepath.is_file():
         raise FileNotFoundError(filepath)

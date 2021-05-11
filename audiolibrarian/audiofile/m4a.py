@@ -16,54 +16,42 @@
 #
 
 from logging import getLogger
+from typing import Optional, Union
 
-from mutagen.mp4 import AtomDataType, MP4Cover, MP4FreeForm
+import mutagen.mp4
 
-from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.audiofile.tags import Tags
-from audiolibrarian.records import (
-    BitrateMode,
-    FileInfo,
-    FileType,
-    FrontCover,
-    ListF,
-    Medium,
-    OneTrack,
-    People,
-    Release,
-    Source,
-    Track,
-)
+from audiolibrarian import records
+from audiolibrarian.audiofile import audiofile, tags
 
 log = getLogger(__name__)
 ITUNES = "----:com.apple.iTunes"
 
 
-class M4aFile(AudioFile):
+class M4aFile(audiofile.AudioFile):
     """AudioFile for M4A files."""
 
     extensions = (".m4a",)
 
-    def read_tags(self) -> OneTrack:
-        """Reads the tags and returns a OneTrack object."""
+    def read_tags(self) -> records.OneTrack:
+        """Read the tags and returns a OneTrack object."""
 
-        def get_str(key) -> (str, None):
+        def get_str(key) -> Optional[str]:
             # Return first element for the given key, utf8-decoded.
             if mut.get(key) is None:
                 return None
             return mut.get(key)[0].decode("utf8")
 
-        def get_strl(key) -> (ListF, None):
+        def get_strl(key) -> Optional[records.ListF]:
             # Return all elements for a given key, utf8-decoded.
             if mut.get(key) is None:
                 return None
-            return ListF([x.decode("utf8") for x in mut.get(key)])
+            return records.ListF([x.decode("utf8") for x in mut.get(key)])
 
-        def listf(key) -> (ListF, None):
+        def listf(key) -> Optional[records.ListF]:
             # Return a ListF object for a given key.
             if mut.get(key) is None:
                 return None
-            return ListF(mut.get(key))
+            return records.ListF(mut.get(key))
 
         mut = self._mut_file
 
@@ -71,14 +59,16 @@ class M4aFile(AudioFile):
         if mut.get("covr"):
             cover = mut["covr"][0]
             # noinspection PyUnresolvedReferences
-            mime = "image/png" if cover.imageformat == AtomDataType.PNG else "image/jpg"
-            front_cover = FrontCover(data=bytes(cover), mime=mime)
+            mime = (
+                "image/png" if cover.imageformat == mutagen.mp4.AtomDataType.PNG else "image/jpg"
+            )
+            front_cover = records.FrontCover(data=bytes(cover), mime=mime)
         medium_count = int(mut["disk"][0][1]) if mut.get("disk") else None
         medium_number = int(mut["disk"][0][0]) if mut.get("disk") else None
         track_count = int(mut["trkn"][0][1]) if mut.get("trkn") else None
         track_number = int(mut["trkn"][0][0]) if mut.get("trkn") else None
         release = (
-            Release(
+            records.Release(
                 album=mut.get("\xa9alb", [None])[0],
                 album_artists=listf("aART"),
                 album_artists_sort=listf("soaa"),
@@ -90,20 +80,20 @@ class M4aFile(AudioFile):
                 genres=listf("\xa9gen"),
                 labels=get_strl(f"{ITUNES}:LABEL"),
                 media={
-                    medium_number: Medium(
+                    medium_number: records.Medium(
                         formats=get_strl(f"{ITUNES}:MEDIA"),
                         titles=get_strl(f"{ITUNES}:DISCSUBTITLE"),
                         track_count=track_count,
                         tracks={
-                            track_number: Track(
+                            track_number: records.Track(
                                 artist=mut.get("\xa9ART", [None])[0],
                                 artists=get_strl(f"{ITUNES}:ARTISTS"),
                                 artists_sort=mut.get("soar"),
-                                file_info=FileInfo(
+                                file_info=records.FileInfo(
                                     bitrate=mut.info.bitrate // 1000,
-                                    bitrate_mode=BitrateMode.CBR,
+                                    bitrate_mode=records.BitrateMode.CBR,
                                     path=self.filepath,
-                                    type=FileType.AAC,
+                                    type=records.FileType.AAC,
                                 ),
                                 isrcs=get_strl(f"{ITUNES}:ISRC"),
                                 musicbrainz_artist_ids=get_strl(f"{ITUNES}:MusicBrainz Artist Id"),
@@ -128,7 +118,7 @@ class M4aFile(AudioFile):
                 original_date=get_str(f"{ITUNES}:originaldate"),
                 original_year=get_str(f"{ITUNES}:originalyear") or None,
                 people=(
-                    People(
+                    records.People(
                         arrangers=get_strl(f"{ITUNES}:ARRANGER"),
                         composers=get_strl(f"{ITUNES}:COMPOSER"),
                         conductors=get_strl(f"{ITUNES}:CONDUCTOR"),
@@ -149,30 +139,37 @@ class M4aFile(AudioFile):
             or None
         )
         if release:
-            release.source = Source.TAGS
-        return OneTrack(release=release, medium_number=medium_number, track_number=track_number)
+            release.source = records.Source.TAGS
+        return records.OneTrack(
+            release=release, medium_number=medium_number, track_number=track_number
+        )
 
     def write_tags(self) -> None:
-        """Writes the tags."""
+        """Write the tags."""
 
-        def ff(text: (str, int, None)) -> (bytes, None):  # pylint: disable=invalid-name
+        def ff(text: Union[str, int, None]) -> Optional[bytes]:  # pylint: disable=invalid-name
             if text is None:
                 return None
-            return MP4FreeForm(bytes(str(text), "utf8"))
+            return mutagen.mp4.MP4FreeForm(bytes(str(text), "utf8"))
 
-        def ffl(list_: (list[str], None)) -> (ListF, None):  # pylint: disable=invalid-name
+        # pylint: disable=invalid-name
+        def ffl(list_: Optional[list[str]]) -> Optional[records.ListF]:
             if not list_:
                 return None
-            return ListF([ff(x) for x in list_])
+            return records.ListF([ff(x) for x in list_])
 
         # Note: We don't write "performers" to m4a files.
         release, medium_number, medium, track_number, track = self._get_tag_sources()
         front_cover = None
         if (cover := release.front_cover) is not None:
             # noinspection PyUnresolvedReferences
-            image_format = AtomDataType.PNG if cover.mime == "image/png" else AtomDataType.JPEG
-            front_cover = [MP4Cover(cover.data, imageformat=image_format)]
-        tags = {
+            image_format = (
+                mutagen.mp4.AtomDataType.PNG
+                if cover.mime == "image/png"
+                else mutagen.mp4.AtomDataType.JPEG
+            )
+            front_cover = [mutagen.mp4.MP4Cover(cover.data, imageformat=image_format)]
+        tags_ = {
             f"{ITUNES}:ARRANGER": ffl(release.people and release.people.arrangers),
             f"{ITUNES}:ARTISTS": ffl(track.artists),
             f"{ITUNES}:ASIN": ffl(release.asins),
@@ -213,9 +210,9 @@ class M4aFile(AudioFile):
             "soar": track.artists_sort,
             "trkn": [(track_number, medium.track_count)] if track_number else None,
         }
-        tags = Tags(tags)
+        tags_ = tags.Tags(tags_)
 
-        for key, value in tags.items():
+        for key, value in tags_.items():
             try:
                 self._mut_file[key] = value
             except Exception:  # pragma: no cover

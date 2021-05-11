@@ -1,3 +1,4 @@
+"""Unit test helper functions."""
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -20,6 +21,7 @@ from io import StringIO
 
 @contextmanager
 def captured_output():
+    """Capture stdout and stderr."""
     new_out, new_err = StringIO(), StringIO()
     old_out, old_err = sys.stdout, sys.stderr
     try:

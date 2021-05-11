@@ -20,48 +20,36 @@ from typing import Optional
 
 import mutagen.flac
 
-from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.audiofile.tags import Tags
-from audiolibrarian.records import (
-    BitrateMode,
-    FileInfo,
-    FileType,
-    FrontCover,
-    ListF,
-    Medium,
-    OneTrack,
-    People,
-    Performer,
-    Release,
-    Source,
-    Track,
-)
+from audiolibrarian import records
+from audiolibrarian.audiofile import audiofile, tags
 
 
-class FlacFile(AudioFile):
+class FlacFile(audiofile.AudioFile):
     """AudioFile for Flac files."""
 
     extensions = (".flac",)
 
-    def read_tags(self) -> OneTrack:
-        """Reads the tags and returns a OneTrack object."""
+    def read_tags(self) -> records.OneTrack:
+        """Read the tags and returns a OneTrack object."""
 
-        def listf(lst: (list, None)) -> (ListF, None):
-            if lst is not None:
-                return ListF(lst)
-            return None
+        def listf(lst: Optional[list]) -> Optional[records.ListF]:
+            if lst is None:
+                return None
+            return records.ListF(lst)
 
         mut = self._mut_file
         front_cover = None
         if self._mut_file.pictures:
             cover = self._mut_file.pictures[0]
-            front_cover = FrontCover(data=cover.data, desc=cover.desc or "", mime=cover.mime)
+            front_cover = records.FrontCover(
+                data=cover.data, desc=cover.desc or "", mime=cover.mime
+            )
         medium_count = int(mut["disctotal"][0]) if mut.get("disctotal") else None
         medium_number = int(mut["discnumber"][0]) if mut.get("discnumber") else None
         track_count = int(mut["tracktotal"][0]) if mut.get("tracktotal") else None
         track_number = int(mut["tracknumber"][0]) if mut.get("tracknumber") else None
         release = (
-            Release(
+            records.Release(
                 album=mut.get("album", [None])[0],
                 album_artists=listf(mut.get("albumartist")),
                 album_artists_sort=listf(mut.get("albumartistsort")),
@@ -73,20 +61,20 @@ class FlacFile(AudioFile):
                 genres=listf(mut.get("genre")),
                 labels=mut.get("label"),
                 media={
-                    medium_number: Medium(
+                    medium_number: records.Medium(
                         formats=listf(mut.get("media")),
                         titles=mut.get("discsubtitle"),
                         track_count=track_count,
                         tracks={
-                            track_number: Track(
+                            track_number: records.Track(
                                 artist=mut.get("artist", [None])[0],
                                 artists=listf(mut.get("artists")),
                                 artists_sort=mut.get("artistsort"),
-                                file_info=FileInfo(
+                                file_info=records.FileInfo(
                                     bitrate=mut.info.bitrate // 1000,
-                                    bitrate_mode=BitrateMode.CBR,
+                                    bitrate_mode=records.BitrateMode.CBR,
                                     path=self.filepath,
-                                    type=FileType.FLAC,
+                                    type=records.FileType.FLAC,
                                 ),
                                 isrcs=mut.get("isrc"),
                                 musicbrainz_artist_ids=listf(mut.get("musicbrainz_artistid")),
@@ -111,7 +99,7 @@ class FlacFile(AudioFile):
                 original_date=mut.get("originaldate", [None])[0],
                 original_year=mut["originalyear"][0] if mut.get("originalyear") else None,
                 people=(
-                    People(
+                    records.People(
                         arrangers=mut.get("arranger"),
                         composers=mut.get("composer"),
                         conductors=mut.get("conductor"),
@@ -133,13 +121,15 @@ class FlacFile(AudioFile):
             or None
         )
         if release:
-            release.source = Source.TAGS
-        return OneTrack(release=release, medium_number=medium_number, track_number=track_number)
+            release.source = records.Source.TAGS
+        return records.OneTrack(
+            release=release, medium_number=medium_number, track_number=track_number
+        )
 
     def write_tags(self) -> None:
-        """Writes the tags."""
+        """Write the tags."""
         release, medium_number, medium, track_number, track = self._get_tag_sources()
-        tags = {
+        tags_ = {
             "album": [release.album],
             "albumartist": release.album_artists,
             "albumartistsort": release.album_artists_sort,
@@ -184,10 +174,10 @@ class FlacFile(AudioFile):
             "tracktotal": [str(medium.track_count)],
             "writer": release.people and release.people.writers,
         }
-        tags = Tags(tags)
+        tags_ = tags.Tags(tags_)
         self._mut_file.delete()  # clear old tags
         self._mut_file.clear_pictures()
-        self._mut_file.update(tags)
+        self._mut_file.update(tags_)
 
         if release.front_cover is not None:
             cover = mutagen.flac.Picture()
@@ -200,14 +190,14 @@ class FlacFile(AudioFile):
         self._mut_file.save()
 
     @staticmethod
-    def _make_performer_tag(performers: Optional[list[Performer]]) -> Optional[list[str]]:
-        # Returns a list of performer tag strings "name (instrument)".
+    def _make_performer_tag(performers: Optional[list[records.Performer]]) -> Optional[list[str]]:
+        # Return a list of performer tag strings "name (instrument)".
         if performers is None:
             return None
         return [f"{p.name} ({p.instrument})" for p in performers]
 
     @staticmethod
-    def _parse_performer_tag(performers_tag: list[str]) -> list[Performer]:
+    def _parse_performer_tag(performers_tag: list[str]) -> list[records.Performer]:
         # Parses a list of performer tags and returns a list of Performer objects.
         performer_re = re.compile(r"(?P<name>.*)\((?P<instrument>.*)\)")
         performers = []
@@ -215,5 +205,5 @@ class FlacFile(AudioFile):
             if match := performer_re.match(tag):
                 name = match.groupdict()["name"].strip()
                 instrument = match.groupdict()["instrument"].strip()
-                performers.append(Performer(name=name, instrument=instrument))
+                performers.append(records.Performer(name=name, instrument=instrument))
         return performers
