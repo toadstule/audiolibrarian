@@ -4,11 +4,11 @@ MANIFEST
 *.jpg
 
 __pycache__/
+.pytype/
+.venv/
 dist/
 htmlcov/
 library/
 new_library/
 workdir/
 venv/
-
-
