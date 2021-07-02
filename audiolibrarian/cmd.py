@@ -23,9 +23,10 @@ from audiolibrarian import output
 def parallel(message: str, commands: list[tuple]):
     """Execute commands in parallel."""
     with output.Dots(message) as dots:
-        for proc in [subprocess.Popen(c) for c in commands]:
-            dots.dot()
-            proc.wait()
+        for command in commands:
+            with subprocess.Popen(command) as proc:
+                dots.dot()
+                proc.wait()
 
 
 def touch(paths):

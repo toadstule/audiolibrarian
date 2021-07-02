@@ -8,7 +8,7 @@ pipelines:
   branches:
     develop:
       - step:
-          name: Run tests
+          name: Check
           deployment: test
           max-time: 5
           caches:
@@ -16,7 +16,7 @@ pipelines:
           script:
             - apt-get update
             - apt-get install libdiscid0
-            - make clean requirements test
+            - make clean requirements check
     master:
       - step:
           name: Deploy to production
@@ -27,5 +27,5 @@ pipelines:
           script:
             - apt-get update
             - apt-get install libdiscid0
-            - make clean requirements test sdist
+            - make clean requirements sdist
             - find dist -name '*.gz' -exec curl -X POST "https://${BB_AUTH_STRING}@api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" --form files=@"{}" \;

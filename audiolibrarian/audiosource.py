@@ -102,7 +102,7 @@ class CDAudioSource(AudioSource):
     def get_source_filenames(self) -> list[pathlib.Path]:
         """Return a list of the original source file paths.
 
-        Since we're working with a CD, these files may not yet exists if they have not been
+        Since we're working with a CD, these files may not yet exist if they have not been
         read from the disc.
         """
         return [

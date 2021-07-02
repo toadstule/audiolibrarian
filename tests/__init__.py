@@ -1,7 +1,6 @@
-"""The audiolibrarian package."""
-__version__ = "0.14.2"
+"""Unit tests."""
 
-#  Copyright (c) 2020 Stephen Jibson
+#  Copyright (c) 2021 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
 #

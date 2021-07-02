@@ -187,7 +187,7 @@ class TestAudioFileMisc(TestCase):
 def _audio_file_copy(src_filepath):
     # Create a copy of the given source file and return the copy as a context-manager.
     #
-    # We work with a temp copy of the file so we don't break our test data
+    # We work with a temp copy of the file, so we don't break our test data.
     dst = tempfile.NamedTemporaryFile(mode="wb", prefix="test_", suffix=src_filepath.suffix)
     dst.write(src_filepath.read_bytes())
     dst.flush()

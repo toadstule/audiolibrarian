@@ -54,7 +54,9 @@ class Mp3File(audiofile.AudioFile):
         track_count = int(mut["TRCK"][0].split("/")[1]) if mut.get("TRCK") else None
         track_number = int(mut["TRCK"][0].split("/")[0]) if mut.get("TRCK") else None
         bitrate = mut.info.bitrate // 1000
-        bitrate_mode = records.BitrateMode.__members__[str(mut.info.bitrate_mode).split(".")[-1]]
+        bitrate_mode = records.BitrateMode.__members__[
+            str(mut.info.bitrate_mode).rsplit(".", maxsplit=1)[-1]
+        ]
         # Hack for common CBRs
         if bitrate_mode == records.BitrateMode.UNKNOWN and bitrate in (128, 160, 192, 320):
             bitrate_mode = records.BitrateMode.CBR

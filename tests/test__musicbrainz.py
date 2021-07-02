@@ -17,7 +17,7 @@
 import logging
 import os
 from pathlib import Path
-from unittest import TestCase, skip, skipUnless
+from unittest import TestCase, skipUnless
 
 from audiolibrarian.audiofile import open_
 from audiolibrarian.musicbrainz import MusicBrainzRelease

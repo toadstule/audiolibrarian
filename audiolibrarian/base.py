@@ -107,7 +107,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
     def _convert(self, make_source: bool = True) -> None:
-        # Performs all of the steps of ripping, normalizing, converting and moving the files.
+        # Performs all the steps of ripping, normalizing, converting and moving the files.
         if self._audio_source is None:
             warnings.warn("Cannot convert; no audio_source is defined.", RuntimeWarning)
             return
@@ -130,7 +130,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
     ) -> Iterable[audiofile.AudioFile]:
         # Yields audiofile objects found in the given directories.
         paths = []
-        # grab all of the paths first because thing may change as files are renamed
+        # grab all the paths first because thing may change as files are renamed
         for directory in directories:
             path = pathlib.Path(directory)
             for ext in audiofile.extensions:
@@ -199,7 +199,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         # Converts the wav files into flac files; tags them.
         #
         # If source is True, it stores the flac files in the source directory,
-        # otherwise it stores them in the flac directory.
+        # otherwise, it stores them in the flac directory.
         out_dir = self._source_dir if source else self._flac_dir
         commands = [
             ("flac", "--silent", f"--output-prefix={out_dir}/", f) for f in self._wav_filenames

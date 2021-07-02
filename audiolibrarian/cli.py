@@ -61,7 +61,7 @@ class CommandLineInterface:
             print(pathlib.Path("/proc/self/status").read_text())
 
     def _check_deps(self) -> bool:
-        """Check that all of the executables defined in REQUIRED_EXE exist on the system.
+        """Check that all the executables defined in REQUIRED_EXE exist on the system.
 
         If any of the required executables are missing, list them and return False.
         """
