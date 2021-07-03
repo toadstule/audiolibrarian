@@ -50,7 +50,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
 
     def __init__(self, args: argparse.Namespace) -> None:
         """Initialize the base."""
-        # Pull in stuff from args
+        # Pull in stuff from args.
         search_keys = ("album", "artist", "mb_artist_id", "mb_release_id")
         self._provided_search_data = {k: v for k, v in vars(args).items() if k in search_keys}
         if vars(args).get("disc"):
@@ -58,7 +58,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         else:
             self._disc_number, self._disc_count = 1, 1
 
-        # directories
+        # Directories.
         self._library_dir = pathlib.Path("library").resolve()
         self._work_dir = pathlib.Path("/var/tmp/audiolibrarian")
         self._flac_dir = self._work_dir / "flac"
@@ -66,10 +66,11 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._mp3_dir = self._work_dir / "mp3"
         self._source_dir = self._work_dir / "source"
         self._wav_dir = self._work_dir / "wav"
+
         self._manifest_file = "Manifest.yaml"
         self._lock = filelock.FileLock(str(self._work_dir) + ".lock")
 
-        # initialize stuff that will be defined later
+        # Initialize stuff that will be defined later.
         self._audio_source = None
         self._release = None
         self._medium = None
@@ -107,7 +108,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
     def _convert(self, make_source: bool = True) -> None:
-        # Performs all the steps of ripping, normalizing, converting and moving the files.
+        # Perform all the steps of ripping, normalizing, converting and moving the files.
         if self._audio_source is None:
             warnings.warn("Cannot convert; no audio_source is defined.", RuntimeWarning)
             return
@@ -128,16 +129,16 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
     def _find_audio_files(
         directories: list[Union[str, pathlib.Path]]
     ) -> Iterable[audiofile.AudioFile]:
-        # Yields audiofile objects found in the given directories.
+        # Yield audiofile objects found in the given directories.
         paths = []
-        # grab all the paths first because thing may change as files are renamed
+        # Grab all the paths first because thing may change as files are renamed.
         for directory in directories:
             path = pathlib.Path(directory)
             for ext in audiofile.extensions:
                 paths.extend(path.rglob(f"*{ext}"))
         paths = sorted(list(set(paths)))
-        # using yield rather than returning a list saves us from simultaneously storing
-        # potentially thousands of AudioFile objects in memory at the same time
+        # Using yield rather than returning a list saves us from simultaneously storing
+        # potentially thousands of AudioFile objects in memory at the same time.
         for path in paths:
             try:
                 yield audiofile.open_(path)
@@ -158,7 +159,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         search_data = self._audio_source.get_search_data() if self._audio_source else {}
         searcher = musicbrainz.Searcher(**search_data)
         searcher.disc_number = self._disc_number
-        # override with user-provided info
+        # Override with user-provided info.
         if value := self._provided_search_data.get("artist"):
             searcher.artist = value
         if value := self._provided_search_data.get("album"):
@@ -189,14 +190,14 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             sys.exit(1)
 
     def _make_clean_workdirs(self) -> None:
-        # Erases everything from the workdir and creates the empty directory structure.
+        # Erase everything from the workdir and create the empty directory structure.
         if self._work_dir.is_dir():
             shutil.rmtree(self._work_dir)
         for path in self._flac_dir, self._m4a_dir, self._mp3_dir, self._source_dir, self._wav_dir:
             path.mkdir(parents=True)
 
     def _make_flac(self, source: bool = False) -> None:
-        # Converts the wav files into flac files; tags them.
+        # Convert the wav files into flac files; tag them.
         #
         # If source is True, it stores the flac files in the source directory,
         # otherwise, it stores them in the flac directory.
@@ -210,7 +211,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._tag_files(filenames)
 
     def _make_m4a(self) -> None:
-        # Converts the wav files into m4a files; tags them.
+        # Convert the wav files into m4a files; tag them.
         commands = []
         for filename in self._wav_filenames:
             dst_file = self._m4a_dir / filename.name.replace(".wav", ".m4a")
@@ -220,7 +221,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._tag_files(self._m4a_filenames)
 
     def _make_mp3(self) -> None:
-        # Converts the wav files into mp3 files; tags them.
+        # Convert the wav files into mp3 files; tag them.
         commands = []
         for filename in self._wav_filenames:
             dst_file = self._mp3_dir / filename.name.replace(".wav", ".mp3")
@@ -230,7 +231,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._tag_files(self._mp3_filenames)
 
     def _make_source(self) -> None:
-        # Converts the files into flac files; stores them in the source dir; reads their tags.
+        # Convert the files into flac files; store them in the source dir; read their tags.
         #
         # The files are defined by the audio source; they could be wav files from a CD
         # or another type of audio file.
@@ -238,7 +239,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._source_example = audiofile.open_(self._source_filenames[0]).read_tags()
 
     def _move_files(self, move_source: bool = True) -> None:
-        # Moves converted/tagged files from the work directory into the library directory.
+        # Move converted/tagged files from the work directory into the library directory.
         artist_album_dir = self._release.get_artist_album_path()
         flac_dir = self._library_dir / "flac" / artist_album_dir
         m4a_dir = self._library_dir / "m4a" / artist_album_dir
@@ -264,7 +265,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
                 path.rename(source_dir / path.name)
 
     def _normalize(self) -> None:
-        # Normalizes the wav files using wavegain.
+        # Normalize the wav files using wavegain.
         print("Normalizing wav files...")
         # sub_command = ["wavegain", "--album", "--apply"]
         command = ["wavegain", "--radio", "--gain=5", "--apply"]
@@ -281,7 +282,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             return yaml.safe_load(manifest_file)
 
     def _rename_wav(self) -> None:
-        # Renames the wav files to a filename-sane representation of the track title.
+        # Rename the wav files to a filename-sane representation of the track title.
         for old_path in self._wav_filenames:
             track_number = text.get_track_number(str(old_path.name))
             title_filename = self._medium.tracks[track_number].get_filename(".wav")
@@ -308,7 +309,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         col1 = [f.stem if f else no_match for f in self._audio_source.source_list]
         col2 = [t.get_filename() for _, t in sorted(self._medium.tracks.items())]
         col3 = [f"{str(n).zfill(2)}: {t.title}" for n, t in sorted(self._medium.tracks.items())]
-        min_total_w = 74  # make sure we've got enough width for MB Release URL
+        min_total_w = 74  # Make sure we've got enough width for MB Release URL.
         width = 40
         col1_w = min(width, max([len(x) for x in col1] + [len(no_match)]))
         col2_w = min(width, max([len(x) for x in col2] + [len(no_match)]))
@@ -354,7 +355,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         return "\n".join(lines), okay
 
     def _tag_files(self, filenames: list[pathlib.Path]) -> None:
-        # Tags the given list of files.
+        # Tag the given list of files.
         for filename in filenames:
             song = audiofile.open_(filename)
             song.one_track = records.OneTrack(
@@ -365,8 +366,8 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             song.write_tags()
 
     def _write_manifest(self) -> None:
-        # Writes out a manifest file with release information.
-        release = self._release  # we use this a lot below
+        # Write out a manifest file with release information.
+        release = self._release  # We use this a lot below.
         file_info = self._source_example.track.file_info
         manifest = {
             "album": release.album,
@@ -390,7 +391,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             },
         }
         if self.command == "manifest":
-            manifest_filename = self._manifest_file  # write to current directory
+            manifest_filename = self._manifest_file  # Write to current directory.
             if self._source_is_cd:
                 manifest["source_info"] = {
                     "type": "CD",

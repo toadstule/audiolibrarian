@@ -33,7 +33,7 @@ class M4aFile(audiofile.AudioFile):
     extensions = (".m4a",)
 
     def read_tags(self) -> records.OneTrack:
-        """Read the tags and returns a OneTrack object."""
+        """Read the tags and return a OneTrack object."""
 
         def get_str(key) -> Optional[str]:
             # Return first element for the given key, utf8-decoded.

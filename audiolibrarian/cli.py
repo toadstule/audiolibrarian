@@ -96,10 +96,10 @@ class CommandLineInterface:
             help="log level (default: ERROR)",
         )
 
-        # add sub-commands and args for sub_commands
+        # Add sub-commands and args for sub_commands.
         subparsers = parser.add_subparsers(title="commands", dest="command")
         for cmd_ in commands.commands:
-            # this is a total hack because argparse won't allow you to add an already
+            # This is a total hack because argparse won't allow you to add an already
             # existing ArgumentParser as a sub-parser.
             # pylint: disable=protected-access
             if cmd_.parser:

@@ -65,7 +65,6 @@ def fix(text: str) -> str:
 
 def get_filename(title: str) -> str:
     """Convert a title into a filename."""
-    # allowed_chars = string.ascii_letters + string.digits + "_.,"
     escape_required = "'!\"#$&'()*;<>?[]\\`{}|~\t\n); "
     invalid = "/"
     no_underscore_replace = "'!\""
@@ -78,7 +77,7 @@ def get_filename(title: str) -> str:
         elif char not in no_underscore_replace:
             result.append("_")
     result = "".join(result).rstrip("_")
-    # strip tailing dots, unless we end with an upper-case letter, then put one dot back
+    # Strip tailing dots, unless we end with an upper-case letter, then put one dot back.
     if result.endswith(".") and result.rstrip(".")[-1].isupper():
         return result.rstrip(".") + "."
     return result.rstrip(".")
@@ -109,7 +108,6 @@ def get_uuid(text: str) -> Optional[str]:
 
 def input_(prompt: str) -> str:  # pragma: no cover
     """Sound a terminal bell then prompt the user for input."""
-    # terminal bell
-    sys.stdout.write("\a")
+    sys.stdout.write("\a")  # Terminal bell escape char.
     sys.stdout.flush()
     return input(prompt)

@@ -56,7 +56,7 @@ class AudioFile(abc.ABC):
 
     @abc.abstractmethod
     def read_tags(self) -> records.OneTrack:
-        """Read the tags from the audio file and returns a populated OneTrack record."""
+        """Read the tags from the audio file and return a populated OneTrack record."""
 
     @abc.abstractmethod
     def write_tags(self) -> None:

@@ -54,7 +54,7 @@ class TestAudioLibrarian(TestCase):
         self.assertEqual([], audio_files)
 
         audio_files = list(al._find_audio_files([test_data_path]))
-        self.assertEqual(21, len(audio_files))  # this will need updated if test files are added
+        self.assertEqual(21, len(audio_files))  # This will need updated if test files are added.
 
     def test__manifests(self):
         al = Base(args=Namespace())

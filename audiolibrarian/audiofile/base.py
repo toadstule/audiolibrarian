@@ -45,7 +45,7 @@ def open_(filename: Union[str, Path]) -> AudioFile:
         filename: The filename of a supported audio file.
 
     Returns:
-        AudioFile: And AudioFile object.
+        AudioFile: An AudioFile object.
 
     Raises:
         FileNotFoundError: If the file cannot be found or is not a file.

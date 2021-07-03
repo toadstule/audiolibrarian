@@ -24,7 +24,7 @@ test_data_path = (Path(__file__).parent / "test_data").resolve()
 class TestAudioSource(TestCase):
     def test__single_directory_argument(self):
         audio_source = FilesAudioSource([test_data_path])
-        # this will need updated if more test files are added
+        # This will need updated if more test files are added.
         self.assertEqual(7, len(audio_source.get_source_filenames()))
         self.assertListEqual([], audio_source.get_wav_filenames())
         audio_source.copy_wavs(Path("/tmp"))
@@ -51,11 +51,11 @@ class TestAudioSource(TestCase):
     def test__source_list(self):
         audio_source = FilesAudioSource([test_data_path / "00.mp3"])
         self.assertListEqual([], audio_source.source_list)
-        audio_source.prepare_source()  # This should run w/o helper programs on an empty list
+        audio_source.prepare_source()  # This should run w/o helper programs on an empty list.
 
         audio_source = FilesAudioSource([test_data_path / "09.flac"])
         _ = audio_source.source_list
-        source_list = audio_source.source_list  # run twice to test stored value
+        source_list = audio_source.source_list  # Run twice to test stored value.
         self.assertEqual(9, len(source_list))
         for i in range(8):
             self.assertIsNone(source_list[i])

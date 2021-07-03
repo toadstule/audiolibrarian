@@ -31,7 +31,7 @@ class Tags(dict):
         self.update(*args, **kwargs)
 
     def __setitem__(self, k, v):
-        """Set an item only if should not be dropped."""
+        """Set an item only if it should not be dropped."""
         if not (
             v is None
             or (isinstance(v, list) and (None in v or "None" in v))

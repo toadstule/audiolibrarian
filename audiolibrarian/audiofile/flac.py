@@ -30,7 +30,7 @@ class FlacFile(audiofile.AudioFile):
     extensions = (".flac",)
 
     def read_tags(self) -> records.OneTrack:
-        """Read the tags and returns a OneTrack object."""
+        """Read the tags and return a OneTrack object."""
 
         def listf(lst: Optional[list]) -> Optional[records.ListF]:
             if lst is None:
@@ -175,7 +175,7 @@ class FlacFile(audiofile.AudioFile):
             "writer": release.people and release.people.writers,
         }
         tags_ = tags.Tags(tags_)
-        self._mut_file.delete()  # clear old tags
+        self._mut_file.delete()  # Clear old tags.
         self._mut_file.clear_pictures()
         self._mut_file.update(tags_)
 
@@ -198,7 +198,7 @@ class FlacFile(audiofile.AudioFile):
 
     @staticmethod
     def _parse_performer_tag(performers_tag: list[str]) -> list[records.Performer]:
-        # Parses a list of performer tags and returns a list of Performer objects.
+        # Parse a list of performer tags and return a list of Performer objects.
         performer_re = re.compile(r"(?P<name>.*)\((?P<instrument>.*)\)")
         performers = []
         for tag in performers_tag:

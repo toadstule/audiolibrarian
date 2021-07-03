@@ -34,7 +34,7 @@ class Mp3File(audiofile.AudioFile):
     extensions = (".mp3",)
 
     def read_tags(self) -> records.OneTrack:
-        """Read the tags and returns a OneTrack object."""
+        """Read the tags and return a OneTrack object."""
 
         def get_l(key) -> Optional[records.ListF]:
             if (value := mut.get(key)) is None:
@@ -57,7 +57,7 @@ class Mp3File(audiofile.AudioFile):
         bitrate_mode = records.BitrateMode.__members__[
             str(mut.info.bitrate_mode).rsplit(".", maxsplit=1)[-1]
         ]
-        # Hack for common CBRs
+        # Hack for common CBRs.
         if bitrate_mode == records.BitrateMode.UNKNOWN and bitrate in (128, 160, 192, 320):
             bitrate_mode = records.BitrateMode.CBR
         release = (

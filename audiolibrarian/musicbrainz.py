@@ -65,7 +65,7 @@ class MusicBrainzSession:
         return self.__session
 
     def _get(self, path: str, params=None):
-        # Used for direct API calls; those not supported by the python library
+        # Used for direct API calls; those not supported by the python library.
         path = path.lstrip("/")
         url = f"https://musicbrainz.org/ws/2/{path}"
         params["fmt"] = "json"
@@ -161,7 +161,7 @@ class MusicBrainzRelease:
         # - release-group tags
         # - user input
 
-        # user-genres and genres are not supported with the python library
+        # user-genres and genres are not supported with the python library.
         release_group = self._session.get_release_group_by_id(
             release_group_id, includes=["genres", "user-genres"]
         )

@@ -40,27 +40,27 @@ class TestMusicBrainzRelease(TestCase):
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
                 f = open_(test_file.name)
-                if (expected := f._one_track.release) is None:  # Blank tags in audio file
+                if (expected := f._one_track.release) is None:  # Blank tags in audio file.
                     continue
                 medium_number = f._one_track.medium_number
                 track_number = f._one_track.track_number
 
             got = MusicBrainzRelease(expected.musicbrainz_album_id).get_release()
 
-            # remove stuff we don't want to compare
-            expected.genres, got.genres = None, None  # genres should be ignored
-            expected.front_cover, got.front_cover = None, None  # don't compare image
-            expected.asins, got.asins = None, None  # Something's weird with ASINS
+            # Remove stuff we don't want to compare.
+            expected.genres, got.genres = None, None  # Genres should be ignored.
+            expected.front_cover, got.front_cover = None, None  # Don't compare image.
+            expected.asins, got.asins = None, None  # Something's weird with ASINS.
             # noinspection PyUnresolvedReferences
             expected.media[medium_number].tracks[track_number].file_info = None
             # noinspection PyUnresolvedReferences
             got.media[medium_number].tracks[track_number].file_info = None
 
-            if src.suffix == ".m4a":  # we don't store this for m4a files
+            if src.suffix == ".m4a":  # We don't store this for m4a files.
                 if got.people:
                     got.people.performers = None
 
-            if src.suffix == ".mp3":  # we don't store this for mp3 files
+            if src.suffix == ".mp3":  # We don't store this for mp3 files.
                 expected.original_date, got.original_date = None, None
 
             self.assertEqual(expected.people, got.people, f"People failed for {src}")

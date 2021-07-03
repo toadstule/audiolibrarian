@@ -47,7 +47,7 @@ class GenreManager:  # pylint: disable=too-few-public-methods
             self._update_tags()
 
     def _update_tags(self) -> None:
-        # Set the genre tags for all songs to the user-based genre
+        # Set the genre tags for all songs to the user-based genre.
         for artist_id, paths in self._paths_by_artist.items():
             genre = self._user_genres_by_artist.get(artist_id)
             if not genre:
@@ -95,7 +95,7 @@ class GenreManager:  # pylint: disable=too-few-public-methods
 
     def _get_all_paths(self) -> list[pathlib.Path]:
         # Return a list of paths (pathlib.Path objects) for all files in the directories
-        # specified in the args
+        # specified in the args.
         paths = []
         for directory in self._args.directory:
             paths.extend([p for p in list(pathlib.Path(directory).glob("**/*")) if p.is_file()])
@@ -146,7 +146,7 @@ class GenreManager:  # pylint: disable=too-few-public-methods
         for artist_id in self._paths_by_artist:
             if artist_id in user:
                 log.debug(f"Cache hit: {artist_id} {user[artist_id]}")
-                continue  # already in the cache
+                continue  # Already in the cache.
             artist = self._mb.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
             if artist["user-genres"]:
                 genre = artist["user-genres"][0]["name"].title()

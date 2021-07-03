@@ -19,12 +19,6 @@ from audiolibrarian import cli
 
 
 class TestMisc(TestCase):
-    # def setUp(self) -> None:
-    #     self._required_exe = cli.CommandLineInterface.required_exe[:]
-    #
-    # def tearDown(self) -> None:
-    #     cli.CommandLineInterface.required_exe = self._required_exe[:]
-    #
     def test__check_deps_true(self) -> None:
         cli_ = cli.CommandLineInterface(parse_args=False)
         cli_.required_exe = ["ls", "ps"]

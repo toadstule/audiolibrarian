@@ -129,7 +129,7 @@ class FilesAudioSource(AudioSource):
         super().__init__()
         self._filenames = filenames
         if len(filenames) == 1 and filenames[0].is_dir():
-            # if we're given a directory, figure out what's in there
+            # If we're given a directory, figure out what's in there.
             for file_type in ("flac", "wav", "m4a", "mp3"):
                 if fns := sorted(filenames[0].glob(f"*.{file_type}"), key=text.alpha_numeric_key):
                     self._filenames = list(fns)

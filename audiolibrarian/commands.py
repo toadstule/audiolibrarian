@@ -191,7 +191,6 @@ class Rename(_Command, Base):
                 / audio_file.one_track.get_artist_album_disc_path()
                 / audio_file.one_track.track.get_filename(filepath.suffix)
             )
-            # new_name = audio_file.one_track.track.get_filename(filepath.suffix)
             if old_name != new_name:
                 print(f"Renaming:\n  {old_name} -> \n  {new_name}")
                 if args.dry_run:
@@ -201,7 +200,7 @@ class Rename(_Command, Base):
                 new_parent.mkdir(parents=True, exist_ok=True)
                 old_name.rename(new_name)
                 if not old_parent.samefile(new_parent):
-                    # move the Manifest if it's the only file left
+                    # Move the Manifest if it's the only file left.
                     man = "Manifest.yaml"
                     if [f.name for f in old_parent.glob("*")] == [man]:
                         print(f"Renaming:\n  {old_parent / man} -> \n  {new_parent / man}")

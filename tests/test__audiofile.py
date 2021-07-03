@@ -69,7 +69,7 @@ class TestAudioFile(TestCase):
                 f.write_tags()
                 after = dict(f._mut_file.tags)
 
-            # TIPL can be in any order, so we'll compare it separately and remove it
+            # TIPL can be in any order, so we'll compare it separately and remove it.
             tipl_before, tipl_after = [], []
             if t := before.get("TIPL"):
                 tipl_before = sorted(t.people)
@@ -162,14 +162,14 @@ class TestAudioFile(TestCase):
                 old_info = copy.deepcopy(info)
                 new_info = f.read_tags()
 
-                # remove stuff we don't want to check
+                # Remove stuff we don't want to check.
                 new_info.track.file_info = None
 
                 if src.suffix == ".m4a":
-                    old_info.release.people.performers = None  # m4a doesn't save performers
-                    old_info.release.front_cover.desc = None  # m4a doesn't save cover desc
+                    old_info.release.people.performers = None  # m4a doesn't save performers.
+                    old_info.release.front_cover.desc = None  # m4a doesn't save cover desc.
                 if src.suffix == ".mp3":
-                    old_info.release.original_date = None  # mp3 doesn't save orig date
+                    old_info.release.original_date = None  # mp3 doesn't save orig date.
                 self.assertEqual(old_info, new_info, f"Write/Read failed for {src.suffix}")
 
 
@@ -180,7 +180,7 @@ class TestAudioFileMisc(TestCase):
 
     def test__file_not_supported(self):
         with self.assertRaises(NotImplementedError):
-            # the current file should always be around, and never be an audio file
+            # The current file should always be around, and never be an audio file.
             open_(__file__)
 
 
