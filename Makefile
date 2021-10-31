@@ -85,9 +85,9 @@ test-external-coverage:  ## Run unit tests -- including external tests -- and ge
 .PHONY: venv-check
 venv-check:  # Verify that we are in a virtual environment.
 ifndef VIRTUAL_ENV
-	ifndef PYTHON_VERSION
-		$(error this should only be executed in a Python virtual environment)
-	endif
+ifndef BITBUCKET_WORKSPACE
+	$(error this should only be executed in a Python virtual environment)
+endif
 endif
 
 .PHONY: venv-clean
