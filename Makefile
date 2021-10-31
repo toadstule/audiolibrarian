@@ -16,6 +16,7 @@ check: lint test  ## Check the code.
 .PHONY: clean
 clean:  ## Clean up.
 	rm -rf dist
+	env
 
 .PHONY: distclean
 distclean: clean venv-clean  ## Clean up all extra files.
