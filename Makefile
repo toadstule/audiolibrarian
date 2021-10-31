@@ -41,11 +41,11 @@ requirements-base: requirements-base.txt  ## Install base requirements.
 	python -m pip install --quiet --requirement requirements-base.txt
 
 .PHONY: requirements-dev
-requirements-dev: requirements-dev.txt  ## Install dev requirements.
+requirements-dev: venv-check requirements-dev.txt  ## Install dev requirements.
 	python -m pip install --quiet --requirement requirements-dev.txt
 
 .PHONY: requirements
-requirements: requirements.txt  ## Install requirements.
+requirements: venv-check requirements.txt  ## Install requirements.
 	python -m pip install --quiet --requirement requirements.txt
 
 requirements.txt: requirements-base.txt  ## Make a new requirements file.
