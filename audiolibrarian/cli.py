@@ -58,7 +58,7 @@ class CommandLineInterface:
                 cmd(self._args)
                 break
         if self._args.log_level == logging.DEBUG:
-            print(pathlib.Path("/proc/self/status").read_text())
+            print(pathlib.Path("/proc/self/status").read_text(encoding="utf-8"))
 
     def _check_deps(self) -> bool:
         """Check that all the executables defined in REQUIRED_EXE exist on the system.

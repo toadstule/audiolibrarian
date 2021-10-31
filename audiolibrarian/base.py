@@ -68,6 +68,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._wav_dir = self._work_dir / "wav"
 
         self._manifest_file = "Manifest.yaml"
+        # pylint: disable=abstract-class-instantiated
         self._lock = filelock.FileLock(str(self._work_dir) + ".lock")
 
         # Initialize stuff that will be defined later.
@@ -278,7 +279,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
 
     @staticmethod
     def _read_manifest(manifest_path: pathlib.Path) -> dict:
-        with open(manifest_path, "r") as manifest_file:
+        with open(manifest_path, "r", encoding="utf-8") as manifest_file:
             return yaml.safe_load(manifest_file)
 
     def _rename_wav(self) -> None:
@@ -402,6 +403,6 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             source_dir = self._library_dir / "source"
             artist_album_dir = self._release.get_artist_album_path()
             manifest_filename = source_dir / artist_album_dir / self._manifest_file
-        with open(manifest_filename, "w") as manifest_file:
+        with open(manifest_filename, "w", encoding="utf-8") as manifest_file:
             pyaml.dump(manifest, manifest_file)
         print(f"Wrote {manifest_filename}")
