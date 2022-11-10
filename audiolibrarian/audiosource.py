@@ -53,7 +53,7 @@ class AudioSource(abc.ABC):
         """
         if not self._source_list:
             source_filenames = self.get_source_filenames()
-            length = max([text.get_track_number(str(f.name)) for f in source_filenames])
+            length = max(text.get_track_number(str(f.name)) for f in source_filenames)
             result: list[Optional[pathlib.Path]] = [None] * length
             if length:
                 for filename in source_filenames:
