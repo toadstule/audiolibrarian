@@ -35,5 +35,5 @@ if __name__ == "__main__":
         author_email="audiolibrarian@jibson.com",
         description="Audio library utilities",
         scripts=["scripts/audiolibrarian"],
-        install_requires=[line.strip() for line in open("requirements-base.txt")],
+        install_requires=[line.strip() for line in open("requirements.base.txt")],
     )

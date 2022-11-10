@@ -15,14 +15,27 @@ check: lint test  ## Check the code.
 
 .PHONY: clean
 clean:  ## Clean up.
-	rm -rf dist
+	rm -rf audiolibrarian.egg-info dist
+
+.PHONY: dep
+dep: venv-check requirements.txt  ## Install requirements.
+	python -m pip install --quiet --upgrade pip setuptools wheel
+	python -m pip install --quiet --requirement requirements.txt
+
+.PHONY: dep-base
+dep-base: requirements.base.txt  ## Install base requirements.
+	python -m pip install --quiet --requirement requirements.base.txt
+
+.PHONY: dep-dev
+dep-dev: venv-check requirements.dev.txt  ## Install dev requirements.
+	python -m pip install --quiet --requirement requirements.dev.txt
 
 .PHONY: distclean
 distclean: clean venv-clean  ## Clean up all extra files.
 	rm -rf MANIFEST .pytype .coverage htmlcov/ library/
 
 .PHONY: format
-format: requirements-dev  ## Format the code.
+format: dep-dev  ## Format the code.
 	black $(CHECK) $(PKG_FILES) tests
 	isort $(CHECK) $(PKG_FILES) tests
 
@@ -31,30 +44,18 @@ help:  ## Display this help.
 	@grep -h -E '^[a-zA-Z0-9._-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: lint
-lint: requirements requirements-dev format  ## Lint the code.
+lint: dep dep-dev format  ## Lint the code.
 	pylint audiolibrarian
 	pydocstyle $(PKG_FILES) tests
 	pytype --jobs=auto --keep-going $(PKG_FILES) tests
 
-.PHONY: requirements-base
-requirements-base: requirements-base.txt  ## Install base requirements.
-	python -m pip install --quiet --requirement requirements-base.txt
-
-.PHONY: requirements-dev
-requirements-dev: venv-check requirements-dev.txt  ## Install dev requirements.
-	python -m pip install --quiet --requirement requirements-dev.txt
-
-.PHONY: requirements
-requirements: venv-check requirements.txt  ## Install requirements.
-	python -m pip install --quiet --requirement requirements.txt
-
-requirements.txt: requirements-base.txt  ## Make a new requirements file.
-	make venv-clean
-	make requirements-base
+requirements.txt: requirements.base.txt  ## Make a new requirements file.
+	$(MAKE) venv-clean
+	$(MAKE) dep-base
 	python -m pip freeze > $@
 
 .PHONY: sdist
-sdist: requirements  ## Build distributable archive.
+sdist: dep  ## Build distributable archive.
 	python setup.py sdist
 
 .PHONY: showvars
