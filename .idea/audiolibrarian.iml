@@ -5,8 +5,10 @@
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/.pytype" />
+      <excludeFolder url="file://$MODULE_DIR$/audiolibrarian.egg-info" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.9 (audiolibrarian)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.10 (audiolibrarian)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

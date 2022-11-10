@@ -6,6 +6,7 @@ MANIFEST
 __pycache__/
 .pytype/
 .venv/
+audiolibrarian.egg-info/
 dist/
 htmlcov/
 library/
