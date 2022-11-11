@@ -28,11 +28,11 @@ import warnings
 from collections.abc import Iterable
 
 import filelock
-import pyaml  # type: ignore
+import pyaml
 import yaml
 
 # noinspection PyPackageRequirements
-from colors import color  # type: ignore
+from colors import color
 
 from audiolibrarian import audiofile, audiosource, cmd, musicbrainz, records, text
 

@@ -48,8 +48,7 @@ lint: dep dep-dev format  ## Lint the code.
 	pylint audiolibrarian
 	pydocstyle $(PKG_FILES) tests
 	pytype --jobs=auto --keep-going $(PKG_FILES) tests
-	mypy --install-types --non-interactive --no-strict-optional $(PKG_FILES) tests
-
+	mypy $(PKG_FILES) tests
 
 requirements.txt: requirements.base.txt  ## Make a new requirements file.
 	$(MAKE) venv-clean

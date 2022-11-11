@@ -22,9 +22,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from logging import DEBUG, getLogger
 
-import musicbrainzngs as mb  # type: ignore
+import musicbrainzngs as mb
 import requests
-from fuzzywuzzy import fuzz  # type: ignore
+from fuzzywuzzy import fuzz
 from requests.auth import HTTPDigestAuth
 
 from audiolibrarian import __version__, records, text

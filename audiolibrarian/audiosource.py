@@ -23,7 +23,7 @@ import shutil
 import subprocess
 import tempfile
 
-import discid  # type: ignore
+import discid
 
 from audiolibrarian import audiofile, cmd, records, text
 
