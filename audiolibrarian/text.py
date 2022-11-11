@@ -68,15 +68,15 @@ def get_filename(title: str) -> str:
     escape_required = "'!\"#$&'()*;<>?[]\\`{}|~\t\n); "
     invalid = "/"
     no_underscore_replace = "'!\""
-    result = []
+    results: list[str] = []
     for char in picard_src.replace_non_ascii(title):
         if char == "&":
-            result.extend("and")
+            results.extend("and")
         elif char.isascii() and char not in escape_required and char not in invalid:
-            result.append(char)
+            results.append(char)
         elif char not in no_underscore_replace:
-            result.append("_")
-    result = "".join(result).rstrip("_")
+            results.append("_")
+    result = "".join(results).rstrip("_")
     # Strip tailing dots, unless we end with an upper-case letter, then put one dot back.
     if result.endswith(".") and result.rstrip(".")[-1].isupper():
         return result.rstrip(".") + "."
