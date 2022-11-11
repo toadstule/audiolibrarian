@@ -1,4 +1,5 @@
 black
+mypy
 pydocstyle
 pylint
 pytype
