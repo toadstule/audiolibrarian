@@ -156,9 +156,9 @@ class FilesAudioSource(AudioSource):
             album = release.album or "" if release else ""
             mb_artist_id = (
                 release.musicbrainz_album_artist_ids.first
-                if release
+                if release and release.musicbrainz_album_artist_ids
                 else "" or track.musicbrainz_artist_ids.first
-                if track
+                if track and track.musicbrainz_artist_ids
                 else "" or ""
             )
             mb_release_id = release.musicbrainz_album_id or "" if release else ""
