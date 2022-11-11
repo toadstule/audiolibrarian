@@ -1,4 +1,8 @@
 """Command execution helpers."""
+import subprocess
+
+from audiolibrarian import output
+
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -15,12 +19,8 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 
-import subprocess
 
-from audiolibrarian import output
-
-
-def parallel(message: str, commands: list[tuple]):
+def parallel(message: str, commands: list[tuple[str, ...]]):
     """Execute commands in parallel."""
     with output.Dots(message) as dots:
         for command in commands:

@@ -26,16 +26,15 @@ import subprocess
 import sys
 import warnings
 from collections.abc import Iterable
-from typing import Union
 
 import filelock
-import pyaml
+import pyaml  # type: ignore
 import yaml
 
 # noinspection PyPackageRequirements
-from colors import color
+from colors import color  # type: ignore
 
-from audiolibrarian import audiofile, cmd, musicbrainz, records, text
+from audiolibrarian import audiofile, audiosource, cmd, musicbrainz, records, text
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
     This class should be sub-classed for various sub_commands.
     """
 
-    command = None
+    command: str | None = None
 
     def __init__(self, args: argparse.Namespace) -> None:
         """Initialize the base."""
@@ -72,11 +71,11 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._lock = filelock.FileLock(str(self._work_dir) + ".lock")
 
         # Initialize stuff that will be defined later.
-        self._audio_source = None
-        self._release = None
-        self._medium = None
-        self._source_is_cd = None
-        self._source_example = None
+        self._audio_source: audiosource.AudioSource | None = None
+        self._release: records.Release | None = None
+        self._medium: records.Medium | None = None
+        self._source_is_cd: bool | None = None
+        self._source_example: records.OneTrack | None = None
 
     @property
     def _flac_filenames(self) -> list[pathlib.Path]:
@@ -127,11 +126,9 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             self._move_files(move_source=make_source)
 
     @staticmethod
-    def _find_audio_files(
-        directories: list[Union[str, pathlib.Path]]
-    ) -> Iterable[audiofile.AudioFile]:
+    def _find_audio_files(directories: list[str | pathlib.Path]) -> Iterable[audiofile.AudioFile]:
         # Yield audiofile objects found in the given directories.
-        paths = []
+        paths: list[pathlib.Path] = []
         # Grab all the paths first because thing may change as files are renamed.
         for directory in directories:
             path = pathlib.Path(directory)
@@ -146,7 +143,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
             except FileNotFoundError:
                 continue
 
-    def _find_manifests(self, directories: list[Union[str, pathlib.Path]]) -> list[pathlib.Path]:
+    def _find_manifests(self, directories: list[str | pathlib.Path]) -> list[pathlib.Path]:
         # Return a sorted, unique list of manifest files anywhere in the given directories.
         manifests = set()
         for directory in directories:
@@ -157,9 +154,11 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
 
     def _get_searcher(self) -> musicbrainz.Searcher:
         # Return a Searcher object populated with data from the audio source and cli args.
-        search_data = self._audio_source.get_search_data() if self._audio_source else {}
+        search_data: dict = (
+            self._audio_source.get_search_data() if self._audio_source is not None else {}
+        )
         searcher = musicbrainz.Searcher(**search_data)
-        searcher.disc_number = self._disc_number
+        searcher.disc_number = str(self._disc_number)
         # Override with user-provided info.
         if value := self._provided_search_data.get("artist"):
             searcher.artist = value
@@ -179,7 +178,11 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         print("Finding MusicBrainz release information...")
         self._release = searcher.find_music_brains_release()
         self._medium = self._release.media[int(self._disc_number)]
-        if cover := not self._release.front_cover and self._audio_source.get_front_cover():
+        if (
+            cover := not self._release.front_cover
+            and self._audio_source
+            and self._audio_source.get_front_cover()
+        ):
             log.info("Using front-cover image from source file")
             self._release.front_cover = cover
         summary, okay = self._summary()
@@ -203,8 +206,9 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         # If source is True, it stores the flac files in the source directory,
         # otherwise, it stores them in the flac directory.
         out_dir = self._source_dir if source else self._flac_dir
-        commands = [
-            ("flac", "--silent", f"--output-prefix={out_dir}/", f) for f in self._wav_filenames
+        commands: list[tuple[str, ...]] = [
+            ("flac", "--silent", f"--output-prefix={out_dir}/", str(f))
+            for f in self._wav_filenames
         ]
         cmd.parallel(f"Making {len(self._wav_filenames)} flac files...", commands)
         filenames = self._source_filenames if source else self._flac_filenames
@@ -213,20 +217,22 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
 
     def _make_m4a(self) -> None:
         # Convert the wav files into m4a files; tag them.
-        commands = []
+        commands: list[tuple[str, ...]] = []
         for filename in self._wav_filenames:
             dst_file = self._m4a_dir / filename.name.replace(".wav", ".m4a")
-            commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", dst_file, filename))
+            commands.append(
+                ("fdkaac", "--silent", "--bitrate-mode=5", "-o", str(dst_file), str(filename))
+            )
         cmd.parallel(f"Making {len(commands)} m4a files...", commands)
         cmd.touch(self._m4a_filenames)
         self._tag_files(self._m4a_filenames)
 
     def _make_mp3(self) -> None:
         # Convert the wav files into mp3 files; tag them.
-        commands = []
+        commands: list[tuple[str, ...]] = []
         for filename in self._wav_filenames:
             dst_file = self._mp3_dir / filename.name.replace(".wav", ".mp3")
-            commands.append(("lame", "--silent", "-h", "-b", "192", filename, dst_file))
+            commands.append(("lame", "--silent", "-h", "-b", "192", str(filename), str(dst_file)))
         cmd.parallel(f"Making {len(commands)} mp3 files...", commands)
         cmd.touch(self._mp3_filenames)
         self._tag_files(self._mp3_filenames)
@@ -270,7 +276,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         print("Normalizing wav files...")
         # sub_command = ["wavegain", "--album", "--apply"]
         command = ["wavegain", "--radio", "--gain=5", "--apply"]
-        command.extend(self._wav_filenames)
+        command.extend(str(f) for f in self._wav_filenames)
         result = subprocess.run(command, capture_output=True, check=False)
         for line in str(result.stderr).split(r"\n"):
             line_trunc = line[:137] + "..." if len(line) > 140 else line
@@ -402,7 +408,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         else:
             source_dir = self._library_dir / "source"
             artist_album_dir = self._release.get_artist_album_path()
-            manifest_filename = source_dir / artist_album_dir / self._manifest_file
+            manifest_filename = str(source_dir / artist_album_dir / self._manifest_file)
         with open(manifest_filename, "w", encoding="utf-8") as manifest_file:
             pyaml.dump(manifest, manifest_file)
         print(f"Wrote {manifest_filename}")

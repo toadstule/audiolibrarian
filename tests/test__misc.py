@@ -21,10 +21,10 @@ from audiolibrarian import cli
 class TestMisc(TestCase):
     def test__check_deps_true(self) -> None:
         cli_ = cli.CommandLineInterface(parse_args=False)
-        cli_.required_exe = ["ls", "ps"]
+        cli_.required_exe = {"ls", "ps"}
         self.assertTrue(cli_._check_deps())
 
     def test__check_deps_false(self) -> None:
         cli_ = cli.CommandLineInterface(parse_args=False)
-        cli_.required_exe = ["your_mom_goes_to_college"]
+        cli_.required_exe = {"your_mom_goes_to_college"}
         self.assertFalse(cli_._check_deps())

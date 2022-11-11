@@ -17,7 +17,6 @@
 
 import re
 import sys
-from typing import Optional
 
 import picard_src
 
@@ -99,7 +98,7 @@ def get_track_number(filename: str) -> int:
             pass
 
 
-def get_uuid(text: str) -> Optional[str]:
+def get_uuid(text: str) -> str | None:
     """Return the first UUID found within a given string."""
     if (match := uuid_regex.search(text)) is not None:
         return match.group()

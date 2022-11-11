@@ -16,7 +16,7 @@
 #
 
 import re
-from typing import Optional
+from typing import Any
 
 import mutagen.flac
 
@@ -27,12 +27,12 @@ from audiolibrarian.audiofile import audiofile, tags
 class FlacFile(audiofile.AudioFile):
     """AudioFile for Flac files."""
 
-    extensions = (".flac",)
+    extensions: set[str] = {".flac"}
 
     def read_tags(self) -> records.OneTrack:
         """Read the tags and return a OneTrack object."""
 
-        def listf(lst: Optional[list]) -> Optional[records.ListF]:
+        def listf(lst: list | None) -> records.ListF | None:
             if lst is None:
                 return None
             return records.ListF(lst)
@@ -190,7 +190,7 @@ class FlacFile(audiofile.AudioFile):
         self._mut_file.save()
 
     @staticmethod
-    def _make_performer_tag(performers: Optional[list[records.Performer]]) -> Optional[list[str]]:
+    def _make_performer_tag(performers: list[records.Performer] | None | Any) -> list[str] | None:
         # Return a list of performer tag strings "name (instrument)".
         if performers is None:
             return None

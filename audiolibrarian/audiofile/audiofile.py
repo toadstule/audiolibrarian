@@ -27,7 +27,7 @@ from audiolibrarian import records
 class AudioFile(abc.ABC):
     """Abstract base class for AudioFile classes."""
 
-    extensions = ()
+    extensions: set[str] = set()
 
     def __init__(self, filepath: pathlib.Path):
         """Initialize an AudioFile."""

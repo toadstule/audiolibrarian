@@ -19,8 +19,8 @@ clean:  ## Clean up.
 
 .PHONY: dep
 dep: venv-check requirements.txt  ## Install requirements.
-	python -m pip install --quiet --upgrade pip setuptools wheel
-	python -m pip install --quiet --requirement requirements.txt
+	@python -m pip install --quiet --upgrade pip setuptools wheel
+	@python -m pip install --quiet --requirement requirements.txt
 
 .PHONY: dep-base
 dep-base: requirements.base.txt  ## Install base requirements.
@@ -48,6 +48,8 @@ lint: dep dep-dev format  ## Lint the code.
 	pylint audiolibrarian
 	pydocstyle $(PKG_FILES) tests
 	pytype --jobs=auto --keep-going $(PKG_FILES) tests
+	mypy --install-types --non-interactive --no-strict-optional $(PKG_FILES) tests
+
 
 requirements.txt: requirements.base.txt  ## Make a new requirements file.
 	$(MAKE) venv-clean

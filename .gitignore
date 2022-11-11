@@ -4,6 +4,7 @@ MANIFEST
 *.jpg
 
 __pycache__/
+.mypy_cache/
 .pytype/
 .venv/
 audiolibrarian.egg-info/

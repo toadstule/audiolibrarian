@@ -21,11 +21,10 @@ import webbrowser
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from logging import DEBUG, getLogger
-from typing import Optional
 
-import musicbrainzngs as mb
+import musicbrainzngs as mb  # type: ignore
 import requests
-from fuzzywuzzy import fuzz
+from fuzzywuzzy import fuzz  # type: ignore
 from requests.auth import HTTPDigestAuth
 
 from audiolibrarian import __version__, records, text
@@ -128,7 +127,7 @@ class MusicBrainzRelease:
         self._session = MusicBrainzSession()
         self._session.sleep()
         self._release = mb.get_release_by_id(release_id, includes=self._includes)["release"]
-        self._release_record = None
+        self._release_record: records.Release | None = None
 
     def get_release(self) -> records.Release:
         """Return the Release record."""
@@ -136,7 +135,7 @@ class MusicBrainzRelease:
             self._release_record = self._get_release()
         return self._release_record
 
-    def _get_front_cover(self, size: int = 500) -> Optional[records.FrontCover]:
+    def _get_front_cover(self, size: int = 500) -> records.FrontCover | None:
         # Return the FrontCover object (of None).
         if self._release["cover-art-archive"]["front"] == "true":
             self._session.sleep()
@@ -183,7 +182,7 @@ class MusicBrainzRelease:
             ][0]
         return text.input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
-    def _get_media(self) -> Optional[dict[int, records.Medium]]:
+    def _get_media(self) -> dict[int, records.Medium] | None:
         # Return a dict of Media objects, keyed on number or position (or None).
         media = {}
         for medium in self._release.get("medium-list", []):
@@ -196,7 +195,7 @@ class MusicBrainzRelease:
             )
         return media
 
-    def _get_people(self) -> Optional[records.People]:  # pylint: disable=too-many-branches
+    def _get_people(self) -> records.People | None:  # pylint: disable=too-many-branches
         # Return a People object (or None).
         arrangers, composers, conductors, engineers, lyricists = [], [], [], [], []
         mixers, performers, producers, writers = [], [], [], []
@@ -317,7 +316,7 @@ class MusicBrainzRelease:
             source=records.Source.MUSICBRAINZ,
         )
 
-    def _get_tracks(self, medium_number: int = 1) -> Optional[dict[int, records.Track]]:
+    def _get_tracks(self, medium_number: int = 1) -> dict[int, records.Track] | None:
         # Return a dict of Track objects, keyed on track number.
         tracks = {}
         for medium in self._release.get("medium-list", []):
@@ -382,7 +381,7 @@ class Searcher:
             self.__mb_session = MusicBrainzSession()
         return self.__mb_session
 
-    def find_music_brains_release(self) -> Optional[records.Release]:
+    def find_music_brains_release(self) -> records.Release | None:
         """Return a Release object (or None) based on a search."""
         release_id = self.mb_release_id
         if not release_id and self.disc_id:

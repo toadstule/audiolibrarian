@@ -46,7 +46,7 @@ class TestAudioLibrarian(TestCase):
 
         self.assertTrue(al._multi_disc)
         searcher = al._get_searcher()
-        self.assertEqual(2, searcher.disc_number)
+        self.assertEqual("2", searcher.disc_number)
 
     def test__find_audio_files(self):
         al = Base(args=Namespace())

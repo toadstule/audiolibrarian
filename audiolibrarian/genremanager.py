@@ -54,22 +54,22 @@ class GenreManager:  # pylint: disable=too-few-public-methods
                 continue
             for path in paths:
                 if path.suffix == ".flac":
-                    song = mutagen.flac.FLAC(str(path))
-                    current_genre = song.tags["genre"][0]
+                    flac_song = mutagen.flac.FLAC(str(path))
+                    current_genre = flac_song.tags["genre"][0]  # type: ignore
                     if current_genre != genre:
-                        song.tags["genre"] = genre
-                        song.save()
+                        flac_song.tags["genre"] = genre  # type: ignore
+                        flac_song.save()
                         print(f"{path}: {current_genre} --> {genre}")
                 elif path.suffix == ".m4a":
-                    song = mutagen.mp4.MP4(str(path))
-                    current_genre = song.tags["\xa9gen"][0]
+                    m4a_song = mutagen.mp4.MP4(str(path))
+                    current_genre = m4a_song.tags["\xa9gen"][0]  # type: ignore
                     if current_genre != genre:
-                        song.tags["\xa9gen"] = genre
-                        song.save()
+                        m4a_song.tags["\xa9gen"] = genre  # type: ignore
+                        m4a_song.save()
                         print(f"{path}: {current_genre} --> {genre}")
                 elif path.suffix == ".mp3":
-                    song = mutagen.File(str(path))
-                    current_genre = str(song.tags["TCON"])
+                    mp3_song = mutagen.File(str(path))
+                    current_genre = str(mp3_song.tags["TCON"])
                     if current_genre != genre:
                         id3 = mutagen.id3.ID3(str(path))
                         id3.add(mutagen.id3.TCON(encoding=3, text=genre))
@@ -104,7 +104,7 @@ class GenreManager:  # pylint: disable=too-few-public-methods
     def _get_paths_by_artist(self) -> dict[str, list[pathlib.Path]]:
         # Return a dict mapping Musicbrainz-artist-ID to a list of paths (pathlib.Path objects)
         # representing audio files by that artist.
-        artists = {}
+        artists: dict[str, list[pathlib.Path]] = {}
         for path in self._paths:
             artist_id = None
             song = mutagen.File(str(path))

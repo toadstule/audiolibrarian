@@ -22,9 +22,8 @@ import pathlib
 import shutil
 import subprocess
 import tempfile
-from typing import Optional
 
-import discid
+import discid  # type: ignore
 
 from audiolibrarian import audiofile, cmd, records, text
 
@@ -45,7 +44,7 @@ class AudioSource(abc.ABC):
             shutil.rmtree(self._temp_dir)
 
     @property
-    def source_list(self) -> list[Optional[pathlib.Path]]:
+    def source_list(self) -> list[pathlib.Path | None]:
         """Return a list with source file paths and blanks.
 
         The list will be ordered by track number, with None in spaces where no
@@ -54,7 +53,7 @@ class AudioSource(abc.ABC):
         if not self._source_list:
             source_filenames = self.get_source_filenames()
             length = max(text.get_track_number(str(f.name)) for f in source_filenames)
-            result: list[Optional[pathlib.Path]] = [None] * length
+            result: list[pathlib.Path | None] = [None] * length
             if length:
                 for filename in source_filenames:
                     idx = text.get_track_number(str(filename.name)) - 1
@@ -67,7 +66,7 @@ class AudioSource(abc.ABC):
         for filename in self.get_wav_filenames():
             shutil.copy2(filename, dest_dir / filename.name)
 
-    def get_front_cover(self) -> Optional[records.FrontCover]:
+    def get_front_cover(self) -> records.FrontCover | None:
         """Return a FrontCover record or None."""
 
     @abc.abstractmethod
@@ -136,7 +135,7 @@ class FilesAudioSource(AudioSource):
                     break
         self._file_type = self._filenames[0].suffix.lstrip(".")
 
-    def get_front_cover(self) -> Optional[records.FrontCover]:
+    def get_front_cover(self) -> records.FrontCover | None:
         """See base class."""
         for filename in self._filenames:
             one_track = audiofile.open_(filename).one_track
@@ -189,7 +188,7 @@ class FilesAudioSource(AudioSource):
             raise Exception(f"Unsupported source file type: {self._file_type}") from err
         tmp_dir = self._temp_dir / "__tmp__"
         tmp_dir.mkdir(parents=True)
-        commands = []
+        commands: list[tuple[str, ...]] = []
         for track_number, filepath in enumerate(self.source_list, 1):
             if filepath:
                 in_ = str(filepath)

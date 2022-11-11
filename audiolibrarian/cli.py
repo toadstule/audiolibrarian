@@ -28,7 +28,7 @@ log = logging.getLogger("audiolibrarian")
 class CommandLineInterface:
     """Command line interface."""
 
-    required_exe = (
+    required_exe: set[str] = {
         "cd-paranoia",
         "eject",
         "faad",
@@ -38,7 +38,7 @@ class CommandLineInterface:
         "mpg123",
         "sndfile-convert",
         "wavegain",
-    )
+    }
 
     def __init__(self, parse_args: bool = True):
         """Initialize a CommandLineInterface handler."""
@@ -103,10 +103,10 @@ class CommandLineInterface:
             # existing ArgumentParser as a sub-parser.
             # pylint: disable=protected-access
             if cmd_.parser:
-                cmd_.parser.prog = f"{subparsers._prog_prefix} {cmd_.command}"
+                cmd_.parser.prog = f"{subparsers._prog_prefix} {cmd_.command}"  # type: ignore
                 subparsers._choices_actions.append(
-                    subparsers._ChoicesPseudoAction(cmd_.command, (), cmd_.help)
+                    subparsers._ChoicesPseudoAction(cmd_.command, (), cmd_.help)  # type: ignore
                 )
-                subparsers._name_parser_map[cmd_.command] = cmd_.parser
+                subparsers._name_parser_map[cmd_.command] = cmd_.parser  # type: ignore
 
         return parser.parse_args()

@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-from typing import Optional
+from typing import Any
 
 import mutagen
 import mutagen.id3
@@ -31,12 +31,12 @@ MB_UFID = "http://musicbrainz.org"
 class Mp3File(audiofile.AudioFile):
     """AudioFile for MP3 files."""
 
-    extensions = (".mp3",)
+    extensions: set[str] = {".mp3"}
 
     def read_tags(self) -> records.OneTrack:
         """Read the tags and return a OneTrack object."""
 
-        def get_l(key) -> Optional[records.ListF]:
+        def get_l(key) -> records.ListF | None:
             if (value := mut.get(key)) is None:
                 return None
             if "/" in str(value):
@@ -160,7 +160,9 @@ class Mp3File(audiofile.AudioFile):
             + [[p.instrument, p.name] for p in release.people and release.people.performers or []]
             + [["writer", x] for x in release.people and release.people.writers or []]
         )
-        tags = []
+        tags: list[mutagen.id3.Frame] = []
+        # noinspection PyUnusedLocal
+        tag: Any = None
         if tag := release.album:
             tags.append(mutagen.id3.TALB(encoding=1, text=tag))
         if tag := release.people and release.people.composers:

@@ -16,7 +16,7 @@
 #
 
 from logging import getLogger
-from typing import Optional, Union
+from typing import Any
 
 import mutagen.mp4
 
@@ -30,24 +30,24 @@ ITUNES = "----:com.apple.iTunes"
 class M4aFile(audiofile.AudioFile):
     """AudioFile for M4A files."""
 
-    extensions = (".m4a",)
+    extensions: set[str] = {".m4a"}
 
     def read_tags(self) -> records.OneTrack:
         """Read the tags and return a OneTrack object."""
 
-        def get_str(key) -> Optional[str]:
+        def get_str(key) -> str | None:
             # Return first element for the given key, utf8-decoded.
             if mut.get(key) is None:
                 return None
             return mut.get(key)[0].decode("utf8")
 
-        def get_strl(key) -> Optional[records.ListF]:
+        def get_strl(key) -> records.ListF | None:
             # Return all elements for a given key, utf8-decoded.
             if mut.get(key) is None:
                 return None
             return records.ListF([x.decode("utf8") for x in mut.get(key)])
 
-        def listf(key) -> Optional[records.ListF]:
+        def listf(key) -> records.ListF | None:
             # Return a ListF object for a given key.
             if mut.get(key) is None:
                 return None
@@ -147,13 +147,13 @@ class M4aFile(audiofile.AudioFile):
     def write_tags(self) -> None:
         """Write the tags."""
 
-        def ff(text: Union[str, int, None]) -> Optional[bytes]:  # pylint: disable=invalid-name
+        def ff(text: int | str | None) -> bytes | None:  # pylint: disable=invalid-name
             if text is None:
                 return None
             return mutagen.mp4.MP4FreeForm(bytes(str(text), "utf8"))
 
         # pylint: disable=invalid-name
-        def ffl(list_: Optional[list[str]]) -> Optional[records.ListF]:
+        def ffl(list_: list[str] | None | Any) -> records.ListF | None:
             if not list_:
                 return None
             return records.ListF([ff(x) for x in list_])

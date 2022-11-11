@@ -1,4 +1,12 @@
 """Base functions for the audio file library."""
+import pathlib
+from typing import Any
+
+from audiolibrarian.audiofile.audiofile import AudioFile
+from audiolibrarian.audiofile.flac import FlacFile
+from audiolibrarian.audiofile.m4a import M4aFile
+from audiolibrarian.audiofile.mp3 import Mp3File
+
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -15,15 +23,8 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 
-from pathlib import Path
-from typing import Union
 
-from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.audiofile.flac import FlacFile
-from audiolibrarian.audiofile.m4a import M4aFile
-from audiolibrarian.audiofile.mp3 import Mp3File
-
-_audioFiles = [
+_AUDIO_FILE_CLASSES: list[Any] = [
     FlacFile,
     M4aFile,
     Mp3File,
@@ -32,13 +33,13 @@ _audioFiles = [
 
 def extensions() -> list[str]:
     """Return a sorted list of all filename extensions that can be opened by open_()."""
-    ext = []
-    for audioFile in _audioFiles:
-        ext.extend(audioFile.extensions)
-    return sorted(list(set(ext)))
+    ext = set()
+    for audioFile in _AUDIO_FILE_CLASSES:
+        ext |= audioFile.extensions
+    return sorted(list(ext))
 
 
-def open_(filename: Union[str, Path]) -> AudioFile:
+def open_(filename: str | pathlib.Path) -> AudioFile:
     """Return an AudioFile object based on the filename extension (factory function).
 
     Args:
@@ -51,10 +52,10 @@ def open_(filename: Union[str, Path]) -> AudioFile:
         FileNotFoundError: If the file cannot be found or is not a file.
         NotImplementedError: If the type of the file is not supported.
     """
-    filepath = Path(filename).resolve()
+    filepath = pathlib.Path(filename).resolve()
     if not filepath.is_file():
         raise FileNotFoundError(filepath)
-    for audioFile in _audioFiles:
+    for audioFile in _AUDIO_FILE_CLASSES:
         if filepath.suffix in audioFile.extensions:
             return audioFile(filepath=filepath)
     raise NotImplementedError(f"Unknown file type: {filepath}")
