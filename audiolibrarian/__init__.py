@@ -1,5 +1,5 @@
 """The audiolibrarian package."""
-__version__ = "0.14.4"
+__version__ = "0.14.5"
 
 #  Copyright (c) 2020 Stephen Jibson
 #
