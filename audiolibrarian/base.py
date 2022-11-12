@@ -17,7 +17,6 @@ Useful stuff: https://help.mp3tag.de/main_tags.html
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-
 import argparse
 import logging
 import pathlib

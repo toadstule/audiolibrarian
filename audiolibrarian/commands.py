@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-
 import re
 from argparse import ArgumentParser, Namespace
 from logging import getLogger

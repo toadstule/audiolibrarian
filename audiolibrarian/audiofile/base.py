@@ -1,12 +1,4 @@
 """Base functions for the audio file library."""
-import pathlib
-from typing import Any
-
-from audiolibrarian.audiofile.audiofile import AudioFile
-from audiolibrarian.audiofile.flac import FlacFile
-from audiolibrarian.audiofile.m4a import M4aFile
-from audiolibrarian.audiofile.mp3 import Mp3File
-
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -22,7 +14,13 @@ from audiolibrarian.audiofile.mp3 import Mp3File
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+import pathlib
+from typing import Any
 
+from audiolibrarian.audiofile.audiofile import AudioFile
+from audiolibrarian.audiofile.flac import FlacFile
+from audiolibrarian.audiofile.m4a import M4aFile
+from audiolibrarian.audiofile.mp3 import Mp3File
 
 _AUDIO_FILE_CLASSES: list[Any] = [
     FlacFile,
