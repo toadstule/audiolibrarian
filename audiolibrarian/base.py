@@ -131,7 +131,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         # Grab all the paths first because thing may change as files are renamed.
         for directory in directories:
             path = pathlib.Path(directory)
-            for ext in audiofile.extensions:
+            for ext in audiofile.EXTENSIONS:
                 paths.extend(path.rglob(f"*{ext}"))
         paths = sorted(list(set(paths)))
         # Using yield rather than returning a list saves us from simultaneously storing
