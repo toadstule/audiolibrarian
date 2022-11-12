@@ -14,33 +14,29 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+import argparse
+import logging
+import pathlib
 import re
-from argparse import ArgumentParser, Namespace
-from logging import getLogger
-from pathlib import Path
 
-from audiolibrarian import __version__
-from audiolibrarian.audiofile import open_
-from audiolibrarian.audiosource import CDAudioSource, FilesAudioSource
-from audiolibrarian.base import Base
-from audiolibrarian.genremanager import GenreManager
+from audiolibrarian import __version__, audiofile, audiosource, base, genremanager
 
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class _Command:
     # Base class for commands.
     help = ""
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
 
     @staticmethod
-    def validate_args(args: Namespace) -> bool:
+    def validate_args(args: argparse.Namespace) -> bool:
         """Validate command line arguments."""
         _ = args
         return True
 
 
-class Convert(_Command, Base):
+class Convert(_Command, base.Base):
     """AudioLibrarian tool for converting and tagging audio files.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -49,7 +45,7 @@ class Convert(_Command, Base):
 
     command = "convert"
     help = "convert music from files"
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("--artist", "-a", help="provide artist (ignore tags)")
     parser.add_argument("--album", "-m", help="provide album (ignore tags)")
     parser.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
@@ -57,17 +53,17 @@ class Convert(_Command, Base):
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a Convert command handler."""
         super().__init__(args)
         self._source_is_cd = False
-        self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
+        self._audio_source = audiosource.FilesAudioSource([pathlib.Path(x) for x in args.filename])
         self._get_tag_info()
         self._convert()
         self._write_manifest()
 
     @staticmethod
-    def validate_args(args: Namespace) -> bool:
+    def validate_args(args: argparse.Namespace) -> bool:
         """Validate command line arguments."""
         return _validate_disc_arg(args)
 
@@ -77,7 +73,7 @@ class Genre(_Command):
 
     command = "genre"
     help = "manager MB genre"
-    parser = ArgumentParser(
+    parser = argparse.ArgumentParser(
         description=(
             "Process all audio files in the given directory(ies), allowing the user to *update* "
             "the genre in Musicbrainz or *tag* audio files with the user-defined genre in "
@@ -89,12 +85,12 @@ class Genre(_Command):
     parser_action.add_argument("--tag", action="store_true", help="update tags")
     parser_action.add_argument("--update", action="store_true", help="update Musicbrainz")
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a Genre command handler."""
-        GenreManager(args)
+        genremanager.GenreManager(args)
 
 
-class Manifest(_Command, Base):
+class Manifest(_Command, base.Base):
     """AudioLibrarian tool for writing manifest.yaml files.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -103,7 +99,7 @@ class Manifest(_Command, Base):
 
     command = "manifest"
     help = "create the Manifest.yaml file"
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("--artist", "-a", help="provide artist (ignore tags)")
     parser.add_argument("--album", "-m", help="provide album (ignore tags)")
     parser.add_argument("--cd", "-c", action="store_true", help="original source was a CD")
@@ -112,23 +108,23 @@ class Manifest(_Command, Base):
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a Manifest command handler."""
         super().__init__(args)
         self._source_is_cd = args.cd
-        self._audio_source = FilesAudioSource([Path(x) for x in args.filename])
+        self._audio_source = audiosource.FilesAudioSource([pathlib.Path(x) for x in args.filename])
         source_filenames = self._audio_source.get_source_filenames()
-        self._source_example = open_(source_filenames[0]).read_tags()
+        self._source_example = audiofile.open_(source_filenames[0]).read_tags()
         self._get_tag_info()
         self._write_manifest()
 
     @staticmethod
-    def validate_args(args: Namespace) -> bool:
+    def validate_args(args: argparse.Namespace) -> bool:
         """Validate command line arguments."""
         return _validate_disc_arg(args)
 
 
-class Reconvert(_Command, Base):
+class Reconvert(_Command, base.Base):
     """AudioLibrarian tool for re-converting and tagging audio files from existing source files.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -137,10 +133,10 @@ class Reconvert(_Command, Base):
 
     command = "reconvert"
     help = "re-convert files from an existing source directory"
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("directories", nargs="+", help="source directories")
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a Reconvert command handler."""
         super().__init__(args)
         self._source_is_cd = False
@@ -148,19 +144,19 @@ class Reconvert(_Command, Base):
         count = len(manifest_paths)
         for i, manifest_path in enumerate(manifest_paths):
             print(f"Processing {i+1} of {count} ({i/count:.0%}): {manifest_path}...")
-            self._audio_source = FilesAudioSource([manifest_path.parent])
+            self._audio_source = audiosource.FilesAudioSource([manifest_path.parent])
             manifest = self._read_manifest(manifest_path)
             self._disc_number, self._disc_count = manifest["disc_number"], manifest["disc_count"]
             self._get_tag_info()
             self._convert(make_source=False)
 
     @staticmethod
-    def validate_args(args: Namespace) -> bool:
+    def validate_args(args: argparse.Namespace) -> bool:
         """Validate command line arguments."""
         return _validate_directories_arg(args)
 
 
-class Rename(_Command, Base):
+class Rename(_Command, base.Base):
     """AudioLibrarian tool for renaming audio files based on their tags.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -169,11 +165,11 @@ class Rename(_Command, Base):
 
     command = "rename"
     help = "rename files based on tags or MusicBrainz data"
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="don't actually rename files")
     parser.add_argument("directories", nargs="+", help="audio file directories")
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a Rename command handler."""
         super().__init__(args)
         self._source_is_cd = False
@@ -213,12 +209,12 @@ class Rename(_Command, Base):
                 log.debug(f"Not renaming {filepath}")
 
     @staticmethod
-    def validate_args(args: Namespace) -> bool:
+    def validate_args(args: argparse.Namespace) -> bool:
         """Validate command line arguments."""
         return _validate_directories_arg(args)
 
 
-class Rip(_Command, Base):
+class Rip(_Command, base.Base):
     """AudioLibrarian tool for ripping, converting and tagging audio files.
 
     This class performs all of its tasks on instantiation and provides no public members or
@@ -227,24 +223,24 @@ class Rip(_Command, Base):
 
     command = "rip"
     help = "rip music from a CD"
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("--artist", "-a", help="provide artist")
     parser.add_argument("--album", "-m", help="provide album")
     parser.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
     parser.add_argument("--mb-release-id", help="Musicbrainz release ID")
     parser.add_argument("--disc", "-d", help="x/y: disc x of y; multi-disc release")
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a Rip command handler."""
         super().__init__(args)
         self._source_is_cd = True
-        self._audio_source = CDAudioSource()
+        self._audio_source = audiosource.CDAudioSource()
         self._get_tag_info()
         self._convert()
         self._write_manifest()
 
     @staticmethod
-    def validate_args(args: Namespace) -> bool:
+    def validate_args(args: argparse.Namespace) -> bool:
         """Validate command line arguments."""
         return _validate_disc_arg(args)
 
@@ -255,21 +251,21 @@ class Version(_Command):
     command = "version"
     help = "display the program version"
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a Version command handler."""
         _ = args
         print(f"audiolibrarian {__version__}")
 
 
-def _validate_directories_arg(args: Namespace) -> bool:
+def _validate_directories_arg(args: argparse.Namespace) -> bool:
     for directory in args.directories:
-        if not Path(directory).is_dir():
+        if not pathlib.Path(directory).is_dir():
             print(f"Directory not found: {directory}")
             return False
     return True
 
 
-def _validate_disc_arg(args: Namespace) -> bool:
+def _validate_disc_arg(args: argparse.Namespace) -> bool:
     if "disc" in args and args.disc:
         if not re.match(r"\d+/\d+", args.disc):
             print("Invalid --disc specification; should be 'x/y'")
