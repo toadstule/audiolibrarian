@@ -27,7 +27,7 @@ class AudioFile(abc.ABC):
 
     extensions: set[str] = set()
 
-    def __init__(self, filepath: pathlib.Path):
+    def __init__(self, filepath: pathlib.Path) -> None:
         """Initialize an AudioFile."""
         self._filepath = filepath
         self._mut_file = mutagen.File(self.filepath.absolute())

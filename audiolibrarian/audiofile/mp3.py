@@ -1,4 +1,6 @@
 """AudioFile support for mp3 files."""
+import typing
+
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -33,6 +35,7 @@ class Mp3File(audiofile.AudioFile):
 
     extensions: set[str] = {".mp3"}
 
+    @typing.no_type_check  # The mutagen library doesn't provide type hints.
     def read_tags(self) -> records.OneTrack:
         """Read the tags and return a OneTrack object."""
 
@@ -143,10 +146,11 @@ class Mp3File(audiofile.AudioFile):
         )
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+    @typing.no_type_check  # The mutagen library doesn't provide type hints.
     def write_tags(self) -> None:
         """Write the tags."""
 
-        def slash(text):
+        def slash(text: list[str] | records.ListF) -> str:
             return "/".join(text)
 
         release, medium_number, medium, track_number, track = self._get_tag_sources()

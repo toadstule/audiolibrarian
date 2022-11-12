@@ -1,4 +1,6 @@
 """Manage tags."""
+from typing import Any
+
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -17,7 +19,7 @@
 
 
 # noinspection PyMissingConstructor
-class Tags(dict):
+class Tags(dict[Any, Any]):
     """A dict-like object that silently drops keys with None in their values.
 
     A key will be dropped if:
@@ -26,11 +28,11 @@ class Tags(dict):
     * its value is a dict with None in its values
     """
 
-    def __init__(self, *args, **kwargs):  # pylint: disable=super-init-not-called
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # pylint: disable=super-init-not-called
         """Initialize a Tags object."""
         self.update(*args, **kwargs)
 
-    def __setitem__(self, k, v):
+    def __setitem__(self, k: Any, v: Any) -> None:
         """Set an item only if it should not be dropped."""
         if not (
             v is None
@@ -39,7 +41,7 @@ class Tags(dict):
         ):
             super().__setitem__(k, v)
 
-    def update(self, *args, **kwargs):
+    def update(self, *args: Any, **kwargs: Any) -> None:
         """See base class."""
         for key, value in dict(*args, **kwargs).items():
             self[key] = value

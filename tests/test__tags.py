@@ -20,7 +20,7 @@ from audiolibrarian.audiofile.tags import Tags
 
 
 class TestTags(TestCase):
-    def test__tags(self):
+    def test__tags(self) -> None:
         t = Tags()
         t["a"] = "A"
         t["b"] = "B"
@@ -28,12 +28,12 @@ class TestTags(TestCase):
         expected = {"a": "A", "b": "B"}
         self.assertDictEqual(expected, t)
 
-    def test__tags_init(self):
+    def test__tags_init(self) -> None:
         t = Tags({"a": "A", "b": "B", "c": None})
         expected = {"a": "A", "b": "B"}
         self.assertDictEqual(expected, t)
 
-    def test__tags_list(self):
+    def test__tags_list(self) -> None:
         t = Tags()
         t["a"] = "A"
         t["b"] = [None]

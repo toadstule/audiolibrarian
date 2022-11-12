@@ -20,7 +20,7 @@ from audiolibrarian import text
 
 
 class TestText(TestCase):
-    def test__alpha_numeric_key(self):
+    def test__alpha_numeric_key(self) -> None:
         for initial, expected in (
             ([], []),
             (["b", "a", "c"], ["a", "b", "c"]),
@@ -28,9 +28,11 @@ class TestText(TestCase):
             (["9", "10", "5"], ["5", "9", "10"]),
             (["6_six", "10_ten", "1_one", "11_eleven"], ["1_one", "6_six", "10_ten", "11_eleven"]),
         ):
-            self.assertListEqual(expected, sorted(initial, key=text.alpha_numeric_key))
+            self.assertListEqual(
+                expected, sorted(initial, key=text.alpha_numeric_key)  # type: ignore
+            )
 
-    def test__comma_and_join(self):
+    def test__comma_and_join(self) -> None:
         self.assertEqual("", text.join([]))
         self.assertEqual("a", text.join(["a"]))
         self.assertEqual("aa", text.join(["aa"]))
@@ -50,7 +52,7 @@ class TestText(TestCase):
         self.assertEqual("aa, bb or cc", text.join(["aa", "bb", "cc"], word="or"))
         self.assertEqual("aa, bb, cc or dd", text.join(["aa", "bb", "cc", "dd"], word="or"))
 
-    def test__fix(self):
+    def test__fix(self) -> None:
         self.assertEqual("", text.fix(""))
         self.assertEqual("abc", text.fix("abc"))
         self.assertEqual("a-b", text.fix("a-b"))
@@ -61,19 +63,19 @@ class TestText(TestCase):
         self.assertEqual("one...two", text.fix(f"one{chr(8230)}two"))
         self.assertEqual("é", text.fix("é"), "fix should not drop accents")
 
-    def test__get_filename(self):
-        self.assertEqual("your_mom", text.get_filename("your_mom"))
-        self.assertEqual("your_mom", text.get_filename("your mom"))
-        self.assertEqual("your_mom", text.get_filename("your mom!"))
-        self.assertEqual("your.mom", text.get_filename("your.mom"))
-        self.assertEqual("your__mom", text.get_filename("your (mom)"))
-        self.assertEqual("your__mom", text.get_filename("your [mom]"))
-        self.assertEqual("your_mom_and_me", text.get_filename("your mom & me"))
-        self.assertEqual("e", text.get_filename("é"), "get_filename should drop accents")
-        self.assertEqual("your_mom", text.get_filename("your_mom..."))
-        self.assertEqual("I.D.", text.get_filename("I.D."))
+    def test__get_filename(self) -> None:
+        self.assertEqual("your_mom", text.filename_from_title("your_mom"))
+        self.assertEqual("your_mom", text.filename_from_title("your mom"))
+        self.assertEqual("your_mom", text.filename_from_title("your mom!"))
+        self.assertEqual("your.mom", text.filename_from_title("your.mom"))
+        self.assertEqual("your__mom", text.filename_from_title("your (mom)"))
+        self.assertEqual("your__mom", text.filename_from_title("your [mom]"))
+        self.assertEqual("your_mom_and_me", text.filename_from_title("your mom & me"))
+        self.assertEqual("e", text.filename_from_title("é"), "get_filename should drop accents")
+        self.assertEqual("your_mom", text.filename_from_title("your_mom..."))
+        self.assertEqual("I.D.", text.filename_from_title("I.D."))
 
-    def test__get_numbers(self):
+    def test__get_numbers(self) -> None:
         self.assertEqual([], text.get_numbers(""))
         self.assertEqual([1], text.get_numbers("1"))
         self.assertEqual([1], text.get_numbers("01"))
@@ -81,7 +83,7 @@ class TestText(TestCase):
         self.assertEqual([1, 3], text.get_numbers("01__two3_four"))
         self.assertEqual([1, 2, 3, 4], text.get_numbers("1a2b3c4d"))
 
-    def test__get_uuid(self):
+    def test__get_uuid(self) -> None:
         input_ = "your mom"
         expected = None
         self.assertEqual(expected, text.get_uuid(input_))

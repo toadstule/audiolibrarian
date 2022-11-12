@@ -17,8 +17,10 @@
 import contextlib
 import copy
 import hashlib
+import pathlib
 import tempfile
 from pathlib import Path
+from typing import Any
 from unittest import TestCase
 
 from audiolibrarian.audiofile import open_
@@ -174,17 +176,17 @@ class TestAudioFile(TestCase):
 
 
 class TestAudioFileMisc(TestCase):
-    def test__file_not_found(self):
+    def test__file_not_found(self) -> None:
         with self.assertRaises(FileNotFoundError):
             open_("your_mom_goes_to_college.mp3")
 
-    def test__file_not_supported(self):
+    def test__file_not_supported(self) -> None:
         with self.assertRaises(NotImplementedError):
             # The current file should always be around, and never be an audio file.
             open_(__file__)
 
 
-def _audio_file_copy(src_filepath):
+def _audio_file_copy(src_filepath: pathlib.Path) -> contextlib.closing[Any]:
     # Create a copy of the given source file and return the copy as a context-manager.
     #
     # We work with a temp copy of the file, so we don't break our test data.

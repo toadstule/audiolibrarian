@@ -31,7 +31,7 @@ class FlacFile(audiofile.AudioFile):
     def read_tags(self) -> records.OneTrack:
         """Read the tags and return a OneTrack object."""
 
-        def listf(lst: list | None) -> records.ListF | None:
+        def listf(lst: list[Any] | None) -> records.ListF | None:
             if lst is None:
                 return None
             return records.ListF(lst)
@@ -179,7 +179,7 @@ class FlacFile(audiofile.AudioFile):
         self._mut_file.update(tags_)
 
         if release.front_cover is not None:
-            cover = mutagen.flac.Picture()
+            cover = mutagen.flac.Picture()  # type: ignore
             cover.type = 3
             cover.mime = release.front_cover.mime
             cover.desc = release.front_cover.desc or ""

@@ -1,5 +1,7 @@
 """Command execution helpers."""
+import pathlib
 import subprocess
+from typing import Iterable
 
 from audiolibrarian import output
 
@@ -20,7 +22,7 @@ from audiolibrarian import output
 #
 
 
-def parallel(message: str, commands: list[tuple[str, ...]]):
+def parallel(message: str, commands: list[tuple[str, ...]]) -> None:
     """Execute commands in parallel."""
     with output.Dots(message) as dots:
         for command in commands:
@@ -29,7 +31,7 @@ def parallel(message: str, commands: list[tuple[str, ...]]):
                 proc.wait()
 
 
-def touch(paths):
+def touch(paths: Iterable[pathlib.Path]) -> None:
     """Touch all files in a given path."""
     for path in paths:
         subprocess.run(("touch", path), check=False)

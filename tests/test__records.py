@@ -88,12 +88,12 @@ class TestOneTrack(TestCase):
         track_number=3,
     )
 
-    def test__record_class(self):
+    def test__record_class(self) -> None:
         self.assertEqual("Album Artist One", self.one_track.release.album_artists.first)
         self.assertEqual("Track Artist", self.one_track.track.asdict().get("artist"))
         self.assertEqual("03__Track_Title", self.one_track.track.get_filename())
 
-    def test__get_artist_album_disc_path(self):
+    def test__get_artist_album_disc_path(self) -> None:
         self.assertEqual(
             "One,_Album_Artist/1992__Album/disc7", str(self.one_track.get_artist_album_disc_path())
         )

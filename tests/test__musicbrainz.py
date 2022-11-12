@@ -39,7 +39,7 @@ class TestMusicBrainzRelease(TestCase):
         extensions = (".flac", ".m4a", ".mp3")
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
-                f = open_(test_file.name)
+                f = open_(test_file.name)  # mypy: ignore-errors  # type: ignore
                 if (expected := f._one_track.release) is None:  # Blank tags in audio file.
                     continue
                 medium_number = f._one_track.medium_number

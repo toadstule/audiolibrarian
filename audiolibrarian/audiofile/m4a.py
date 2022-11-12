@@ -34,19 +34,19 @@ class M4aFile(audiofile.AudioFile):
     def read_tags(self) -> records.OneTrack:
         """Read the tags and return a OneTrack object."""
 
-        def get_str(key) -> str | None:
+        def get_str(key: str) -> str | None:
             # Return first element for the given key, utf8-decoded.
             if mut.get(key) is None:
                 return None
-            return mut.get(key)[0].decode("utf8")
+            return str(mut.get(key)[0].decode("utf8"))
 
-        def get_strl(key) -> records.ListF | None:
+        def get_strl(key: str) -> records.ListF | None:
             # Return all elements for a given key, utf8-decoded.
             if mut.get(key) is None:
                 return None
             return records.ListF([x.decode("utf8") for x in mut.get(key)])
 
-        def listf(key) -> records.ListF | None:
+        def listf(key: str) -> records.ListF | None:
             # Return a ListF object for a given key.
             if mut.get(key) is None:
                 return None
@@ -149,7 +149,7 @@ class M4aFile(audiofile.AudioFile):
         def ff(text: int | str | None) -> bytes | None:  # pylint: disable=invalid-name
             if text is None:
                 return None
-            return mutagen.mp4.MP4FreeForm(bytes(str(text), "utf8"))
+            return mutagen.mp4.MP4FreeForm(bytes(str(text), "utf8"))  # type: ignore
 
         # pylint: disable=invalid-name
         def ffl(list_: list[str] | None | Any) -> records.ListF | None:
@@ -167,7 +167,9 @@ class M4aFile(audiofile.AudioFile):
                 if cover.mime == "image/png"
                 else mutagen.mp4.AtomDataType.JPEG
             )
-            front_cover = [mutagen.mp4.MP4Cover(cover.data, imageformat=image_format)]
+            front_cover = [
+                mutagen.mp4.MP4Cover(cover.data, imageformat=image_format)  # type: ignore
+            ]
         tags_ = {
             f"{ITUNES}:ARRANGER": ffl(release.people and release.people.arrangers),
             f"{ITUNES}:ARTISTS": ffl(track.artists),

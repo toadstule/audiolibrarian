@@ -25,13 +25,13 @@ import subprocess
 import sys
 import warnings
 from collections.abc import Iterable
+from typing import Any
 
+# noinspection PyPackageRequirements
+import colors
 import filelock
 import pyaml
 import yaml
-
-# noinspection PyPackageRequirements
-from colors import color
 
 from audiolibrarian import audiofile, audiosource, cmd, musicbrainz, records, text
 
@@ -153,10 +153,10 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
 
     def _get_searcher(self) -> musicbrainz.Searcher:
         # Return a Searcher object populated with data from the audio source and cli args.
-        search_data: dict = (
+        search_data: dict[str, str] = (
             self._audio_source.get_search_data() if self._audio_source is not None else {}
         )
-        searcher = musicbrainz.Searcher(**search_data)
+        searcher = musicbrainz.Searcher(**search_data)  # type: ignore
         searcher.disc_number = str(self._disc_number)
         # Override with user-provided info.
         if value := self._provided_search_data.get("artist"):
@@ -187,7 +187,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         summary, okay = self._summary()
         print(summary)
         if not okay:
-            print(color("\n*** Track count does not match file count ***\n", fg="red"))
+            print(colors.color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
         if not skip_confirm and text.input_("Confirm [N,y]: ").lower() != "y":  # pragma: no cover
             sys.exit(1)
@@ -283,9 +283,9 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         result.check_returncode()
 
     @staticmethod
-    def _read_manifest(manifest_path: pathlib.Path) -> dict:
+    def _read_manifest(manifest_path: pathlib.Path) -> dict[Any, Any]:
         with open(manifest_path, "r", encoding="utf-8") as manifest_file:
-            return yaml.safe_load(manifest_file)
+            return dict(yaml.safe_load(manifest_file))
 
     def _rename_wav(self) -> None:
         # Rename the wav files to a filename-sane representation of the track title.

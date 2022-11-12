@@ -32,12 +32,12 @@ log = logging.getLogger(__name__)
 class AudioSource(abc.ABC):
     """An abstract base class for AudioSource classes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize an AudioSource."""
-        self._temp_dir = pathlib.Path(tempfile.mkdtemp())
-        self._source_list = None
+        self._temp_dir: pathlib.Path = pathlib.Path(tempfile.mkdtemp())
+        self._source_list: list[pathlib.Path | None] | None = None
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Remove any temp files."""
         if self._temp_dir.is_dir():
             shutil.rmtree(self._temp_dir)
@@ -60,7 +60,7 @@ class AudioSource(abc.ABC):
             self._source_list = result
         return self._source_list
 
-    def copy_wavs(self, dest_dir) -> None:
+    def copy_wavs(self, dest_dir: pathlib.Path) -> None:
         """Copy wav files to the given destination directory."""
         for filename in self.get_wav_filenames():
             shutil.copy2(filename, dest_dir / filename.name)
@@ -88,7 +88,7 @@ class AudioSource(abc.ABC):
 class CDAudioSource(AudioSource):
     """AudioSource from a compact disc."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a CDAudioSource."""
         super().__init__()
         self._cd = discid.read(features=["mcn"])
@@ -122,7 +122,7 @@ class CDAudioSource(AudioSource):
 class FilesAudioSource(AudioSource):
     """AudioSource from local files."""
 
-    def __init__(self, filenames: list[pathlib.Path]):
+    def __init__(self, filenames: list[pathlib.Path]) -> None:
         """Initialize a FilesAudioSource."""
         super().__init__()
         self._filenames = filenames
@@ -193,7 +193,7 @@ class FilesAudioSource(AudioSource):
                 in_ = str(filepath)
                 out_path = tmp_dir / f"{str(track_number).zfill(2)}__.wav"
                 out = str(out_path)
-                commands.append(decode(in_, out))
+                commands.append(decode(in_, out))  # type: ignore
                 log.info(f"DECODING: {filepath.name} -> {out_path.name}")
         cmd.parallel(f"Making {len(commands)} wav files...", commands)
         cmd.touch(tmp_dir.glob("*.wav"))

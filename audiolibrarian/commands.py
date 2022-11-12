@@ -18,6 +18,7 @@ import argparse
 import logging
 import pathlib
 import re
+from typing import Any
 
 from audiolibrarian import __version__, audiofile, audiosource, base, genremanager
 
@@ -277,4 +278,4 @@ def _validate_disc_arg(args: argparse.Namespace) -> bool:
     return True
 
 
-commands = (Convert, Genre, Manifest, Reconvert, Rename, Rip, Version)
+COMMANDS: set[Any] = {Convert, Genre, Manifest, Reconvert, Rename, Rip, Version}

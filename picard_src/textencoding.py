@@ -83,7 +83,6 @@ from functools import partial
 
 # STJ # from picard.util import sanitize_filename
 
-
 # LATIN SIMPLIFICATION
 # The translation tables for punctuation and latin combined-characters are taken from
 # http://unicode.org/repos/cldr/trunk/common/transforms/Latin-ASCII.xml
@@ -479,11 +478,12 @@ def replace_non_ascii(string, repl="_"):  # STJ #
     interim = unicode_simplify_accents(interim)
     # STJ # interim = unicode_simplify_punctuation(interim, pathsave, win_compat)
     interim = unicode_simplify_punctuation(interim)  # STJ #
-    interim = unicode_simplify_compatibility(interim)
+    interim = unicode_simplify_compatibility(interim)  # type: ignore
 
     # STJ #
     # noinspection PyShadowingNames
-    def error_repl(e, repl="_"):
+
+    def error_repl(e, repl="_"):  # type: ignore
         # STJ #
         # noinspection PyRedundantParentheses
         return (repl, e.start + 1)

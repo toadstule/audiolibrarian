@@ -15,6 +15,7 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 import sys
+from typing import Any
 
 
 class Dots:
@@ -27,15 +28,15 @@ class Dots:
                 d.dot()
     """
 
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         """Initialize a Dots object."""
         self._out(message)
 
-    def __enter__(self):
+    def __enter__(self) -> "Dots":
         """Enter the context manager."""
         return self
 
-    def __exit__(self, _, __, ___):
+    def __exit__(self, _: Any, __: Any, ___: Any) -> None:
         """Exit the context manager."""
         self._out("\n")
 

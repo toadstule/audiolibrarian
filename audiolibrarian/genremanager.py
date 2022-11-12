@@ -1,4 +1,6 @@
 """Genre Manager."""
+import argparse
+
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -17,6 +19,7 @@
 import logging
 import pathlib
 import pickle
+import typing
 import webbrowser
 from typing import Any
 
@@ -33,7 +36,7 @@ log = logging.getLogger(__name__)
 class GenreManager:  # pylint: disable=too-few-public-methods
     """Manage genres."""
 
-    def __init__(self, args):
+    def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a GenreManager."""
         self._args = args
         self._mb = musicbrainz.MusicBrainzSession()
@@ -44,8 +47,9 @@ class GenreManager:  # pylint: disable=too-few-public-methods
         if self._args.update:
             self._update_user_artists()
         elif self._args.tag:
-            self._update_tags()
+            self._update_tags()  # type: ignore
 
+    @typing.no_type_check  # The mutagen library doesn't provide type hints.
     def _update_tags(self) -> None:
         # Set the genre tags for all songs to the user-based genre.
         for artist_id, paths in self._paths_by_artist.items():
@@ -55,16 +59,16 @@ class GenreManager:  # pylint: disable=too-few-public-methods
             for path in paths:
                 if path.suffix == ".flac":
                     flac_song = mutagen.flac.FLAC(str(path))
-                    current_genre = flac_song.tags["genre"][0]  # type: ignore
+                    current_genre = flac_song.tags["genre"][0]
                     if current_genre != genre:
-                        flac_song.tags["genre"] = genre  # type: ignore
+                        flac_song.tags["genre"] = genre
                         flac_song.save()
                         print(f"{path}: {current_genre} --> {genre}")
                 elif path.suffix == ".m4a":
                     m4a_song = mutagen.mp4.MP4(str(path))
-                    current_genre = m4a_song.tags["\xa9gen"][0]  # type: ignore
+                    current_genre = m4a_song.tags["\xa9gen"][0]
                     if current_genre != genre:
-                        m4a_song.tags["\xa9gen"] = genre  # type: ignore
+                        m4a_song.tags["\xa9gen"] = genre
                         m4a_song.save()
                         print(f"{path}: {current_genre} --> {genre}")
                 elif path.suffix == ".mp3":
@@ -80,7 +84,7 @@ class GenreManager:  # pylint: disable=too-few-public-methods
         # Pull up a web page to allow the user to set the genre for all artists that
         # only have community-base genres.
         for artist_id, artist in sorted(
-            self._community_genres_by_artist.items(), key=lambda x: x[1]["name"]
+            self._community_genres_by_artist.items(), key=lambda x: x[1]["name"]  # type: ignore
         ):
             artist_name = artist["name"]
             i = (

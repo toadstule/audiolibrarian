@@ -51,7 +51,7 @@ class Source(enum.Enum):
     TAGS = 2
 
 
-class ListF(list):
+class ListF(list[Any]):
     """A list, with a first property."""
 
     @property
@@ -69,11 +69,11 @@ class Record:
     Overrides true/false test for records returning false if all fields are None.
     """
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         """Return a boolean representation of the Record."""
         return bool([x for x in dataclasses.asdict(self).values() if x is not None])
 
-    def asdict(self) -> dict:
+    def asdict(self) -> dict[Any, Any]:
         """Return a dict version of the record."""
         return dataclasses.asdict(self)
 
@@ -130,7 +130,9 @@ class Track(Record):
             raise ValueError(
                 "Unable to generate a filename for Track with missing number and/or title"
             )
-        return str(self.track_number).zfill(2) + "__" + text.get_filename(self.title) + suffix
+        return (
+            str(self.track_number).zfill(2) + "__" + text.filename_from_title(self.title) + suffix
+        )
 
 
 # Combined Record Types (fields + other record types)
@@ -195,10 +197,10 @@ class Release(Record):  # pylint: disable=too-many-instance-attributes
         """
         if self.album_artists_sort is None or self.album_artists_sort.first is None:
             raise ValueError("Unable to determine artist path without artist(s)")
-        artist_dir = pathlib.Path(text.get_filename(self.album_artists_sort.first))
+        artist_dir = pathlib.Path(text.filename_from_title(self.album_artists_sort.first))
         if self.original_year is None or self.album is None:
             raise ValueError("Unable to determine album path without year and album")
-        album_dir = pathlib.Path(text.get_filename(f"{self.original_year}__{self.album}"))
+        album_dir = pathlib.Path(text.filename_from_title(f"{self.original_year}__{self.album}"))
         return artist_dir / album_dir
 
     def pp(self, medium_number: int) -> str:  # pylint: disable=invalid-name

@@ -25,7 +25,7 @@ test_data_path = (Path(__file__).parent / "test_data").resolve()
 class TestAudioLibrarian(TestCase):
     _blank_test_files = [p.resolve() for p in test_data_path.glob("00.*")]
 
-    def test__single_media(self):
+    def test__single_media(self) -> None:
         al = Base(args=Namespace())
 
         self.assertFalse(al._multi_disc)
@@ -41,14 +41,14 @@ class TestAudioLibrarian(TestCase):
         with self.assertWarns(RuntimeWarning):
             al._summary()
 
-    def test__multi_media(self):
+    def test__multi_media(self) -> None:
         al = Base(args=Namespace(disc="2/3"))
 
         self.assertTrue(al._multi_disc)
         searcher = al._get_searcher()
         self.assertEqual("2", searcher.disc_number)
 
-    def test__find_audio_files(self):
+    def test__find_audio_files(self) -> None:
         al = Base(args=Namespace())
         audio_files = list(al._find_audio_files([]))
         self.assertEqual([], audio_files)
@@ -56,7 +56,7 @@ class TestAudioLibrarian(TestCase):
         audio_files = list(al._find_audio_files([test_data_path]))
         self.assertEqual(21, len(audio_files))  # This will need updated if test files are added.
 
-    def test__manifests(self):
+    def test__manifests(self) -> None:
         al = Base(args=Namespace())
         manifests = list(al._find_manifests([]))
         self.assertEqual([], manifests)
@@ -68,7 +68,7 @@ class TestAudioLibrarian(TestCase):
         manifest = al._read_manifest(manifests[0])
         self.assertEqual("The Secret", manifest.get("album"))
 
-    def test__get_searcher(self):
+    def test__get_searcher(self) -> None:
         al = Base(args=Namespace())
         searcher = al._get_searcher()
         self.assertEqual("", searcher.artist)

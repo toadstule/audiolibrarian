@@ -14,21 +14,22 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+import dataclasses
+import datetime as dt
+import logging
 import pprint
 import time
 import webbrowser
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from logging import DEBUG, getLogger
+from typing import Any, Callable
 
 import musicbrainzngs as mb
 import requests
 from fuzzywuzzy import fuzz
-from requests.auth import HTTPDigestAuth
+from requests import auth
 
 from audiolibrarian import __version__, records, text
 
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
 _USER_AGENT_NAME = "audiolibrarian"
 _USER_AGENT_CONTACT = "audiolibrarian@jibson.com"
 mb.set_useragent(_USER_AGENT_NAME, __version__, _USER_AGENT_CONTACT)
@@ -40,29 +41,29 @@ class MusicBrainzSession:
     It can be for things that are not supported by the musicbrainzngs library.
     """
 
-    _api_rate = timedelta(seconds=1.5)
-    _last_api_call = datetime.now()
+    _api_rate = dt.timedelta(seconds=1.5)
+    _last_api_call = dt.datetime.now()
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a MusicBrainzSession."""
-        self.__session = None
+        self.__session: requests.Session | None = None
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Close a MusicBrainzSession."""
         if self.__session is not None:
             self.__session.close()
 
     @property
-    def _session(self):
+    def _session(self) -> requests.Session:
         if self.__session is None:
             self.__session = requests.Session()
-            self._session.auth = HTTPDigestAuth("toadstule", "***REMOVED***")
+            self._session.auth = auth.HTTPDigestAuth("toadstule", "***REMOVED***")
             self._session.headers.update(
                 {"User-Agent": f"{_USER_AGENT_NAME}/{__version__} ({_USER_AGENT_CONTACT})"}
             )
         return self.__session
 
-    def _get(self, path: str, params=None):
+    def _get(self, path: str, params: dict[str, str]) -> dict[Any, Any]:
         # Used for direct API calls; those not supported by the python library.
         path = path.lstrip("/")
         url = f"https://musicbrainz.org/ws/2/{path}"
@@ -74,16 +75,20 @@ class MusicBrainzSession:
             time.sleep(10)
             result = self._session.get(url, params=params)
         assert result.status_code == 200, f"{result.status_code} - {url}"
-        return result.json()
+        return dict(result.json())
 
-    def get_artist_by_id(self, artist_id: str, includes=None):
+    def get_artist_by_id(
+        self, artist_id: str, includes: list[str] | None = None
+    ) -> dict[str, Any]:
         """Return artist for the given musicbrainz-artist ID."""
         params = {}
         if includes is not None:
             params["inc"] = "+".join(includes)
         return self._get(f"artist/{artist_id}", params=params)
 
-    def get_release_group_by_id(self, release_group_id: str, includes=None):
+    def get_release_group_by_id(
+        self, release_group_id: str, includes: list[str] | None = None
+    ) -> dict[str, Any]:
         """Return release-group for the given musicbrainz-release-group ID."""
         params = {}
         if includes is not None:
@@ -91,16 +96,16 @@ class MusicBrainzSession:
         return self._get(f"release-group/{release_group_id}", params=params)
 
     @staticmethod
-    def sleep():
+    def sleep() -> None:
         """Sleep so we don't abuse the MusicBrainz API service.
 
         See https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
         """
-        since_last = datetime.now() - MusicBrainzSession._last_api_call
+        since_last = dt.datetime.now() - MusicBrainzSession._last_api_call
         if (sleep_seconds := (MusicBrainzSession._api_rate - since_last).total_seconds()) > 0:
             log.debug(f"Sleeping {sleep_seconds} to avoid throttling...")
             time.sleep(sleep_seconds)
-            MusicBrainzSession._last_api_call = datetime.now()
+            MusicBrainzSession._last_api_call = dt.datetime.now()
 
 
 class MusicBrainzRelease:
@@ -119,7 +124,7 @@ class MusicBrainzRelease:
         "work-level-rels",
     ]
 
-    def __init__(self, release_id: str, verbose: bool = False):
+    def __init__(self, release_id: str, verbose: bool = False) -> None:
         """Initialize an MusicBrainzRelease."""
         self._release_id = release_id
         self._verbose = verbose
@@ -166,19 +171,17 @@ class MusicBrainzRelease:
         log.info(f"RELEASE_GROUP_GENRES: {release_group}")
         artist = self._session.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
         log.info(f"ARTIST_GENRES: {artist}")
+        x_count: Callable[[Any], int] = lambda x: int(x["count"])
         if release_group["user-genres"]:
-            return release_group["user-genres"][0]["name"]
+            return str(release_group["user-genres"][0]["name"])
         if artist["user-genres"]:
-            return artist["user-genres"][0]["name"]
+            return str(artist["user-genres"][0]["name"])
         if release_group["genres"]:
-            return [
-                g["name"]
-                for g in reversed(sorted(release_group["genres"], key=lambda x: x["count"]))
-            ][0]
+            return str(
+                [g["name"] for g in reversed(sorted(release_group["genres"], key=x_count))][0]
+            )
         if artist["genres"]:
-            return [
-                g["name"] for g in reversed(sorted(artist["genres"], key=lambda x: x["count"]))
-            ][0]
+            return str([g["name"] for g in reversed(sorted(artist["genres"], key=x_count))][0])
         return text.input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
     def _get_media(self) -> dict[int, records.Medium] | None:
@@ -199,7 +202,7 @@ class MusicBrainzRelease:
         arrangers, composers, conductors, engineers, lyricists = [], [], [], [], []
         mixers, performers, producers, writers = [], [], [], []
         for relation in self._release.get("artist-relation-list", []):
-            if log.getEffectiveLevel() == DEBUG:
+            if log.getEffectiveLevel() == logging.DEBUG:
                 pprint.pp("== ARTIST-RELATION-LIST ===================")
                 pprint.pp(relation)
             name = text.fix(relation["artist"]["name"])
@@ -265,7 +268,7 @@ class MusicBrainzRelease:
         # Return the Release object.
         release = self._release
         log.info(f"RELEASE {release}")
-        if log.getEffectiveLevel() == DEBUG:
+        if log.getEffectiveLevel() == logging.DEBUG:
             pprint.pp("== RELEASE ===================")
             pprint.pp(release)
         release_group = release["release-group"]
@@ -342,7 +345,7 @@ class MusicBrainzRelease:
 
     @staticmethod
     def _process_artist_credit(
-        artist_credit: list,
+        artist_credit: list[str],
     ) -> tuple[str, records.ListF, str, records.ListF]:
         # Return artist info from an artist-credit list.
         artist_names_str = ""
@@ -361,7 +364,7 @@ class MusicBrainzRelease:
         return artist_names_str, artist_names_list, artist_sort_names, artist_ids
 
 
-@dataclass
+@dataclasses.dataclass
 class Searcher:
     """Searcher objects contain data and methods for searching the MusicBrainz database."""
 
@@ -372,10 +375,10 @@ class Searcher:
     disc_number: str = ""
     mb_artist_id: str = ""
     mb_release_id: str = ""
-    __mb_session = None
+    __mb_session: MusicBrainzSession | None = None
 
     @property
-    def _mb_session(self):
+    def _mb_session(self) -> MusicBrainzSession:
         if self.__mb_session is None:
             self.__mb_session = MusicBrainzSession()
         return self.__mb_session
@@ -417,7 +420,7 @@ class Searcher:
             "release-group-list"
         ]
         log.info(f"RELEASE_GROUPS: {release_group_list}")
-        if log.getEffectiveLevel() == DEBUG:
+        if log.getEffectiveLevel() == logging.DEBUG:
             pprint.pp("== RELEASE_GROUPS ===================")
             pprint.pp(release_group_list)
         return [

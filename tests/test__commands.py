@@ -25,7 +25,7 @@ test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
 class TestCommands(TestCase):
-    def test__version(self):
+    def test__version(self) -> None:
         from audiolibrarian import __version__
 
         with captured_output() as (out, err):
@@ -35,7 +35,7 @@ class TestCommands(TestCase):
 
 
 class TestValidateArgs(TestCase):
-    def test__validate_disc(self):
+    def test__validate_disc(self) -> None:
         self.assertTrue(commands._validate_disc_arg(Namespace(disc="")))
         self.assertTrue(commands._validate_disc_arg(Namespace(disc="1/2")))
         self.assertTrue(commands._validate_disc_arg(Namespace(disc="1/1")))
@@ -49,7 +49,7 @@ class TestValidateArgs(TestCase):
         self.assertFalse(commands._validate_disc_arg(Namespace(disc="0/1")))
         self.assertFalse(commands._validate_disc_arg(Namespace(disc="-5/-4")))
 
-    def test__validate_dirs(self):
+    def test__validate_dirs(self) -> None:
         exist = str(test_data_path)
         not_exist = "/does/not/exist/"
         self.assertTrue(commands._validate_directories_arg(Namespace(directories=[])))

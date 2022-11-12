@@ -46,4 +46,4 @@ def open_(filename: str | pathlib.Path) -> audiofile.AudioFile:
         raise FileNotFoundError(filepath)
     if filepath.suffix not in EXTENSIONS:
         raise NotImplementedError(f"Unknown file type: {filepath}")
-    return _AUDIOFILE_CLS_BY_EXTENSION[filepath.suffix](filepath=filepath)
+    return _AUDIOFILE_CLS_BY_EXTENSION[filepath.suffix](filepath=filepath)  # type: ignore

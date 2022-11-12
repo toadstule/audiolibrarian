@@ -21,7 +21,7 @@ from tests.helpers import captured_output
 
 
 class TestDots(TestCase):
-    def test__dots(self):
+    def test__dots(self) -> None:
         with captured_output() as (out, err):
             with Dots("Please wait") as d:
                 for _ in range(5):

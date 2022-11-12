@@ -40,18 +40,18 @@ class CommandLineInterface:
         "wavegain",
     }
 
-    def __init__(self, parse_args: bool = True):
+    def __init__(self, parse_args: bool = True) -> None:
         """Initialize a CommandLineInterface handler."""
         if parse_args:
             self._args = self._parse_args()
             self.log_level = self._args.log_level
 
-    def execute(self):
+    def execute(self) -> None:
         """Execute the command."""
         log.info(f"ARGS: {self._args}")
         if not self._check_deps():
             sys.exit(1)
-        for cmd in commands.commands:
+        for cmd in commands.COMMANDS:
             if self._args.command == cmd.command:
                 if not cmd.validate_args(self._args):
                     sys.exit(2)
@@ -98,15 +98,15 @@ class CommandLineInterface:
 
         # Add sub-commands and args for sub_commands.
         subparsers = parser.add_subparsers(title="commands", dest="command")
-        for cmd_ in commands.commands:
+        for cmd_ in commands.COMMANDS:
             # This is a total hack because argparse won't allow you to add an already
             # existing ArgumentParser as a sub-parser.
             # pylint: disable=protected-access
             if cmd_.parser:
-                cmd_.parser.prog = f"{subparsers._prog_prefix} {cmd_.command}"  # type: ignore
+                cmd_.parser.prog = f"{subparsers._prog_prefix} {cmd_.command}"
                 subparsers._choices_actions.append(
-                    subparsers._ChoicesPseudoAction(cmd_.command, (), cmd_.help)  # type: ignore
+                    subparsers._ChoicesPseudoAction(cmd_.command, (), cmd_.help)
                 )
-                subparsers._name_parser_map[cmd_.command] = cmd_.parser  # type: ignore
+                subparsers._name_parser_map[cmd_.command] = cmd_.parser
 
         return parser.parse_args()
