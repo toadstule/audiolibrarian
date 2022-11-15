@@ -57,7 +57,7 @@ class MusicBrainzSession:
     def _session(self) -> requests.Session:
         if self.__session is None:
             self.__session = requests.Session()
-            self._session.auth = auth.HTTPDigestAuth("toadstule", "***REMOVED***")
+            self._session.auth = auth.HTTPDigestAuth("toadstule", "")
             self._session.headers.update(
                 {"User-Agent": f"{_USER_AGENT_NAME}/{__version__} ({_USER_AGENT_CONTACT})"}
             )
