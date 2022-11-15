@@ -27,7 +27,7 @@ import requests
 from fuzzywuzzy import fuzz
 from requests import auth
 
-from audiolibrarian import __version__, records, text
+from audiolibrarian import __version__, config, records, text
 
 log = logging.getLogger(__name__)
 _USER_AGENT_NAME = "audiolibrarian"
@@ -57,7 +57,11 @@ class MusicBrainzSession:
     def _session(self) -> requests.Session:
         if self.__session is None:
             self.__session = requests.Session()
-            self._session.auth = auth.HTTPDigestAuth("toadstule", "")
+            cfg = config.Config()
+            if (username := cfg.get("musicbrainz", {}).get("username")) is not None and (
+                password := cfg.get("musicbrainz", {}).get("password") is not None
+            ):
+                self._session.auth = auth.HTTPDigestAuth(username, password)
             self._session.headers.update(
                 {"User-Agent": f"{_USER_AGENT_NAME}/{__version__} ({_USER_AGENT_CONTACT})"}
             )
