@@ -1,3 +1,4 @@
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -13,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-
 from unittest import TestCase
 
 from audiolibrarian.audiofile.tags import Tags

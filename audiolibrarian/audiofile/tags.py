@@ -1,6 +1,5 @@
 """Manage tags."""
-from typing import Any
-
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -16,6 +15,7 @@ from typing import Any
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+from typing import Any
 
 
 # noinspection PyMissingConstructor

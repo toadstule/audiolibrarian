@@ -1,4 +1,5 @@
 """Audiolibrarian command line interface."""
+#
 #  Copyright (c) 2021 Stephen Jibson
 #
 #  This file is part of audiolibrarian.

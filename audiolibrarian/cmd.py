@@ -1,10 +1,5 @@
 """Command execution helpers."""
-import pathlib
-import subprocess
-from typing import Iterable
-
-from audiolibrarian import output
-
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -20,6 +15,11 @@ from audiolibrarian import output
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+import pathlib
+import subprocess
+from typing import Iterable
+
+from audiolibrarian import output
 
 
 def parallel(message: str, commands: list[tuple[str, ...]]) -> None:

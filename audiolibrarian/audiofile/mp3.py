@@ -1,6 +1,5 @@
 """AudioFile support for mp3 files."""
-import typing
-
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -16,7 +15,7 @@ import typing
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-from typing import Any
+import typing
 
 import mutagen
 import mutagen.id3
@@ -166,7 +165,7 @@ class Mp3File(audiofile.AudioFile):
         )
         tags: list[mutagen.id3.Frame] = []
         # noinspection PyUnusedLocal
-        tag: Any = None
+        tag: typing.Any = None
         if tag := release.album:
             tags.append(mutagen.id3.TALB(encoding=1, text=tag))
         if tag := release.people and release.people.composers:

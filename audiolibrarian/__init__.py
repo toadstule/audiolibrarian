@@ -1,6 +1,5 @@
 """The audiolibrarian package."""
-__version__ = "0.14.5"
-
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -16,3 +15,4 @@ __version__ = "0.14.5"
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+__version__ = "0.14.5"

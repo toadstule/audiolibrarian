@@ -1,4 +1,5 @@
 """Access the MusicBrainz service."""
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#
 # Copyright (c) 2020 Stephen Jibson
 #
 # This file is part of audiolibrarian.
@@ -17,12 +17,10 @@
 #
 #
 
-
 # This file should be located in the /bin directory of the library (i.e. "/media/music/bin")
 # along side the flac, m4a, mp3 directories
 
 #set -x
-
 music_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../ >/dev/null 2>&1 && pwd )"
 
 function make_links {

@@ -1,6 +1,5 @@
 """Text utilities."""
-import pathlib
-
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -16,6 +15,7 @@ import pathlib
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+import pathlib
 import re
 import sys
 from typing import Any

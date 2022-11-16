@@ -1,9 +1,6 @@
 #!python
-
-"""
-PYTHONPATH=$(pwd) scripts/audiolibrarian /media/BlackBox/Music/flac/some_file
-
-"""
+"""audiolibrarian."""
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -19,7 +16,6 @@ PYTHONPATH=$(pwd) scripts/audiolibrarian /media/BlackBox/Music/flac/some_file
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-
 import logging
 
 from audiolibrarian import cli

@@ -1,5 +1,8 @@
-"""Record (dataclass) definitions."""
+"""Record (dataclass) definitions.
 
+Useful field reference: https://github.com/metabrainz/picard/blob/master/picard/util/tags.py
+"""
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
@@ -14,9 +17,6 @@
 #
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
-#
-
-# Useful field reference: https://github.com/metabrainz/picard/blob/master/picard/util/tags.py
 #
 import dataclasses
 import enum

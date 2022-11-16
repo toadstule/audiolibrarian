@@ -2,6 +2,7 @@
 
 Useful stuff: https://help.mp3tag.de/main_tags.html
 """
+#
 #  Copyright (c) 2020 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
