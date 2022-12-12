@@ -7,7 +7,7 @@
 ## Installation ##
 
 ```bash
-pip install --user git+https://toadstule@bitbucket.org/toadstule/audiolibrarian
+pip install --user git+https://bitbucket.org/toadstule/audiolibrarian
 ```
 
 ## Usage ##

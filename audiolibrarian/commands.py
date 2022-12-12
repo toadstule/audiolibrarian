@@ -4,11 +4,11 @@
 #
 #  This file is part of audiolibrarian.
 #
-#  audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  Audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
 #  GNU General Public License as published by the Free Software Foundation, either version 3 of the
 #  License, or (at your option) any later version.
 #
-#  audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  Audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 #  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
 #  the GNU General Public License for more details.
 #
@@ -74,7 +74,7 @@ class Genre(_Command):
     """Do stuff with genres."""
 
     command = "genre"
-    help = "manager MB genre"
+    help = "manage MB genre"
     parser = argparse.ArgumentParser(
         description=(
             "Process all audio files in the given directory(ies), allowing the user to *update* "
