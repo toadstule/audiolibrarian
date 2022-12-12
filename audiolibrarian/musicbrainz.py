@@ -60,7 +60,8 @@ class MusicBrainzSession:
             self.__session = requests.Session()
             cfg = config.Config()
             if (username := cfg.get("musicbrainz", {}).get("username")) is not None and (
-                password := cfg.get("musicbrainz", {}).get("password")) is not None:
+                password := cfg.get("musicbrainz", {}).get("password")
+            ) is not None:
                 self._session.auth = auth.HTTPDigestAuth(username, password)
             self._session.headers.update(
                 {"User-Agent": f"{_USER_AGENT_NAME}/{__version__} ({_USER_AGENT_CONTACT})"}
