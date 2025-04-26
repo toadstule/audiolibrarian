@@ -1,3 +1,5 @@
+"""Test AudioSource."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -23,14 +25,18 @@ test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
 class TestAudioSource(TestCase):
+    """Test AudioSource."""
+
     def test__single_directory_argument(self) -> None:
+        """Test single directory argument."""
         audio_source = FilesAudioSource([test_data_path])
         # This will need updated if more test files are added.
         self.assertEqual(7, len(audio_source.get_source_filenames()))
         self.assertListEqual([], audio_source.get_wav_filenames())
-        audio_source.copy_wavs(Path("/tmp"))
+        audio_source.copy_wavs(Path("/tmp"))  # noqa: S108
 
     def test__front_cover(self) -> None:
+        """Test front cover."""
         audio_source = FilesAudioSource([test_data_path / "09.flac"])
         front_cover = audio_source.get_front_cover()
         self.assertIsNotNone(front_cover)
@@ -39,6 +45,7 @@ class TestAudioSource(TestCase):
             self.assertIs(bytes, type(front_cover.data), "cover data should be of type: bytes")
 
     def test__get_search_data(self) -> None:
+        """Test search data."""
         audio_source = FilesAudioSource([test_data_path / "00.mp3"])
         self.assertDictEqual({}, audio_source.get_search_data())
 
@@ -50,6 +57,7 @@ class TestAudioSource(TestCase):
         self.assertDictEqual(expected, audio_source.get_search_data())
 
     def test__source_list(self) -> None:
+        """Test source list."""
         audio_source = FilesAudioSource([test_data_path / "00.mp3"])
         self.assertListEqual([], audio_source.source_list)
         audio_source.prepare_source()  # This should run w/o helper programs on an empty list.

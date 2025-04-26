@@ -1,3 +1,5 @@
+"""Test MusicBrainz."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -30,8 +32,10 @@ if log_level := os.getenv("LOG_LEVEL"):
 
 
 class TestMusicBrainzRelease(TestCase):
+    """Test MusicBrainz."""
+
     maxDiff = None
-    _blank_test_files = [p.resolve() for p in test_data_path.glob("00.*")]
+    _blank_test_files = (p.resolve() for p in test_data_path.glob("00.*"))
 
     @skipUnless(os.getenv("EXTERNAL_TESTS"), "EXTERNAL_TESTS not defined")
     def test__musicbrainz_release(self) -> None:
@@ -39,11 +43,12 @@ class TestMusicBrainzRelease(TestCase):
         extensions = (".flac", ".m4a", ".mp3")
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
-                f = open_(test_file.name)  # mypy: ignore-errors  # type: ignore
-                if (expected := f._one_track.release) is None:  # Blank tags in audio file.
+                f = open_(test_file.name)  # mypy: ignore-errors  # xtype: ignore
+                if (expected := f._one_track.release) is None:  # noqa: SLF001
+                    # Blank tags in audio file.
                     continue
-                medium_number = f._one_track.medium_number
-                track_number = f._one_track.track_number
+                medium_number = f._one_track.medium_number  # noqa: SLF001
+                track_number = f._one_track.track_number  # noqa: SLF001
 
             got = MusicBrainzRelease(expected.musicbrainz_album_id).get_release()
 
@@ -56,9 +61,8 @@ class TestMusicBrainzRelease(TestCase):
             # noinspection PyUnresolvedReferences
             got.media[medium_number].tracks[track_number].file_info = None
 
-            if src.suffix == ".m4a":  # We don't store this for m4a files.
-                if got.people:
-                    got.people.performers = None
+            if src.suffix == ".m4a" and got.people:  # We don't store this for m4a files.
+                got.people.performers = None
 
             if src.suffix == ".mp3":  # We don't store this for mp3 files.
                 expected.original_date, got.original_date = None, None

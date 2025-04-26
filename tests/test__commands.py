@@ -1,3 +1,5 @@
+"""Test commands."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -26,7 +28,10 @@ test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
 class TestCommands(TestCase):
+    """Test commands."""
+
     def test__version(self) -> None:
+        """Test version command."""
         from audiolibrarian import __version__
 
         with captured_output() as (out, err):
@@ -36,33 +41,37 @@ class TestCommands(TestCase):
 
 
 class TestValidateArgs(TestCase):
-    def test__validate_disc(self) -> None:
-        self.assertTrue(commands._validate_disc_arg(Namespace(disc="")))
-        self.assertTrue(commands._validate_disc_arg(Namespace(disc="1/2")))
-        self.assertTrue(commands._validate_disc_arg(Namespace(disc="1/1")))
-        self.assertTrue(commands._validate_disc_arg(Namespace(disc="2/9")))
-        self.assertTrue(commands._validate_disc_arg(Namespace(disc="4/50")))
+    """Test argument validation."""
 
-        self.assertFalse(commands._validate_disc_arg(Namespace(disc="1")))
-        self.assertFalse(commands._validate_disc_arg(Namespace(disc="a")))
-        self.assertFalse(commands._validate_disc_arg(Namespace(disc="a/2")))
-        self.assertFalse(commands._validate_disc_arg(Namespace(disc="5/4")))
-        self.assertFalse(commands._validate_disc_arg(Namespace(disc="0/1")))
-        self.assertFalse(commands._validate_disc_arg(Namespace(disc="-5/-4")))
+    def test__validate_disc(self) -> None:
+        """Test validate disc."""
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="")))  # noqa: SLF001
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="1/2")))  # noqa: SLF001
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="1/1")))  # noqa: SLF001
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="2/9")))  # noqa: SLF001
+        self.assertTrue(commands._validate_disc_arg(Namespace(disc="4/50")))  # noqa: SLF001
+
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="1")))  # noqa: SLF001
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="a")))  # noqa: SLF001
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="a/2")))  # noqa: SLF001
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="5/4")))  # noqa: SLF001
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="0/1")))  # noqa: SLF001
+        self.assertFalse(commands._validate_disc_arg(Namespace(disc="-5/-4")))  # noqa: SLF001
 
     def test__validate_dirs(self) -> None:
+        """Test directory validation."""
         exist = str(test_data_path)
         not_exist = "/does/not/exist/"
-        self.assertTrue(commands._validate_directories_arg(Namespace(directories=[])))
+        self.assertTrue(commands._validate_directories_arg(Namespace(directories=[])))  # noqa: SLF001
         self.assertTrue(
-            commands._validate_directories_arg(Namespace(directories=[str(test_data_path)]))
+            commands._validate_directories_arg(Namespace(directories=[str(test_data_path)]))  # noqa: SLF001
         )
-        self.assertTrue(commands._validate_directories_arg(Namespace(directories=[exist, "/"])))
+        self.assertTrue(commands._validate_directories_arg(Namespace(directories=[exist, "/"])))  # noqa: SLF001
 
-        self.assertFalse(commands._validate_directories_arg(Namespace(directories=[not_exist])))
+        self.assertFalse(commands._validate_directories_arg(Namespace(directories=[not_exist])))  # noqa: SLF001
         self.assertFalse(
-            commands._validate_directories_arg(Namespace(directories=[exist, not_exist]))
+            commands._validate_directories_arg(Namespace(directories=[exist, not_exist]))  # noqa: SLF001
         )
         self.assertFalse(
-            commands._validate_directories_arg(Namespace(directories=[__file__, "/"]))
+            commands._validate_directories_arg(Namespace(directories=[__file__, "/"]))  # noqa: SLF001
         )

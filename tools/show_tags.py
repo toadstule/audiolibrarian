@@ -1,3 +1,5 @@
+"""Show tags."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #

@@ -1,4 +1,5 @@
 """Unit test helper functions."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -16,13 +17,13 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 import sys
+from collections.abc import Generator
 from contextlib import contextmanager
 from io import StringIO
-from typing import Generator, TextIO
 
 
 @contextmanager
-def captured_output() -> Generator[tuple[StringIO, StringIO], None, None]:
+def captured_output() -> Generator[tuple[StringIO, StringIO]]:
     """Capture stdout and stderr."""
     new_out, new_err = StringIO(), StringIO()
     old_out, old_err = sys.stdout, sys.stderr

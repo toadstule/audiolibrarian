@@ -3,70 +3,86 @@
 # These need to be at the top
 PRESET_VARS := $(.VARIABLES)
 
-PKG_FILES := scripts/audiolibrarian audiolibrarian
-INSTALLED_PIP_PACKAGES := $(shell pip freeze)
+# Project variables
+PROJECT_NAME    := $(shell grep -e '^name =' pyproject.toml | cut -d'"' -f2)
+PY_FILES        := $(shell find . -name '*.py' | grep -v "/.venv/" | grep -v "/dist/")
+PYTHON_VERSION_ := $(shell cat .python-version)
+VERSION         := $(shell grep -e '^version =' pyproject.toml | cut -d'"' -f2)
+WHEEL           := dist/$(PROJECT_NAME)-$(VERSION)-py3-none-any.whl
+
+# Tool variables
+PYTHON := $(shell which python$(PYTHON_VERSION_))
+MYPY   := $(PYTHON) -m mypy
+PYTEST := $(PYTHON) -m pytest
+RUFF   := $(PYTHON) -m ruff
+UV     := $(shell command -v uv 2> /dev/null)
+PIP    := $(UV) pip
+
+# Parse dependencies from pyproject.toml
+DEPS     := $(shell sed -n '/^\s*dependencies\s*=\s*\[/,/^\s*]/p' pyproject.toml | grep -vE '^\s*dependencies\s*=\s*\[|^\s*\]' | sed -E 's/[",]//g' | sed -E 's/[<>=!~].*//' | grep -vE '^\s*$$' | xargs)
+DEV_DEPS := $(shell sed -n '/^\s*dev\s*=\s*\[/,/^\s*]/p' pyproject.toml | grep -vE '^\s*dev\s*=\s*\[|^\s*\]' | sed -E 's/[",]//g' | sed -E 's/[<>=!~].*//' | grep -vE '^\s*$$' | xargs)
 
 .PHONY: all
-all: sdist
+all: build
+
+.PHONY: build
+build: $(WHEEL)  ## Build the package.
 
 .PHONY: check
-check: CHECK = --check  # set this so "format" checks but doesn't change the files
 check: lint test  ## Check the code.
 
 .PHONY: clean
 clean:  ## Clean up.
-	rm -rf audiolibrarian.egg-info dist
+	@find . -name "__pycache__" | grep -v "/.venv/" | xargs rm -rf
+	@rm -rf .pytest_cache tests/.pytest_cache
+	@rm -rf .pytype
+	@$(UV) clean
+	@rm -rf dist
 
 .PHONY: dep
-dep: venv-check requirements.txt  ## Install requirements.
-	@python -m pip install --quiet --upgrade pip setuptools wheel
-	@python -m pip install --quiet --requirement requirements.txt
+dep:  ## Install dependencies.
+	@$(UV) sync
 
-.PHONY: dep-base
-dep-base: requirements.base.txt  ## Install base requirements.
-	python -m pip install --quiet --requirement requirements.base.txt
-
-.PHONY: dep-dev
-dep-dev: venv-check requirements.dev.txt  ## Install dev requirements.
-	python -m pip install --quiet --requirement requirements.dev.txt
-
-.PHONY: distclean
-distclean: clean venv-clean  ## Clean up all extra files.
-	rm -rf MANIFEST .pytype .coverage htmlcov/ library/
+.PHONY: dep-upgrade
+dep-upgrade:  # Update (remove and re-install) dependencies.
+	$(UV) remove $(DEPS)
+	$(UV) remove --dev $(DEV_DEPS)
+	$(UV) add $(DEPS)
+	$(UV) add --dev $(DEV_DEPS)
+	$(UV) lock
 
 .PHONY: format
-format: dep-dev  ## Format the code.
-	black $(CHECK) $(PKG_FILES) tests
-	isort $(CHECK) $(PKG_FILES) tests
+format:  ## Format the code; sort the imports.
+	@$(RUFF) format $(PY_FILES)
+	@$(RUFF) check --fix --select I $(PY_FILES)
 
 .PHONY: help
 help:  ## Display this help.
-	@grep -h -E '^[a-zA-Z0-9._-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -h -E '^[a-zA-Z0-9._-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: install
+install: venv-check $(WHEEL)  ## Install the package (locally).
+	@$(PIP) install --editable .
 
 .PHONY: lint
-lint: dep dep-dev format  ## Lint the code.
-	pylint audiolibrarian
-	pydocstyle $(PKG_FILES) tests
-	pytype --jobs=auto --keep-going $(PKG_FILES) tests
-	mypy $(PKG_FILES) tests
+lint: format  ## Lint the code.
+	@$(RUFF) format --check src
+	@$(RUFF) check src
+	@$(MYPY) --non-interactive $(PY_FILES)
 
-requirements.txt: requirements.base.txt  ## Make a new requirements file.
-	$(MAKE) venv-clean
-	$(MAKE) dep-base
-	python -m pip freeze > $@
 
-.PHONY: sdist
-sdist: dep  ## Build distributable archive.
-	python setup.py sdist
+.PHONY: publish
+publish: $(WHEEL)  ## Publish the package to PyPI.
+	@$(UV) publish --publish-url https://pypi.jibson.com --token none
+
 
 .PHONY: showvars
 showvars:  ## Display variables available in the Makefile.
 	$(foreach v, $(filter-out $(PRESET_VARS) PRESET_VARS,$(.VARIABLES)), $(info $(v) = $($(v))))
-	$(info)
 
 .PHONY: test
 test:  ## Run unit tests.
-	python -X dev -m unittest discover tests/
+	$(PYTEST) --verbose tests
 
 .PHONY: test-coverage
 test-coverage:  ## Run unit tests and generate a coverage report.
@@ -84,15 +100,12 @@ test-external-coverage:  ## Run unit tests -- including external tests -- and ge
 	EXTERNAL_TESTS=1 make test-coverage
 
 .PHONY: venv-check
-venv-check:  # Verify that we are in a virtual environment.
+venv-check:  # Verify that we are in a virtual environment (or in a Python container).
 ifndef VIRTUAL_ENV
-ifndef BITBUCKET_WORKSPACE
+ifndef PYTHON_VERSION
 	$(error this should only be executed in a Python virtual environment)
 endif
 endif
 
-.PHONY: venv-clean
-venv-clean: venv-check  ## Remove all packages from the virtual environment
-ifdef INSTALLED_PIP_PACKAGES
-	-@pip uninstall --quiet --yes $(INSTALLED_PIP_PACKAGES)
-endif
+$(WHEEL): $(PY_FILES) pyproject.toml uv.lock dep
+	@$(UV) build

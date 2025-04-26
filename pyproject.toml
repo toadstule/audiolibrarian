@@ -1,10 +1,58 @@
-[tool.black]
-line-length=99
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
 
-[tool.isort]
-line_length = 99
-multi_line_output = 3
-profile = "black"
+[dependency-groups]
+dev = [
+    "coverage>=7.8.0",
+    "hatchling>=1.27.0",
+    "mypy>=1.15.0",
+    "pytest>=8.3.5",
+    "ruff>=0.11.7",
+    "types-pyyaml>=6.0.12.20250402",
+    "types-requests>=2.32.0.20250328",
+]
+
+[project]
+authors = [{name = "Steve Jibson", email = "steve@jibson.com"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+]
+description = "Manage my audio library."
+dependencies = [
+    "ansicolors>=1.1.8",
+    "discid>=1.2.0",
+    "filelock>=3.18.0",
+    "fuzzywuzzy>=0.18.0",
+    "musicbrainzngs>=0.7.1",
+    "mutagen>=1.47.0",
+    "python-levenshtein>=0.27.1",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.3",
+]
+dynamic = [
+    "version",
+]
+name = "audiolibrarian"
+readme = "README.md"
+requires-python = "==3.13.*"
+
+[project.scripts]
+audiolibrarian = "audiolibrarian:cli.main"
+
+[project.urls]
+Repository = "https://bitbucket.org/toadstule/audiolibrarian/"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.hatch.version]
+path = "src/audiolibrarian/__init__.py"
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -13,23 +61,32 @@ install_types = true
 no_strict_optional = true  # All of our record fields default to None.
 non_interactive = true
 pretty = true
-python_version = "3.10"
+python_version = "3.13"
 strict = true
 
 [[tool.mypy.overrides]]
 module = "picard_src.*"
 ignore_errors = true  # This is not our code.
 
-[tool.pylint.design]
-max-attributes=10
-min-public-methods=1
+[tool.ruff]
+extend-exclude = [
+    "picard_src",  # This is not our code.
+]
+line-length = 99
+target-version = "py313"
 
-[tool.pylint.format]
-max-line-length = "99"
+[tool.ruff.lint]
+ignore = [
+    "COM812",  # This gets upset when there isn't a trailing comma in a multi-line split string.
+               # The formatter will add/verify the trailing commas.
+    "PT009",   # We use the UnitTest framework with its built-in asserts.
+    "PT027",   # We use the UnitTest framework with its built-in asserts.
+    "T201",    # This check prevents the use of print() -- which would be fine for non-interactive programs.
+]
+select = [
+    "ALL",  # All the checks.
+    "D401"  # Use imparative mood for comments. The "google" pydocstyle convention disables this, so we'll re-enable it.
+]
 
-[tool.pylint.messages_control]
-disable = "C0103, W1203"
-
-[tool.pylint.similarities]
-ignore-imports = "yes"
-min-similarity-lines = 10
+[tool.ruff.lint.pydocstyle]
+convention = "google"

@@ -1,3 +1,5 @@
+"""Test text."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -20,7 +22,10 @@ from audiolibrarian import text
 
 
 class TestText(TestCase):
+    """Test text functions."""
+
     def test__alpha_numeric_key(self) -> None:
+        """Text alphanumeric key."""
         for initial, expected in (
             ([], []),
             (["b", "a", "c"], ["a", "b", "c"]),
@@ -29,10 +34,12 @@ class TestText(TestCase):
             (["6_six", "10_ten", "1_one", "11_eleven"], ["1_one", "6_six", "10_ten", "11_eleven"]),
         ):
             self.assertListEqual(
-                expected, sorted(initial, key=text.alpha_numeric_key)  # type: ignore
+                expected,
+                sorted(initial, key=text.alpha_numeric_key),  # xtype: ignore
             )
 
     def test__comma_and_join(self) -> None:
+        """Test command and join."""
         self.assertEqual("", text.join([]))
         self.assertEqual("a", text.join(["a"]))
         self.assertEqual("aa", text.join(["aa"]))
@@ -53,6 +60,7 @@ class TestText(TestCase):
         self.assertEqual("aa, bb, cc or dd", text.join(["aa", "bb", "cc", "dd"], word="or"))
 
     def test__fix(self) -> None:
+        """Test fix."""
         self.assertEqual("", text.fix(""))
         self.assertEqual("abc", text.fix("abc"))
         self.assertEqual("a-b", text.fix("a-b"))
@@ -64,6 +72,7 @@ class TestText(TestCase):
         self.assertEqual("é", text.fix("é"), "fix should not drop accents")
 
     def test__get_filename(self) -> None:
+        """Test get-filename."""
         self.assertEqual("your_mom", text.filename_from_title("your_mom"))
         self.assertEqual("your_mom", text.filename_from_title("your mom"))
         self.assertEqual("your_mom", text.filename_from_title("your mom!"))
@@ -76,6 +85,7 @@ class TestText(TestCase):
         self.assertEqual("I.D.", text.filename_from_title("I.D."))
 
     def test__get_numbers(self) -> None:
+        """Test get-numbers."""
         self.assertEqual([], text.get_numbers(""))
         self.assertEqual([1], text.get_numbers("1"))
         self.assertEqual([1], text.get_numbers("01"))
@@ -84,6 +94,7 @@ class TestText(TestCase):
         self.assertEqual([1, 2, 3, 4], text.get_numbers("1a2b3c4d"))
 
     def test__get_uuid(self) -> None:
+        """Test get-uuid."""
         input_ = "your mom"
         expected = None
         self.assertEqual(expected, text.get_uuid(input_))

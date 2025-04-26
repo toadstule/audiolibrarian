@@ -1,3 +1,5 @@
+"""Show differences in tags between two files."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -20,7 +22,7 @@ import sys
 import mutagen
 
 if __name__ == "__main__":
-    assert len(sys.argv) == 3
+    assert len(sys.argv) == 3  # noqa: S101, PLR2004
     filename1, filename2 = sys.argv[1:3]
 
     song1 = mutagen.File(filename1)
@@ -29,7 +31,7 @@ if __name__ == "__main__":
     song2 = mutagen.File(filename2)
     pprint.pp(dict(song2.tags))
 
-    # pprint.pp(sorted(list(set(song1.tags) - set(song2.tags))))
-    # pprint.pp(sorted(list(set(song2.tags) - set(song1.tags))))
-    print(sorted(list(set(song1.tags) - set(song2.tags))))
-    print(sorted(list(set(song2.tags) - set(song1.tags))))
+    # pprint.pp(sorted(list(set(song1.tags) - set(song2.tags))))  # noqa: ERA001
+    # pprint.pp(sorted(list(set(song2.tags) - set(song1.tags))))  # noqa: ERA001
+    print(sorted(set(song1.tags) - set(song2.tags)))
+    print(sorted(set(song2.tags) - set(song1.tags)))

@@ -1,4 +1,4 @@
-"""Test output."""
+"""Command execution helpers."""
 
 #
 #  Copyright (c) 2020 Stephen Jibson
@@ -16,22 +16,23 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-import time
-from unittest import TestCase
+import pathlib
+import subprocess
+from collections.abc import Iterable
 
-from audiolibrarian.output import Dots
-from tests.helpers import captured_output
+from audiolibrarian import output
 
 
-class TestDots(TestCase):
-    """Test dot generation."""
+def parallel(message: str, commands: list[tuple[str, ...]]) -> None:
+    """Execute commands in parallel."""
+    with output.Dots(message) as dots:
+        for command in commands:
+            with subprocess.Popen(command) as proc:  # noqa: S603
+                dots.dot()
+                proc.wait()
 
-    def test__dots(self) -> None:
-        """Test dots."""
-        with captured_output() as (out, err):
-            with Dots("Please wait") as d:
-                for _ in range(5):
-                    time.sleep(0.01)
-                    d.dot()
-            output = out.getvalue().strip()
-            self.assertEqual("Please wait.....", output)
+
+def touch(paths: Iterable[pathlib.Path]) -> None:
+    """Touch all files in a given path."""
+    for path in paths:
+        subprocess.run(("touch", path), check=False)  # noqa: S603

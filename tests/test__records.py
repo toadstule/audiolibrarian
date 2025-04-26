@@ -1,3 +1,5 @@
+"""Test records."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -30,6 +32,8 @@ from audiolibrarian.records import (
 
 
 class TestOneTrack(TestCase):
+    """Test one track."""
+
     one_track = OneTrack(
         release=Release(
             album="Album",
@@ -89,11 +93,13 @@ class TestOneTrack(TestCase):
     )
 
     def test__record_class(self) -> None:
+        """Test record class."""
         self.assertEqual("Album Artist One", self.one_track.release.album_artists.first)
         self.assertEqual("Track Artist", self.one_track.track.asdict().get("artist"))
         self.assertEqual("03__Track_Title", self.one_track.track.get_filename())
 
     def test__get_artist_album_disc_path(self) -> None:
+        """Test get-artist-album-disc-path."""
         self.assertEqual(
             "One,_Album_Artist/1992__Album/disc7", str(self.one_track.get_artist_album_disc_path())
         )

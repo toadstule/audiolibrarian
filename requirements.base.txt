@@ -1,9 +1,0 @@
-ansicolors
-discid
-filelock
-fuzzywuzzy
-musicbrainzngs
-mutagen
-python-Levenshtein
-pyaml
-requests

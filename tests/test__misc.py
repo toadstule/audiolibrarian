@@ -1,3 +1,5 @@
+"""Miscellaneous tests."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -20,12 +22,16 @@ from audiolibrarian import cli
 
 
 class TestMisc(TestCase):
+    """Test miscellaneous functions."""
+
     def test__check_deps_true(self) -> None:
+        """Test dependency checker."""
         cli_ = cli.CommandLineInterface(parse_args=False)
-        cli_.required_exe = {"ls", "ps"}
-        self.assertTrue(cli_._check_deps())
+        cli_.required_exe = {"ls", "ps"}  # type: ignore[misc]
+        self.assertTrue(cli_._check_deps())  # noqa: SLF001
 
     def test__check_deps_false(self) -> None:
+        """Test dependency checker."""
         cli_ = cli.CommandLineInterface(parse_args=False)
-        cli_.required_exe = {"your_mom_goes_to_college"}
-        self.assertFalse(cli_._check_deps())
+        cli_.required_exe = {"your_mom_goes_to_college"}  # type: ignore[misc]
+        self.assertFalse(cli_._check_deps())  # noqa: SLF001

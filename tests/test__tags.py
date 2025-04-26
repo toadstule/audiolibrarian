@@ -1,3 +1,5 @@
+"""Test tags."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -20,7 +22,10 @@ from audiolibrarian.audiofile.tags import Tags
 
 
 class TestTags(TestCase):
+    """Test tags."""
+
     def test__tags(self) -> None:
+        """Test tags."""
         t = Tags()
         t["a"] = "A"
         t["b"] = "B"
@@ -29,11 +34,13 @@ class TestTags(TestCase):
         self.assertDictEqual(expected, t)
 
     def test__tags_init(self) -> None:
+        """Test constructor."""
         t = Tags({"a": "A", "b": "B", "c": None})
         expected = {"a": "A", "b": "B"}
         self.assertDictEqual(expected, t)
 
     def test__tags_list(self) -> None:
+        """Test tags list."""
         t = Tags()
         t["a"] = "A"
         t["b"] = [None]

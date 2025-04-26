@@ -1,3 +1,5 @@
+"""Test AudioFile."""
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -40,13 +42,17 @@ test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
 class TestAudioFile(TestCase):
-    _blank_test_files = [p.resolve() for p in test_data_path.glob("00.*")]
+    """Test AudioFile."""
+
+    _blank_test_files = (p.resolve() for p in test_data_path.glob("00.*"))
 
     def setUp(self) -> None:
+        """Set up the tests."""
         self.maxDiff = None
         self._verify_test_data()
 
     def tearDown(self) -> None:
+        """Tear down the tests."""
         self._verify_test_data()
 
     def _verify_test_data(self) -> None:
@@ -58,7 +64,7 @@ class TestAudioFile(TestCase):
             for line in checksum_file:
                 checksum, filename = line.strip().split()
                 filepath = test_data_path / filename
-                got = hashlib.md5(filepath.read_bytes()).hexdigest()
+                got = hashlib.md5(filepath.read_bytes()).hexdigest()  # noqa: S324
                 self.assertEqual(checksum, got, f"Mismatched checksum for {filepath}")
 
     def test__no_changes_rw(self) -> None:
@@ -67,9 +73,9 @@ class TestAudioFile(TestCase):
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
                 f = open_(test_file.name)
-                before = dict(f._mut_file.tags or {})
+                before = dict(f._mut_file.tags or {})  # noqa: SLF001
                 f.write_tags()
-                after = dict(f._mut_file.tags)
+                after = dict(f._mut_file.tags or {})  # noqa: SLF001
 
             # TIPL can be in any order, so we'll compare it separately and remove it.
             tipl_before, tipl_after = [], []
@@ -96,7 +102,6 @@ class TestAudioFile(TestCase):
 
     def test__no_changes_wr(self) -> None:
         """Verify that a write/read cycle doesn't change any tags."""
-
         info = OneTrack(
             release=Release(
                 album="Album",
@@ -159,7 +164,7 @@ class TestAudioFile(TestCase):
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
                 f = open_(test_file.name)
-                f._one_track = info
+                f._one_track = info  # noqa: SLF001
                 f.write_tags()
                 old_info = copy.deepcopy(info)
                 new_info = f.read_tags()
@@ -176,11 +181,15 @@ class TestAudioFile(TestCase):
 
 
 class TestAudioFileMisc(TestCase):
+    """Test AudioFile miscellaneous functions."""
+
     def test__file_not_found(self) -> None:
+        """Test file-not-found."""
         with self.assertRaises(FileNotFoundError):
             open_("your_mom_goes_to_college.mp3")
 
     def test__file_not_supported(self) -> None:
+        """Test file-not-supported."""
         with self.assertRaises(NotImplementedError):
             # The current file should always be around, and never be an audio file.
             open_(__file__)
@@ -190,7 +199,7 @@ def _audio_file_copy(src_filepath: pathlib.Path) -> contextlib.closing[Any]:
     # Create a copy of the given source file and return the copy as a context-manager.
     #
     # We work with a temp copy of the file, so we don't break our test data.
-    dst = tempfile.NamedTemporaryFile(mode="wb", prefix="test_", suffix=src_filepath.suffix)
+    dst = tempfile.NamedTemporaryFile(mode="wb", prefix="test_", suffix=src_filepath.suffix)  # noqa: SIM115
     dst.write(src_filepath.read_bytes())
     dst.flush()
     dst.seek(0)
