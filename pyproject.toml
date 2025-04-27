@@ -45,6 +45,12 @@ audiolibrarian = "audiolibrarian:cli.main"
 [project.urls]
 Repository = "https://bitbucket.org/toadstule/audiolibrarian/"
 
+[tool.hatch.build.targets.sdist]
+exclude= [
+    ".idea",
+    "tests",
+]
+
 [tool.hatch.build.targets.wheel]
 only-include = ["src"]
 
