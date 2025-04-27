@@ -22,7 +22,7 @@ pipelines:
             - uv venv .venv
             - source .venv/bin/activate
             - make clean check
-    master:
+    main:
       - step:
           name: Deploy to production
           deployment: production
