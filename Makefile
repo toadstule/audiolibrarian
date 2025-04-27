@@ -62,7 +62,7 @@ dep-upgrade:  # Update (remove and re-install) dependencies.
 	$(UV) lock
 
 .PHONY: format
-format:  ## Format the code; sort the imports.
+format: dep  ## Format the code; sort the imports.
 	@$(RUFF) format $(PY_FILES)
 	@$(RUFF) check --fix --select I $(PY_FILES)
 
@@ -89,7 +89,7 @@ showvars:  ## Display variables available in the Makefile.
 	$(foreach v, $(filter-out $(PRESET_VARS) PRESET_VARS,$(.VARIABLES)), $(info $(v) = $($(v))))
 
 .PHONY: test
-test:  ## Run unit tests.
+test: dep  ## Run unit tests.
 	$(PYTEST) --verbose tests
 
 .PHONY: test-coverage
