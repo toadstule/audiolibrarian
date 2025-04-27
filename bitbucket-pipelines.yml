@@ -2,7 +2,7 @@
 # Only use spaces to indent your .yml configuration.
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
-image: python:3.10
+image: python:3.13
 
 pipelines:
   branches:
@@ -16,6 +16,7 @@ pipelines:
           script:
             - apt-get update
             - apt-get install libdiscid0
+            - apt-get install uv
             - make clean check
     master:
       - step:
@@ -27,5 +28,6 @@ pipelines:
           script:
             - apt-get update
             - apt-get install libdiscid0
-            - make clean sdist
+            - apt-get install uv
+            - make clean all
             - find dist -name '*.gz' -exec curl -X POST "https://${BB_AUTH_STRING}@api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" --form files=@"{}" \;
