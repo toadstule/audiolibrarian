@@ -18,6 +18,7 @@ pipelines:
             - apt-get install libdiscid0
             - apt-get install curl
             - curl -LsSf https://astral.sh/uv/install.sh | sh
+            - cp /root/.local/bin/uv* /usr/local/bin/
             - make clean check
     master:
       - step:
@@ -31,5 +32,6 @@ pipelines:
             - apt-get install libdiscid0
             - apt-get install curl
             - curl -LsSf https://astral.sh/uv/install.sh | sh
+            - cp /root/.local/bin/uv* /usr/local/bin/
             - make clean all
             - find dist -name '*.gz' -exec curl -X POST "https://${BB_AUTH_STRING}@api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" --form files=@"{}" \;
