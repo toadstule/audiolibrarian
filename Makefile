@@ -15,9 +15,8 @@ BROWSER := $(shell which chromium || which google-chrome-stable || which firefox
 PYTHON := $(shell which python$(PYTHON_VERSION_))
 MYPY   := $(PYTHON) -m mypy
 PYTEST := $(PYTHON) -m pytest
+RUFF   := $(PYTHON) -m ruff
 UV     := $(shell command -v uv 2> /dev/null)
-UVX    := $(shell command -v uvx 2> /dev/null)
-RUFF   := $(UVX) ruff
 PIP    := $(UV) pip
 
 # Parse dependencies from pyproject.toml
