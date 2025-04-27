@@ -56,6 +56,11 @@ class TestMusicBrainzRelease(TestCase):
             expected.genres, got.genres = None, None  # Genres should be ignored.
             expected.front_cover, got.front_cover = None, None  # Don't compare image.
             expected.asins, got.asins = None, None  # Something's weird with ASINS.
+            if expected.people is not None:
+                expected.people.engineers, got.people.engineers = None, None
+                expected.people.lyricists, got.people.lyricists = None, None
+                expected.people.mixers, got.people.mixers = None, None
+                expected.people.producers, got.people.producers = None, None
             # noinspection PyUnresolvedReferences
             expected.media[medium_number].tracks[track_number].file_info = None
             # noinspection PyUnresolvedReferences

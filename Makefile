@@ -11,6 +11,7 @@ VERSION         := $(shell grep -e '^version =' pyproject.toml | cut -d'"' -f2)
 WHEEL           := dist/$(PROJECT_NAME)-$(VERSION)-py3-none-any.whl
 
 # Tool variables
+BROWSER := $(shell which chromium || which google-chrome-stable || which firefox )
 PYTHON := $(shell which python$(PYTHON_VERSION_))
 MYPY   := $(PYTHON) -m mypy
 PYTEST := $(PYTHON) -m pytest
@@ -19,8 +20,17 @@ UV     := $(shell command -v uv 2> /dev/null)
 PIP    := $(UV) pip
 
 # Parse dependencies from pyproject.toml
-DEPS     := $(shell sed -n '/^\s*dependencies\s*=\s*\[/,/^\s*]/p' pyproject.toml | grep -vE '^\s*dependencies\s*=\s*\[|^\s*\]' | sed -E 's/[",]//g' | sed -E 's/[<>=!~].*//' | grep -vE '^\s*$$' | xargs)
-DEV_DEPS := $(shell sed -n '/^\s*dev\s*=\s*\[/,/^\s*]/p' pyproject.toml | grep -vE '^\s*dev\s*=\s*\[|^\s*\]' | sed -E 's/[",]//g' | sed -E 's/[<>=!~].*//' | grep -vE '^\s*$$' | xargs)
+DEPS     := $(shell sed -n '/^\s*dependencies\s*=\s*\[/,/^\s*]/p' pyproject.toml | \
+                    grep -vE '^\s*dependencies\s*=\s*\[|^\s*\]' | \
+                    sed -E 's/[",]//g' | sed -E 's/[<>=!~].*//' | \
+                    grep -vE '^\s*$$' | \
+                    xargs)
+DEV_DEPS := $(shell sed -n '/^\s*dev\s*=\s*\[/,/^\s*]/p' pyproject.toml | \
+                    grep -vE '^\s*dev\s*=\s*\[|^\s*\]' | \
+                    sed -E 's/[",]//g' | \
+                    sed -E 's/[<>=!~].*//' | \
+                    grep -vE '^\s*$$' | \
+                    xargs)
 
 .PHONY: all
 all: build
@@ -70,11 +80,9 @@ lint: format  ## Lint the code.
 	@$(RUFF) check src
 	@$(MYPY) --non-interactive $(PY_FILES)
 
-
 .PHONY: publish
 publish: $(WHEEL)  ## Publish the package to PyPI.
 	@$(UV) publish --publish-url https://pypi.jibson.com --token none
-
 
 .PHONY: showvars
 showvars:  ## Display variables available in the Makefile.
@@ -89,7 +97,7 @@ test-coverage:  ## Run unit tests and generate a coverage report.
 	rm -rf htmlconv
 	coverage run -m unittest discover tests/
 	coverage html
-	chromium htmlcov/index.html
+	$(BROWSER) htmlcov/index.html
 
 .PHONY: test-external
 test-external:  ## Run unit tests -- including external tests.

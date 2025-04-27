@@ -22,9 +22,7 @@ from typing import Any
 from audiolibrarian.audiofile import audiofile, flac, m4a, mp3
 from audiolibrarian.audiofile.audiofile import AudioFile
 
-__all__ = [
-    "AudioFile",
-]
+__all__ = ["AudioFile", "open_"]
 
 _AUDIOFILE_CLS_BY_EXTENSION: dict[str, Any] = {
     extension: audiofile_cls
