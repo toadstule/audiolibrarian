@@ -17,8 +17,9 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 import abc
+import importlib
 import pathlib
-from typing import Final
+from typing import Any, ClassVar
 
 import mutagen
 
@@ -28,7 +29,7 @@ from audiolibrarian import records
 class AudioFile(abc.ABC):
     """Abstract base class for AudioFile classes."""
 
-    extensions: Final[set[str]] = set()
+    _subclass_by_extension: ClassVar[dict[str, type["AudioFile"]]] = {}
 
     def __init__(self, filepath: pathlib.Path) -> None:
         """Initialize an AudioFile."""
@@ -36,9 +37,49 @@ class AudioFile(abc.ABC):
         self._mut_file = mutagen.File(self.filepath.absolute())
         self._one_track = self.read_tags()
 
+    def __init_subclass__(cls, extensions: set[str], **kwargs: dict[str, Any]) -> None:
+        """Initialize an AudioFile subclass."""
+        super().__init_subclass__(**kwargs)
+        for extension in extensions:
+            cls._subclass_by_extension[extension] = cls
+
     def __repr__(self) -> str:
         """Return a string representation of the AudioFile."""
         return f"AudioFile: {self.filepath}"
+
+    @classmethod
+    def extensions(cls) -> set[str]:
+        """Return the list of supported extensions."""
+        return set(cls._subclass_by_extension.keys())
+
+    @classmethod
+    def open(cls, filename: str | pathlib.Path) -> "AudioFile":
+        """Return an AudioFile object based on the filename extension (factory method).
+
+        Args:
+            filename: The filename of a supported audio file.
+
+        Returns:
+            audiofile.AudioFile: An AudioFile object.
+
+        Raises:
+            FileNotFoundError: If the file cannot be found or is not a file.
+            NotImplementedError: If the type of the file is not supported.
+        """
+        if not AudioFile._subclass_by_extension:
+            # Dynamically load submodules.
+            for module_path in (pathlib.Path(__file__).parent / "formats").glob("*.py"):
+                if module_path.name == "__init__.py":
+                    continue
+                importlib.import_module(f"audiolibrarian.audiofile.formats.{module_path.stem}")
+
+        filepath = pathlib.Path(filename).resolve()
+        if not filepath.is_file():
+            raise FileNotFoundError(filepath)
+        if filepath.suffix not in AudioFile._subclass_by_extension:
+            msg = f"Unknown file type: {filepath}"
+            raise NotImplementedError(msg)
+        return AudioFile._subclass_by_extension[filepath.suffix](filepath=filepath)
 
     @property
     def filepath(self) -> pathlib.Path:

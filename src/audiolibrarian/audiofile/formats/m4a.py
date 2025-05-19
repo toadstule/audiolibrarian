@@ -17,21 +17,18 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 from logging import getLogger
-from typing import Any, Final
+from typing import Any
 
 import mutagen.mp4
 
-from audiolibrarian import records
-from audiolibrarian.audiofile import audiofile, tags
+from audiolibrarian import audiofile, records
 
 log = getLogger(__name__)
 ITUNES = "----:com.apple.iTunes"
 
 
-class M4aFile(audiofile.AudioFile):
+class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
     """AudioFile for M4A files."""
-
-    extensions: Final[set[str]] = {".m4a"}  # type: ignore[misc]
 
     def read_tags(self) -> records.OneTrack:
         """Read the tags and return a OneTrack object."""
@@ -213,7 +210,7 @@ class M4aFile(audiofile.AudioFile):
             "soar": track.artists_sort,
             "trkn": [(track_number, medium.track_count)] if track_number else None,
         }
-        tags_ = tags.Tags(tags_)
+        tags_ = audiofile.Tags(tags_)
 
         for key, value in tags_.items():
             try:

@@ -16,39 +16,8 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-import pathlib
-from typing import Any
 
-from audiolibrarian.audiofile import audiofile, flac, m4a, mp3
 from audiolibrarian.audiofile.audiofile import AudioFile
+from audiolibrarian.audiofile.tags import Tags
 
-__all__ = ["AudioFile", "open_"]
-
-_AUDIOFILE_CLS_BY_EXTENSION: dict[str, Any] = {
-    extension: audiofile_cls
-    for audiofile_cls in [flac.FlacFile, m4a.M4aFile, mp3.Mp3File]
-    for extension in audiofile_cls.extensions
-}
-EXTENSIONS: set[str] = set(_AUDIOFILE_CLS_BY_EXTENSION)
-
-
-def open_(filename: str | pathlib.Path) -> audiofile.AudioFile:
-    """Return an AudioFile object based on the filename extension (factory function).
-
-    Args:
-        filename: The filename of a supported audio file.
-
-    Returns:
-        audiofile.AudioFile: An AudioFile object.
-
-    Raises:
-        FileNotFoundError: If the file cannot be found or is not a file.
-        NotImplementedError: If the type of the file is not supported.
-    """
-    filepath = pathlib.Path(filename).resolve()
-    if not filepath.is_file():
-        raise FileNotFoundError(filepath)
-    if filepath.suffix not in EXTENSIONS:
-        msg = f"Unknown file type: {filepath}"
-        raise NotImplementedError(msg)
-    return _AUDIOFILE_CLS_BY_EXTENSION[filepath.suffix](filepath=filepath)  # type: ignore[no-any-return]
+__all__ = ["AudioFile", "Tags"]

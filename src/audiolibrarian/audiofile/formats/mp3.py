@@ -16,13 +16,12 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-from typing import Any, Final, no_type_check
+from typing import Any, no_type_check
 
 import mutagen
 import mutagen.id3
 
-from audiolibrarian import records
-from audiolibrarian.audiofile import audiofile
+from audiolibrarian import audiofile, records
 
 APIC = mutagen.id3.APIC
 TXXX = mutagen.id3.TXXX
@@ -30,10 +29,8 @@ UFID = mutagen.id3.UFID
 MB_UFID = "http://musicbrainz.org"
 
 
-class Mp3File(audiofile.AudioFile):
+class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
     """AudioFile for MP3 files."""
-
-    extensions: Final[set[str]] = {".mp3"}  # type: ignore[misc]
 
     @no_type_check  # The mutagen library doesn't provide type hints.
     def read_tags(self) -> records.OneTrack:

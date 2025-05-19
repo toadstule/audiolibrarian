@@ -117,7 +117,7 @@ class Manifest(_Command, base.Base):
         self._source_is_cd = args.cd
         self._audio_source = audiosource.FilesAudioSource([pathlib.Path(x) for x in args.filename])
         source_filenames = self._audio_source.get_source_filenames()
-        self._source_example = audiofile.open_(source_filenames[0]).read_tags()
+        self._source_example = audiofile.AudioFile.open(source_filenames[0]).read_tags()
         self._get_tag_info()
         self._write_manifest()
 

@@ -133,14 +133,14 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         # Grab all the paths first because thing may change as files are renamed.
         for directory in directories:
             path = pathlib.Path(directory)
-            for ext in audiofile.EXTENSIONS:
+            for ext in audiofile.AudioFile.extensions():
                 paths.extend(path.rglob(f"*{ext}"))
         paths = sorted(set(paths))
         # Using yield rather than returning a list saves us from simultaneously storing
         # potentially thousands of AudioFile objects in memory at the same time.
         for path in paths:
             try:
-                yield audiofile.open_(path)
+                yield audiofile.AudioFile.open(path)
             except FileNotFoundError:
                 continue
 
@@ -180,9 +180,9 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._release = searcher.find_music_brains_release()
         self._medium = self._release.media[int(self._disc_number)]
         if (
-            cover := not self._release.front_cover
+            not self._release.front_cover
             and self._audio_source
-            and self._audio_source.get_front_cover()
+            and (cover := self._audio_source.get_front_cover())
         ):
             log.info("Using front-cover image from source file")
             self._release.front_cover = cover
@@ -244,7 +244,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         # The files are defined by the audio source; they could be wav files from a CD
         # or another type of audio file.
         self._make_flac(source=True)
-        self._source_example = audiofile.open_(self._source_filenames[0]).read_tags()
+        self._source_example = audiofile.AudioFile.open(self._source_filenames[0]).read_tags()
 
     def _move_files(self, *, move_source: bool = True) -> None:
         # Move converted/tagged files from the work directory into the library directory.
@@ -367,7 +367,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
     def _tag_files(self, filenames: list[pathlib.Path]) -> None:
         # Tag the given list of files.
         for filename in filenames:
-            song = audiofile.open_(filename)
+            song = audiofile.AudioFile.open(filename)
             song.one_track = records.OneTrack(
                 release=self._release,
                 medium_number=self._disc_number,

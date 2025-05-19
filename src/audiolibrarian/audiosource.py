@@ -141,7 +141,7 @@ class FilesAudioSource(AudioSource):
     def get_front_cover(self) -> records.FrontCover | None:
         """See base class."""
         for filename in self._filenames:
-            one_track = audiofile.open_(filename).one_track
+            one_track = audiofile.AudioFile.open(filename).one_track
             release = one_track.release
             if release.front_cover:
                 return release.front_cover
@@ -150,7 +150,7 @@ class FilesAudioSource(AudioSource):
     def get_search_data(self) -> dict[str, str]:
         """See base class."""
         for filename in self._filenames:
-            one_track = audiofile.open_(filename).one_track
+            one_track = audiofile.AudioFile.open(filename).one_track
             release = one_track.release
             track = one_track.track
 

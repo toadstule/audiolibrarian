@@ -21,7 +21,7 @@ import os
 from pathlib import Path
 from unittest import TestCase, skipUnless
 
-from audiolibrarian.audiofile import open_
+from audiolibrarian.audiofile import audiofile
 from audiolibrarian.musicbrainz import MusicBrainzRelease
 from audiolibrarian.records import Source
 from tests.test__audiofile import _audio_file_copy
@@ -43,7 +43,7 @@ class TestMusicBrainzRelease(TestCase):
         extensions = (".flac", ".m4a", ".mp3")
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
-                f = open_(test_file.name)  # mypy: ignore-errors  # xtype: ignore
+                f = audiofile.AudioFile.open(test_file.name)
                 if (expected := f._one_track.release) is None:  # noqa: SLF001
                     # Blank tags in audio file.
                     continue

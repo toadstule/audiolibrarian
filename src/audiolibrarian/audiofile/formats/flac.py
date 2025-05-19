@@ -17,18 +17,15 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 import re
-from typing import Any, Final
+from typing import Any
 
 import mutagen.flac
 
-from audiolibrarian import records
-from audiolibrarian.audiofile import audiofile, tags
+from audiolibrarian import audiofile, records
 
 
-class FlacFile(audiofile.AudioFile):
+class FlacFile(audiofile.AudioFile, extensions={".flac"}):
     """AudioFile for Flac files."""
-
-    extensions: Final[set[str]] = {".flac"}  # type: ignore[misc]
 
     def read_tags(self) -> records.OneTrack:
         """Read the tags and return a OneTrack object."""
@@ -175,7 +172,7 @@ class FlacFile(audiofile.AudioFile):
             "tracktotal": [str(medium.track_count)],
             "writer": release.people and release.people.writers,
         }
-        tags_ = tags.Tags(tags_)
+        tags_ = audiofile.Tags(tags_)
         self._mut_file.delete()  # Clear old tags.
         self._mut_file.clear_pictures()
         self._mut_file.update(tags_)

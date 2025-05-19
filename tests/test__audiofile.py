@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 from unittest import TestCase
 
-from audiolibrarian.audiofile import open_
+from audiolibrarian.audiofile import audiofile
 from audiolibrarian.records import (
     FrontCover,
     ListF,
@@ -72,7 +72,7 @@ class TestAudioFile(TestCase):
         extensions = (".flac", ".m4a", ".mp3")
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
-                f = open_(test_file.name)
+                f = audiofile.AudioFile.open(test_file.name)
                 before = dict(f._mut_file.tags or {})  # noqa: SLF001
                 f.write_tags()
                 after = dict(f._mut_file.tags or {})  # noqa: SLF001
@@ -93,7 +93,7 @@ class TestAudioFile(TestCase):
         blank_info = OneTrack()
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
-                f = open_(test_file.name)
+                f = audiofile.AudioFile.open(test_file.name)
                 f.one_track = blank_info
                 f.write_tags()
                 info = f.read_tags()
@@ -163,7 +163,7 @@ class TestAudioFile(TestCase):
         )
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
-                f = open_(test_file.name)
+                f = audiofile.AudioFile.open(test_file.name)
                 f._one_track = info  # noqa: SLF001
                 f.write_tags()
                 old_info = copy.deepcopy(info)
@@ -186,13 +186,13 @@ class TestAudioFileMisc(TestCase):
     def test__file_not_found(self) -> None:
         """Test file-not-found."""
         with self.assertRaises(FileNotFoundError):
-            open_("your_mom_goes_to_college.mp3")
+            audiofile.AudioFile.open("your_mom_goes_to_college.mp3")
 
     def test__file_not_supported(self) -> None:
         """Test file-not-supported."""
         with self.assertRaises(NotImplementedError):
             # The current file should always be around, and never be an audio file.
-            open_(__file__)
+            audiofile.AudioFile.open(__file__)
 
 
 def _audio_file_copy(src_filepath: pathlib.Path) -> contextlib.closing[Any]:
