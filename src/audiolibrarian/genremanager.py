@@ -34,7 +34,7 @@ from audiolibrarian import musicbrainz, text
 log = logging.getLogger(__name__)
 
 
-class GenreManager:  # pylint: disable=too-few-public-methods
+class GenreManager:
     """Manage genres."""
 
     def __init__(self, args: argparse.Namespace) -> None:

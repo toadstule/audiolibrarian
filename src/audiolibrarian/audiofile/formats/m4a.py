@@ -145,12 +145,11 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
     def write_tags(self) -> None:
         """Write the tags."""
 
-        def ff(text: int | str | None) -> bytes | None:  # pylint: disable=invalid-name
+        def ff(text: int | str | None) -> bytes | None:
             if text is None:
                 return None
             return mutagen.mp4.MP4FreeForm(bytes(str(text), "utf8"))  # type: ignore[no-untyped-call]
 
-        # pylint: disable=invalid-name
         def ffl(list_: list[str] | None | Any) -> records.ListF | None:  # noqa: ANN401
             if not list_:
                 return None

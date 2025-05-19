@@ -38,7 +38,7 @@ from audiolibrarian import audiofile, audiosource, musicbrainz, records, sh, tex
 log = logging.getLogger(__name__)
 
 
-class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
+class Base:
     """AudioLibrarian base class.
 
     This class should be sub-classed for various sub_commands.
@@ -66,7 +66,6 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
         self._wav_dir = self._work_dir / "wav"
 
         self._manifest_file = "Manifest.yaml"
-        # pylint: disable=abstract-class-instantiated
         self._lock = filelock.FileLock(str(self._work_dir) + ".lock")
 
         # Initialize stuff that will be defined later.
@@ -298,7 +297,7 @@ class Base:  # pylint: disable=too-many-instance-attributes,too-few-public-metho
                 log.info("RENAMING: %s --> %s", old_path.name, new_path.name)
                 old_path.rename(new_path)
 
-    def _summary(self) -> tuple[str, bool]:  # pylint: disable=too-many-locals
+    def _summary(self) -> tuple[str, bool]:
         # Return a summary of the conversion/tagging process and an "ok" flag indicating issues.
         #
         # The summary is a nicely formatted table showing the album, artist and track info.

@@ -142,7 +142,6 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
             release=release, medium_number=medium_number, track_number=track_number
         )
 
-    # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     @no_type_check  # The mutagen library doesn't provide type hints.
     def write_tags(self) -> None:  # noqa: C901, PLR0912, PLR0915
         """Write the tags."""

@@ -29,7 +29,7 @@ class Tags(dict[Any, Any]):
     * its value is a dict with None in its values
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:  # pylint: disable=super-init-not-called # noqa: ANN401
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
         """Initialize a Tags object."""
         self.update(*args, **kwargs)
 

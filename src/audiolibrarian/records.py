@@ -58,9 +58,7 @@ class ListF(list[Any]):
     @property
     def first(self) -> Any | None:  # noqa: ANN401
         """Return the first element in the list (or None, if the list is empty)."""
-        if self:
-            return self[0]
-        return None
+        return self[0] if self else None
 
 
 @dataclasses.dataclass
@@ -162,7 +160,7 @@ class People(Record):
 
 
 @dataclasses.dataclass
-class Release(Record):  # pylint: disable=too-many-instance-attributes
+class Release(Record):
     """A release."""
 
     album: str | None = None
@@ -205,7 +203,7 @@ class Release(Record):  # pylint: disable=too-many-instance-attributes
         album_dir = pathlib.Path(text.filename_from_title(f"{self.original_year}__{self.album}"))
         return artist_dir / album_dir
 
-    def pp(self, medium_number: int) -> str:  # pylint: disable=invalid-name
+    def pp(self, medium_number: int) -> str:
         """Return a string summary of the Release."""
         if self.media is None:
             msg = "Missing release information"

@@ -34,53 +34,53 @@ class TestAudioLibrarian(TestCase):
         """Test single media."""
         al = Base(args=Namespace())
 
-        self.assertFalse(al._multi_disc)  # noqa: SLF001
+        self.assertFalse(al._multi_disc)
 
-        self.assertListEqual([], al._flac_filenames)  # noqa: SLF001
-        self.assertListEqual([], al._m4a_filenames)  # noqa: SLF001
-        self.assertListEqual([], al._mp3_filenames)  # noqa: SLF001
-        self.assertListEqual([], al._source_filenames)  # noqa: SLF001
-        self.assertListEqual([], al._wav_filenames)  # noqa: SLF001
+        self.assertListEqual([], al._flac_filenames)
+        self.assertListEqual([], al._m4a_filenames)
+        self.assertListEqual([], al._mp3_filenames)
+        self.assertListEqual([], al._source_filenames)
+        self.assertListEqual([], al._wav_filenames)
 
         with self.assertWarns(RuntimeWarning):
-            al._convert()  # noqa: SLF001
+            al._convert()
         with self.assertWarns(RuntimeWarning):
-            al._summary()  # noqa: SLF001
+            al._summary()
 
     def test__multi_media(self) -> None:
         """Test multi-media."""
         al = Base(args=Namespace(disc="2/3"))
 
-        self.assertTrue(al._multi_disc)  # noqa: SLF001
-        searcher = al._get_searcher()  # noqa: SLF001
+        self.assertTrue(al._multi_disc)
+        searcher = al._get_searcher()
         self.assertEqual("2", searcher.disc_number)
 
     def test__find_audio_files(self) -> None:
         """Test find-audio-files."""
         al = Base(args=Namespace())
-        audio_files = list(al._find_audio_files([]))  # noqa: SLF001
+        audio_files = list(al._find_audio_files([]))
         self.assertEqual([], audio_files)
 
-        audio_files = list(al._find_audio_files([test_data_path]))  # noqa: SLF001
+        audio_files = list(al._find_audio_files([test_data_path]))
         self.assertEqual(21, len(audio_files))  # This will need updated if test files are added.
 
     def test__manifests(self) -> None:
         """Test manifests."""
         al = Base(args=Namespace())
-        manifests = list(al._find_manifests([]))  # noqa: SLF001
+        manifests = list(al._find_manifests([]))
         self.assertEqual([], manifests)
 
-        manifests = al._find_manifests([test_data_path])  # noqa: SLF001
+        manifests = al._find_manifests([test_data_path])
         self.assertEqual(1, len(manifests))
-        self.assertEqual(al._manifest_file, manifests[0].name)  # noqa: SLF001
+        self.assertEqual(al._manifest_file, manifests[0].name)
 
-        manifest = al._read_manifest(manifests[0])  # noqa: SLF001
+        manifest = al._read_manifest(manifests[0])
         self.assertEqual("The Secret", manifest.get("album"))
 
     def test__get_searcher(self) -> None:
         """Test searcher."""
         al = Base(args=Namespace())
-        searcher = al._get_searcher()  # noqa: SLF001
+        searcher = al._get_searcher()
         self.assertEqual("", searcher.artist)
         self.assertEqual("", searcher.album)
         self.assertEqual("", searcher.disc_id)
@@ -89,7 +89,7 @@ class TestAudioLibrarian(TestCase):
         self.assertEqual("", searcher.mb_release_id)
 
         al = Base(args=Namespace(artist="your mom"))
-        searcher = al._get_searcher()  # noqa: SLF001
+        searcher = al._get_searcher()
         self.assertEqual("your mom", searcher.artist)
         self.assertEqual("", searcher.album)
         self.assertEqual("", searcher.disc_id)
@@ -105,7 +105,7 @@ class TestAudioLibrarian(TestCase):
                 mb_release_id="rid",
             )
         )
-        searcher = al._get_searcher()  # noqa: SLF001
+        searcher = al._get_searcher()
         self.assertEqual("your mom", searcher.artist)
         self.assertEqual("the college years", searcher.album)
         self.assertEqual("", searcher.disc_id)

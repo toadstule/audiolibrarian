@@ -254,7 +254,7 @@ class MusicBrainzRelease:
                 writers.append(name)
             else:
                 log.warning("Unknown artist-relation type: %s", type_)
-        if (  # pylint: disable=too-many-boolean-expressions
+        if (
             engineers
             or arrangers
             or composers
