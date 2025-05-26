@@ -11,26 +11,20 @@ VERSION         := $(shell grep -e '^version =' pyproject.toml | cut -d'"' -f2)
 WHEEL           := dist/$(PROJECT_NAME)-$(VERSION)-py3-none-any.whl
 
 # Tool variables
-BROWSER := $(shell which chromium || which google-chrome-stable || which firefox )
-PYTHON := $(shell which python$(PYTHON_VERSION_))
-MYPY   := $(PYTHON) -m mypy
-PYTEST := $(PYTHON) -m pytest
-RUFF   := $(PYTHON) -m ruff
-UV     := $(shell command -v uv 2> /dev/null)
-PIP    := $(UV) pip
+BROWSER  := $(shell command -v chromium || command -v google-chrome-stable || command -v firefox )
+PYTHON   := $(shell command -v python$(PYTHON_VERSION_))
+UV       := $(shell command -v uv)
+COVERAGE := $(UV) run coverage
+MYPY     := $(UV) run mypy
+PIP      := $(UV) pip
+PYTEST   := $(UV) run pytest
+RUFF     := $(UV) run ruff
 
-# Parse dependencies from pyproject.toml
-DEPS     := $(shell sed -n '/^\s*dependencies\s*=\s*\[/,/^\s*]/p' pyproject.toml | \
-                    grep -vE '^\s*dependencies\s*=\s*\[|^\s*\]' | \
-                    sed -E 's/[",]//g' | sed -E 's/[<>=!~].*//' | \
-                    grep -vE '^\s*$$' | \
-                    xargs)
-DEV_DEPS := $(shell sed -n '/^\s*dev\s*=\s*\[/,/^\s*]/p' pyproject.toml | \
-                    grep -vE '^\s*dev\s*=\s*\[|^\s*\]' | \
-                    sed -E 's/[",]//g' | \
-                    sed -E 's/[<>=!~].*//' | \
-                    grep -vE '^\s*$$' | \
-                    xargs)
+# Verify that we have the required tools.
+ifndef UV
+$(error "uv is not installed. Please install it with your package manager.")
+endif
+
 
 .PHONY: all
 all: build
@@ -46,6 +40,7 @@ clean:  ## Clean up.
 	@find . -name "__pycache__" | grep -v "/.venv/" | xargs rm -rf
 	@rm -rf .pytest_cache tests/.pytest_cache
 	@rm -rf .pytype
+	@rm -rf .ruff_cache .mypy_cache
 	@$(UV) clean
 	@rm -rf dist
 
@@ -54,12 +49,8 @@ dep:  ## Install dependencies.
 	@$(UV) sync
 
 .PHONY: dep-upgrade
-dep-upgrade:  # Update (remove and re-install) dependencies.
-	$(UV) remove $(DEPS)
-	$(UV) remove --dev $(DEV_DEPS)
-	$(UV) add $(DEPS)
-	$(UV) add --dev $(DEV_DEPS)
-	$(UV) lock
+dep-upgrade:  # Upgrade dependencies.
+	$(UV) lock --upgrade
 
 .PHONY: format
 format: dep  ## Format the code; sort the imports.
