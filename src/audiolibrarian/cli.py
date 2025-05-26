@@ -31,7 +31,7 @@ log = logging.getLogger("audiolibrarian")
 class CommandLineInterface:
     """Command line interface."""
 
-    required_exe: Final[set[str]] = {
+    _REQUIRED_EXE: Final[set[str]] = {
         "cd-paranoia",
         "eject",
         "faad",
@@ -69,10 +69,11 @@ class CommandLineInterface:
         If any of the required executables are missing, list them and return False.
         """
         missing = []
-        for exe in self.required_exe:
+        for exe in self._REQUIRED_EXE:
             try:
-                subprocess.run(  # noqa: S603
-                    ("which", exe),
+                subprocess.run(  # noqa: S602
+                    f"command -v {exe}",
+                    shell=True,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     check=True,

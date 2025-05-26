@@ -19,6 +19,7 @@
 import logging
 import os
 import pathlib
+import subprocess
 from typing import Any, Self
 
 import yaml
@@ -50,6 +51,19 @@ class Config(dict[str, Any]):
             cls.__instance = dict.__new__(cls, *args, **kwargs)
         return cls.__instance  # type: ignore[no-any-return]
 
+    def edit(self) -> None:
+        """Launch an editor to edit the config file."""
+        editor: str = os.getenv("EDITOR", "vi")
+        try:
+            subprocess.run((editor, str(Config.__path)), check=True)  # noqa: S603
+        except FileNotFoundError as err:
+            msg = f"Failed to find editor: {editor}"
+            raise SystemExit(msg) from err
+        except subprocess.CalledProcessError as err:
+            msg = f"Failed to edit configuration file: {err}"
+            raise SystemExit(msg) from err
+        self._load_config()
+
     def dump(self) -> None:
         """Dump the config to a file."""
         with Config.__path.open("w", encoding="utf-8") as f:
@@ -67,14 +81,16 @@ class Config(dict[str, Any]):
     @staticmethod
     def _get_config_path(config_path: pathlib.Path | str | None) -> pathlib.Path:
         """Return the config path (pathlib.Path)."""
-        match config_path:
+        match type(config_path):
             case pathlib.Path():
-                return config_path.resolve()
+                config_path = config_path.resolve()
             case str():
-                return pathlib.Path(config_path).resolve()
+                config_path = pathlib.Path(config_path).resolve()
             case _:
-                if config_env := os.getenv("CONFIG"):
-                    return pathlib.Path(config_env).resolve()
-                return (
-                    pathlib.Path.home() / ".config" / "audiolibrarian" / "config.yaml"
-                ).resolve()
+                config_home: pathlib.Path = (
+                    pathlib.Path(os.getenv("XDG_CONFIG_HOME", "~/.config")).expanduser()
+                    / "audiolibrarian"
+                )
+                config_path = (config_home / "config.yaml").resolve()
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        return config_path

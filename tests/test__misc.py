@@ -31,10 +31,12 @@ class TestMisc:
 
     def test__check_deps_true(self, cli_: cli.CommandLineInterface) -> None:
         """Test dependency checker."""
-        cli_.required_exe = {"ls", "ps"}  # type: ignore[misc]
+        # noinspection PyFinal
+        cli_._REQUIRED_EXE = {"ls", "ps"}  # type: ignore[misc]
         assert cli_._check_deps()
 
     def test__check_deps_false(self, cli_: cli.CommandLineInterface) -> None:
         """Test dependency checker."""
-        cli_.required_exe = {"your_mom_goes_to_college"}  # type: ignore[misc]
+        # noinspection PyFinal
+        cli_._REQUIRED_EXE = {"your_mom_goes_to_college"}  # type: ignore[misc]
         assert not cli_._check_deps()
