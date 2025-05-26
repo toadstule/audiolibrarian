@@ -17,21 +17,20 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 import time
-from unittest import TestCase
+
+import pytest
 
 from audiolibrarian.output import Dots
-from tests.helpers import captured_output
 
 
-class TestDots(TestCase):
+class TestDots:
     """Test dot generation."""
 
-    def test__dots(self) -> None:
+    def test__dots(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test dots."""
-        with captured_output() as (out, err):
-            with Dots("Please wait") as d:
-                for _ in range(5):
-                    time.sleep(0.01)
-                    d.dot()
-            output = out.getvalue().strip()
-            self.assertEqual("Please wait.....", output)
+        with Dots("Please wait") as d:
+            for _ in range(5):
+                time.sleep(0.01)
+                d.dot()
+        output = capsys.readouterr().out.strip()
+        assert output == "Please wait....."

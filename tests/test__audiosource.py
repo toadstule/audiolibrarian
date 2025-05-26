@@ -17,55 +17,69 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 #
 from pathlib import Path
-from unittest import TestCase
+from typing import Final
+
+import pytest
 
 from audiolibrarian.audiosource import FilesAudioSource
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
-class TestAudioSource(TestCase):
+class TestAudioSource:
     """Test AudioSource."""
+
+    _TEST_FILE_COUNT: Final[int] = 7
+    _TEST_TRACK_NUMBER: Final[int] = 9
+
+    @pytest.fixture(scope="class")
+    def audio_source(self) -> FilesAudioSource:
+        """Return a FLAC audio source instance."""
+        return FilesAudioSource([test_data_path / f"0{self._TEST_TRACK_NUMBER}.flac"])
+
+    @pytest.fixture(scope="class")
+    def blank_audio_source(self) -> FilesAudioSource:
+        """Return an MP3 audio source instance."""
+        return FilesAudioSource([test_data_path / "00.mp3"])
 
     def test__single_directory_argument(self) -> None:
         """Test single directory argument."""
         audio_source = FilesAudioSource([test_data_path])
         # This will need updated if more test files are added.
-        self.assertEqual(7, len(audio_source.get_source_filenames()))
-        self.assertListEqual([], audio_source.get_wav_filenames())
+        assert len(audio_source.get_source_filenames()) == self._TEST_FILE_COUNT
+        assert audio_source.get_wav_filenames() == []
         audio_source.copy_wavs(Path("/tmp"))  # noqa: S108
 
-    def test__front_cover(self) -> None:
+    def test__front_cover(self, audio_source: FilesAudioSource) -> None:
         """Test front cover."""
-        audio_source = FilesAudioSource([test_data_path / "09.flac"])
         front_cover = audio_source.get_front_cover()
-        self.assertIsNotNone(front_cover)
+        assert front_cover is not None
         if front_cover:
-            self.assertEqual("image/jpeg", front_cover.mime)
-            self.assertIs(bytes, type(front_cover.data), "cover data should be of type: bytes")
+            assert front_cover.mime == "image/jpeg"
+            assert type(front_cover.data) is bytes, "cover data should be of type: bytes"
 
-    def test__get_search_data(self) -> None:
+    def test__get_search_data(
+        self, audio_source: FilesAudioSource, blank_audio_source: FilesAudioSource
+    ) -> None:
         """Test search data."""
-        audio_source = FilesAudioSource([test_data_path / "00.mp3"])
-        self.assertDictEqual({}, audio_source.get_search_data())
+        assert blank_audio_source.get_search_data() == {}
 
-        audio_source = FilesAudioSource([test_data_path / "09.flac"])
         expected = {
             "mb_artist_id": "7364dea6-ca9a-48e3-be01-b44ad0d19897",
             "mb_release_id": "840b16e6-975f-4867-be37-ee48d771ec18",
         }
-        self.assertDictEqual(expected, audio_source.get_search_data())
+        assert audio_source.get_search_data() == expected
 
-    def test__source_list(self) -> None:
+    def test__source_list(
+        self, audio_source: FilesAudioSource, blank_audio_source: FilesAudioSource
+    ) -> None:
         """Test source list."""
-        audio_source = FilesAudioSource([test_data_path / "00.mp3"])
-        self.assertListEqual([], audio_source.source_list)
-        audio_source.prepare_source()  # This should run w/o helper programs on an empty list.
+        assert blank_audio_source.source_list == []
+        blank_audio_source.prepare_source()  # Should run w/o helper programs on an empty list.
 
-        audio_source = FilesAudioSource([test_data_path / "09.flac"])
         _ = audio_source.source_list
         source_list = audio_source.source_list  # Run twice to test stored value.
-        self.assertEqual(9, len(source_list))
-        for i in range(8):
-            self.assertIsNone(source_list[i])
-        self.assertIsNotNone(source_list[8])
+        assert len(source_list) == self._TEST_TRACK_NUMBER
+        for i in range(self._TEST_TRACK_NUMBER - 1):
+            assert source_list[i] is None
+        assert source_list[self._TEST_TRACK_NUMBER - 1] is not None

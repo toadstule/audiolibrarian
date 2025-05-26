@@ -21,9 +21,11 @@ import copy
 import hashlib
 import pathlib
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from unittest import TestCase
+
+import pytest
 
 from audiolibrarian.audiofile import audiofile
 from audiolibrarian.records import (
@@ -41,21 +43,20 @@ from audiolibrarian.records import (
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
-class TestAudioFile(TestCase):
+class TestAudioFile:
     """Test AudioFile."""
 
     _blank_test_files = (p.resolve() for p in test_data_path.glob("00.*"))
 
-    def setUp(self) -> None:
+    @pytest.fixture
+    def test_data(self) -> Generator[None]:
         """Set up the tests."""
-        self.maxDiff = None
+        self._verify_test_data()
+        yield None
         self._verify_test_data()
 
-    def tearDown(self) -> None:
-        """Tear down the tests."""
-        self._verify_test_data()
-
-    def _verify_test_data(self) -> None:
+    @staticmethod
+    def _verify_test_data() -> None:
         """Verify that our test data files haven't been modified.
 
         See test_data/README.md for more info.
@@ -64,18 +65,19 @@ class TestAudioFile(TestCase):
             for line in checksum_file:
                 checksum, filename = line.strip().split()
                 filepath = test_data_path / filename
-                got = hashlib.md5(filepath.read_bytes()).hexdigest()  # noqa: S324
-                self.assertEqual(checksum, got, f"Mismatched checksum for {filepath}")
+                got = hashlib.md5(filepath.read_bytes()).hexdigest()
+                assert checksum == got, f"Mismatched checksum for {filepath}"
 
-    def test__no_changes_rw(self) -> None:
+    def test__no_changes_rw(self, test_data: Generator[None]) -> None:
         """Verify that a read/write cycle doesn't change any tags."""
+        _ = test_data
         extensions = (".flac", ".m4a", ".mp3")
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
                 f = audiofile.AudioFile.open(test_file.name)
-                before = dict(f._mut_file.tags or {})  # noqa: SLF001
+                before = dict(f._mut_file.tags or {})
                 f.write_tags()
-                after = dict(f._mut_file.tags or {})  # noqa: SLF001
+                after = dict(f._mut_file.tags or {})
 
             # TIPL can be in any order, so we'll compare it separately and remove it.
             tipl_before, tipl_after = [], []
@@ -85,11 +87,12 @@ class TestAudioFile(TestCase):
             if t := after.get("TIPL"):
                 tipl_after = sorted(t.people)
                 del after["TIPL"]
-            self.assertListEqual(tipl_before, tipl_after, f"TIPL changed in {src}")
-            self.assertDictEqual(before, after, f"Tags changed in {src}")
+            assert tipl_after == tipl_before, f"TIPL changed in {src}"
+            assert after == before, f"Tags changed in {src}"
 
-    def test__no_changes_wr_blank(self) -> None:
+    def test__no_changes_wr_blank(self, test_data: Generator[None]) -> None:
         """Verify that a write/read cycle doesn't change any blank tags."""
+        _ = test_data
         blank_info = OneTrack()
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
@@ -97,11 +100,12 @@ class TestAudioFile(TestCase):
                 f.one_track = blank_info
                 f.write_tags()
                 info = f.read_tags()
-                self.assertEqual(blank_info, info, f"Blank file modified for {src.suffix}")
-                self.assertTrue(f.__repr__().startswith("AudioFile: /"))
+                assert info == blank_info, f"Blank file modified for {src.suffix}"
+                assert f.__repr__().startswith("AudioFile: /")
 
-    def test__no_changes_wr(self) -> None:
+    def test__no_changes_wr(self, test_data: Generator[None]) -> None:
         """Verify that a write/read cycle doesn't change any tags."""
+        _ = test_data
         info = OneTrack(
             release=Release(
                 album="Album",
@@ -164,7 +168,7 @@ class TestAudioFile(TestCase):
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
                 f = audiofile.AudioFile.open(test_file.name)
-                f._one_track = info  # noqa: SLF001
+                f._one_track = info
                 f.write_tags()
                 old_info = copy.deepcopy(info)
                 new_info = f.read_tags()
@@ -177,20 +181,20 @@ class TestAudioFile(TestCase):
                     old_info.release.front_cover.desc = None  # m4a doesn't save cover desc.
                 if src.suffix == ".mp3":
                     old_info.release.original_date = None  # mp3 doesn't save orig date.
-                self.assertEqual(old_info, new_info, f"Write/Read failed for {src.suffix}")
+                assert new_info == old_info, f"Write/Read failed for {src.suffix}"
 
 
-class TestAudioFileMisc(TestCase):
+class TestAudioFileMisc:
     """Test AudioFile miscellaneous functions."""
 
     def test__file_not_found(self) -> None:
         """Test file-not-found."""
-        with self.assertRaises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError):
             audiofile.AudioFile.open("your_mom_goes_to_college.mp3")
 
     def test__file_not_supported(self) -> None:
         """Test file-not-supported."""
-        with self.assertRaises(NotImplementedError):
+        with pytest.raises(NotImplementedError):
             # The current file should always be around, and never be an audio file.
             audiofile.AudioFile.open(__file__)
 

@@ -1,5 +1,4 @@
 """Test tags."""
-
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -16,36 +15,50 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-from unittest import TestCase
+
+import pytest
 
 from audiolibrarian.audiofile.tags import Tags
 
 
-class TestTags(TestCase):
+class TestTags:
     """Test tags."""
 
-    def test__tags(self) -> None:
+    @pytest.fixture
+    def tags(self) -> Tags:
+        """Return a Tags instance."""
+        return Tags()
+
+    def test__tags(self, tags: Tags) -> None:
         """Test tags."""
-        t = Tags()
-        t["a"] = "A"
-        t["b"] = "B"
-        t["c"] = None
+        tags["a"] = "A"
+        tags["b"] = "B"
+        tags["c"] = None  # Should be dropped.
         expected = {"a": "A", "b": "B"}
-        self.assertDictEqual(expected, t)
+        assert tags == expected
 
-    def test__tags_init(self) -> None:
-        """Test constructor."""
-        t = Tags({"a": "A", "b": "B", "c": None})
-        expected = {"a": "A", "b": "B"}
-        self.assertDictEqual(expected, t)
+    @pytest.mark.parametrize(
+        ("initial", "key", "value", "expected"),
+        [
+            ({}, "new_key", "value", {"new_key": "value"}),  # New key.
+            ({"key": "old"}, "key", "new", {"key": "new"}),  # Update existing key.
+            ({"key": "value"}, "key", None, {"key": "value"}),  # Update with None does nothing.
+        ],
+    )
+    def test__tags_modification(
+        self, initial: dict[str, str], key: str, value: str, expected: dict[str, str]
+    ) -> None:
+        """Test tag modification."""
+        tags = Tags(initial)
+        tags[key] = value
+        assert tags == expected
 
-    def test__tags_list(self) -> None:
+    def test__tags_list(self, tags: Tags) -> None:
         """Test tags list."""
-        t = Tags()
-        t["a"] = "A"
-        t["b"] = [None]
-        t["c"] = ["c", None]
-        t["d"] = ["None"]
-        t["e"] = {"1": None}
+        tags["a"] = "A"
+        tags["b"] = [None]
+        tags["c"] = ["c", None]
+        tags["d"] = ["None"]
+        tags["e"] = {"1": None}
         expected = {"a": "A"}
-        self.assertDictEqual(expected, t)
+        assert tags == expected

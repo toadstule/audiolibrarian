@@ -16,97 +16,135 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-from unittest import TestCase
+import pytest
 
 from audiolibrarian import text
 
 
-class TestText(TestCase):
+class TestText:
     """Test text functions."""
 
-    def test__alpha_numeric_key(self) -> None:
-        """Text alphanumeric key."""
-        for initial, expected in (
+    @pytest.mark.parametrize(
+        ("initial", "expected"),
+        [
             ([], []),
             (["b", "a", "c"], ["a", "b", "c"]),
             (["3", "2", "1"], ["1", "2", "3"]),
             (["9", "10", "5"], ["5", "9", "10"]),
             (["6_six", "10_ten", "1_one", "11_eleven"], ["1_one", "6_six", "10_ten", "11_eleven"]),
-        ):
-            self.assertListEqual(
-                expected,
-                sorted(initial, key=text.alpha_numeric_key),  # xtype: ignore
-            )
+        ],
+    )
+    def test__alpha_numeric_key(self, initial: list[str], expected: list[str]) -> None:
+        """Test alphanumeric key sorting."""
+        result = sorted(initial, key=text.alpha_numeric_key)
+        assert result == expected
 
-    def test__comma_and_join(self) -> None:
+    @pytest.mark.parametrize(
+        ("strings", "joiner", "word", "expected"),
+        [
+            ([], None, None, ""),
+            (["a"], None, None, "a"),
+            (["aa"], None, None, "aa"),
+            (["aa", "bb"], None, None, "aa and bb"),
+            (["aa", "bb", "cc"], None, None, "aa, bb and cc"),
+            (["aa", "bb", "cc", "dd"], None, None, "aa, bb, cc and dd"),
+            ([], "; ", None, ""),
+            (["a"], "; ", None, "a"),
+            (["aa"], "; ", None, "aa"),
+            (["aa", "bb"], "; ", None, "aa and bb"),
+            (["aa", "bb", "cc"], "; ", None, "aa; bb and cc"),
+            (["aa", "bb", "cc", "dd"], "; ", None, "aa; bb; cc and dd"),
+            ([], None, "or", ""),
+            (["a"], None, "or", "a"),
+            (["aa"], None, "or", "aa"),
+            (["aa", "bb"], None, "or", "aa or bb"),
+            (["aa", "bb", "cc"], None, "or", "aa, bb or cc"),
+            (["aa", "bb", "cc", "dd"], None, "or", "aa, bb, cc or dd"),
+            (["aa", "bb", "cc", "dd"], "; ", "or", "aa; bb; cc or dd"),
+        ],
+    )
+    def test__comma_and_join(
+        self, strings: list[str], joiner: str | None, word: str | None, expected: str
+    ) -> None:
         """Test command and join."""
-        self.assertEqual("", text.join([]))
-        self.assertEqual("a", text.join(["a"]))
-        self.assertEqual("aa", text.join(["aa"]))
-        self.assertEqual("aa and bb", text.join(["aa", "bb"]))
-        self.assertEqual("aa, bb and cc", text.join(["aa", "bb", "cc"]))
-        self.assertEqual("aa, bb, cc and dd", text.join(["aa", "bb", "cc", "dd"]))
-        self.assertEqual("", text.join([], joiner="; "))
-        self.assertEqual("a", text.join(["a"], joiner="; "))
-        self.assertEqual("aa", text.join(["aa"], joiner="; "))
-        self.assertEqual("aa and bb", text.join(["aa", "bb"], joiner="; "))
-        self.assertEqual("aa; bb and cc", text.join(["aa", "bb", "cc"], joiner="; "))
-        self.assertEqual("aa; bb; cc and dd", text.join(["aa", "bb", "cc", "dd"], joiner="; "))
-        self.assertEqual("", text.join([], word="or"))
-        self.assertEqual("a", text.join(["a"], word="or"))
-        self.assertEqual("aa", text.join(["aa"], word="or"))
-        self.assertEqual("aa or bb", text.join(["aa", "bb"], word="or"))
-        self.assertEqual("aa, bb or cc", text.join(["aa", "bb", "cc"], word="or"))
-        self.assertEqual("aa, bb, cc or dd", text.join(["aa", "bb", "cc", "dd"], word="or"))
+        match (joiner, word):
+            case None, None:
+                result = text.join(strings)
+            case str(joiner), None:
+                result = text.join(strings=strings, joiner=joiner)
+            case None, str(word):
+                result = text.join(strings=strings, word=word)
+            case _:
+                result = text.join(strings=strings, joiner=joiner, word=word)
+        assert result == expected
 
-    def test__fix(self) -> None:
+    @pytest.mark.parametrize(
+        ("initial", "expected"),
+        [
+            ("", ""),
+            ("abc", "abc"),
+            ("a-b", "a-b"),
+            (f"a{chr(8208)}b", "a-b"),
+            (f"a{chr(8211)}b", "a-b"),
+            (f"{chr(8216)}your_mom{chr(8217)}", "'your_mom'"),
+            ("one…two", "one...two"),
+            (f"one{chr(8230)}two", "one...two"),
+            ("é", "é"),  # fix() should not drop accents.
+        ],
+    )
+    def test__fix(self, initial: str, expected: str) -> None:
         """Test fix."""
-        self.assertEqual("", text.fix(""))
-        self.assertEqual("abc", text.fix("abc"))
-        self.assertEqual("a-b", text.fix("a-b"))
-        self.assertEqual("a-b", text.fix(f"a{chr(8208)}b"))
-        self.assertEqual("a-b", text.fix(f"a{chr(8211)}b"))
-        self.assertEqual("'your_mom'", text.fix(f"{chr(8216)}your_mom{chr(8217)}"))
-        self.assertEqual("one...two", text.fix("one…two"))
-        self.assertEqual("one...two", text.fix(f"one{chr(8230)}two"))
-        self.assertEqual("é", text.fix("é"), "fix should not drop accents")
+        assert text.fix(initial) == expected
 
-    def test__get_filename(self) -> None:
+    @pytest.mark.parametrize(
+        ("initial", "expected"),
+        [
+            ("your_mom", "your_mom"),
+            ("your mom", "your_mom"),
+            ("your mom!", "your_mom"),
+            ("your.mom", "your.mom"),
+            ("your (mom)", "your__mom"),
+            ("your [mom]", "your__mom"),
+            ("your mom & me", "your_mom_and_me"),
+            ("é", "e"),  # get_filename should drop accents
+            ("your_mom...", "your_mom"),
+            ("I.D.", "I.D."),
+        ],
+    )
+    def test__get_filename(self, initial: str, expected: str) -> None:
         """Test get-filename."""
-        self.assertEqual("your_mom", text.filename_from_title("your_mom"))
-        self.assertEqual("your_mom", text.filename_from_title("your mom"))
-        self.assertEqual("your_mom", text.filename_from_title("your mom!"))
-        self.assertEqual("your.mom", text.filename_from_title("your.mom"))
-        self.assertEqual("your__mom", text.filename_from_title("your (mom)"))
-        self.assertEqual("your__mom", text.filename_from_title("your [mom]"))
-        self.assertEqual("your_mom_and_me", text.filename_from_title("your mom & me"))
-        self.assertEqual("e", text.filename_from_title("é"), "get_filename should drop accents")
-        self.assertEqual("your_mom", text.filename_from_title("your_mom..."))
-        self.assertEqual("I.D.", text.filename_from_title("I.D."))
+        assert text.filename_from_title(initial) == expected
 
-    def test__get_numbers(self) -> None:
+    @pytest.mark.parametrize(
+        ("text_input", "expected"),
+        [
+            ("", []),
+            ("1", [1]),
+            ("01", [1]),
+            ("your_mom_goes_2_college", [2]),
+            ("01__two3_four", [1, 3]),
+            ("1a2b3c4d", [1, 2, 3, 4]),
+        ],
+    )
+    def test__get_numbers(self, text_input: str, expected: list[int]) -> None:
         """Test get-numbers."""
-        self.assertEqual([], text.get_numbers(""))
-        self.assertEqual([1], text.get_numbers("1"))
-        self.assertEqual([1], text.get_numbers("01"))
-        self.assertEqual([2], text.get_numbers("your_mom_goes_2_college"))
-        self.assertEqual([1, 3], text.get_numbers("01__two3_four"))
-        self.assertEqual([1, 2, 3, 4], text.get_numbers("1a2b3c4d"))
+        assert text.get_numbers(text_input) == expected
 
-    def test__get_uuid(self) -> None:
+    @pytest.mark.parametrize(
+        ("input_text", "expected"),
+        [
+            ("your mom", None),
+            ("123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174000"),
+            (
+                "https://musicbrainz.org/artist/3630fff3-52fc-4e97-ab01-d68fd88e4135",
+                "3630fff3-52fc-4e97-ab01-d68fd88e4135",
+            ),
+            (
+                "11111111-e89b-12d3-a456-426614174000 and 22222222-e89b-12d3-a456-426614174000",
+                "11111111-e89b-12d3-a456-426614174000",
+            ),
+        ],
+    )
+    def test__get_uuid(self, input_text: str, expected: str | None) -> None:
         """Test get-uuid."""
-        input_ = "your mom"
-        expected = None
-        self.assertEqual(expected, text.get_uuid(input_))
-
-        input_ = "123e4567-e89b-12d3-a456-426614174000"
-        expected = input_
-        self.assertEqual(expected, text.get_uuid(input_))
-
-        input_ = "https://musicbrainz.org/artist/3630fff3-52fc-4e97-ab01-d68fd88e4135"
-        expected = "3630fff3-52fc-4e97-ab01-d68fd88e4135"
-        self.assertEqual(expected, text.get_uuid(input_))
-
-        input_ = "11111111-e89b-12d3-a456-426614174000 and 22222222-e89b-12d3-a456-426614174000"
-        expected = "11111111-e89b-12d3-a456-426614174000"
-        self.assertEqual(expected, text.get_uuid(input_))
+        assert text.get_uuid(input_text) == expected

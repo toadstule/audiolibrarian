@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-from unittest import TestCase
+import pytest
 
 from audiolibrarian.records import (
     FrontCover,
@@ -31,82 +31,82 @@ from audiolibrarian.records import (
 )
 
 
-class TestOneTrack(TestCase):
+class TestOneTrack:
     """Test one track."""
 
-    one_track = OneTrack(
-        release=Release(
-            album="Album",
-            album_artists=ListF(["Album Artist One", "Album Artist Two"]),
-            album_artists_sort=ListF(["One, Album Artist", "Two, Album Artist"]),
-            asins=["ASIN 1", "ASIN 2"],
-            barcodes=["Barcode 1", "Barcode 2"],
-            catalog_numbers=["Catalog Number 1", "Catalog Number 2"],
-            date="2015-09-24",
-            front_cover=FrontCover(data=b"", desc="front", mime="image/jpg"),
-            genres=ListF(["Genre 1", "Genre 2"]),
-            labels=["Label 1", "Label 2"],
-            media={
-                7: Medium(
-                    formats=ListF(["Media 1 Format"]),
-                    titles=["Disc title 1", "Disc title 2"],
-                    track_count=10,
-                    tracks={
-                        3: Track(
-                            artist="Track Artist",
-                            artists=ListF(["Track Artist One", "Track Artist Two"]),
-                            artists_sort=["One, Track Artist", "Two, Track Artist"],
-                            isrcs=["ISRCS 1", "ISRCS 2"],
-                            musicbrainz_artist_ids=ListF(["MB-Artist-ID-1", "MB-Artist-ID-2"]),
-                            musicbrainz_release_track_id="MB-Release-Track-ID",
-                            musicbrainz_track_id="MB-Track_ID",
-                            title="Track Title",
-                            track_number=3,
-                        )
-                    },
-                )
-            },
-            medium_count=14,
-            musicbrainz_album_artist_ids=ListF(["MB-Album-Artist-ID-1", "MB-Album-Artist-ID-2"]),
-            musicbrainz_album_id="MB-Album-ID",
-            musicbrainz_release_group_id="MB-Release-Group_ID",
-            original_date="1972-04-02",
-            original_year="1992",
-            people=People(
-                engineers=["Engineer 1", "Engineer 2"],
-                lyricists=["Lyricist 1", "Lyricist 2"],
-                mixers=["Mixer 1", "Mixer 2"],
-                performers=[
-                    Performer(name="Performer 1", instrument="Instrument 1"),
-                    Performer(name="Performer 2", instrument="Instrument 2"),
-                ],
-                producers=["Producer 1", "Producer 2"],
+    @pytest.fixture(scope="class")
+    def one_track(self) -> OneTrack:
+        """Return a populated OneTrack instance."""
+        return OneTrack(
+            release=Release(
+                album="Album",
+                album_artists=ListF(["Album Artist One", "Album Artist Two"]),
+                album_artists_sort=ListF(["One, Album Artist", "Two, Album Artist"]),
+                asins=["ASIN 1", "ASIN 2"],
+                barcodes=["Barcode 1", "Barcode 2"],
+                catalog_numbers=["Catalog Number 1", "Catalog Number 2"],
+                date="2015-09-24",
+                front_cover=FrontCover(data=b"", desc="front", mime="image/jpg"),
+                genres=ListF(["Genre 1", "Genre 2"]),
+                labels=["Label 1", "Label 2"],
+                media={
+                    7: Medium(
+                        formats=ListF(["Media 1 Format"]),
+                        titles=["Disc title 1", "Disc title 2"],
+                        track_count=10,
+                        tracks={
+                            3: Track(
+                                artist="Track Artist",
+                                artists=ListF(["Track Artist One", "Track Artist Two"]),
+                                artists_sort=["One, Track Artist", "Two, Track Artist"],
+                                isrcs=["ISRCS 1", "ISRCS 2"],
+                                musicbrainz_artist_ids=ListF(["MB-Artist-ID-1", "MB-Artist-ID-2"]),
+                                musicbrainz_release_track_id="MB-Release-Track-ID",
+                                musicbrainz_track_id="MB-Track_ID",
+                                title="Track Title",
+                                track_number=3,
+                            )
+                        },
+                    )
+                },
+                medium_count=14,
+                musicbrainz_album_artist_ids=ListF(
+                    ["MB-Album-Artist-ID-1", "MB-Album-Artist-ID-2"]
+                ),
+                musicbrainz_album_id="MB-Album-ID",
+                musicbrainz_release_group_id="MB-Release-Group_ID",
+                original_date="1972-04-02",
+                original_year="1992",
+                people=People(
+                    engineers=["Engineer 1", "Engineer 2"],
+                    lyricists=["Lyricist 1", "Lyricist 2"],
+                    mixers=["Mixer 1", "Mixer 2"],
+                    performers=[
+                        Performer(name="Performer 1", instrument="Instrument 1"),
+                        Performer(name="Performer 2", instrument="Instrument 2"),
+                    ],
+                    producers=["Producer 1", "Producer 2"],
+                ),
+                release_countries=["Release Country 1", "Release Country 2"],
+                release_statuses=["Release Status 1", "Release Status 2"],
+                release_types=["Release Type 1", "Release Type 2"],
+                script="Script",
+                source=Source.TAGS,
             ),
-            release_countries=["Release Country 1", "Release Country 2"],
-            release_statuses=["Release Status 1", "Release Status 2"],
-            release_types=["Release Type 1", "Release Type 2"],
-            script="Script",
-            source=Source.TAGS,
-        ),
-        medium_number=7,
-        track_number=3,
-    )
+            medium_number=7,
+            track_number=3,
+        )
 
-    def test__record_class(self) -> None:
+    def test__record_class(self, one_track: OneTrack) -> None:
         """Test record class."""
-        self.assertEqual("Album Artist One", self.one_track.release.album_artists.first)
-        self.assertEqual("Track Artist", self.one_track.track.asdict().get("artist"))
-        self.assertEqual("03__Track_Title", self.one_track.track.get_filename())
+        assert one_track.release.album_artists.first == "Album Artist One"
+        assert one_track.track.asdict().get("artist") == "Track Artist"
+        assert one_track.track.get_filename() == "03__Track_Title"
 
-    def test__get_artist_album_disc_path(self) -> None:
+    def test__get_artist_album_disc_path(self, one_track: OneTrack) -> None:
         """Test get-artist-album-disc-path."""
-        self.assertEqual(
-            "One,_Album_Artist/1992__Album/disc7", str(self.one_track.get_artist_album_disc_path())
-        )
-        num, cnt = self.one_track.medium_number, self.one_track.release.medium_count
-        self.one_track.medium_number = 1
-        self.one_track.release.medium_count = 1
-        self.assertEqual(
-            "One,_Album_Artist/1992__Album", str(self.one_track.get_artist_album_disc_path())
-        )
-        self.one_track.medium_number, self.one_track.release.medium_count = num, cnt
+        assert str(one_track.get_artist_album_disc_path()) == "One,_Album_Artist/1992__Album/disc7"
+
+        one_track.medium_number = 1
+        one_track.release.medium_count = 1
+        assert str(one_track.get_artist_album_disc_path()) == "One,_Album_Artist/1992__Album"

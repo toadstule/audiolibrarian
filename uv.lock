@@ -35,6 +35,7 @@ dev = [
     { name = "ruff" },
     { name = "types-pyyaml" },
     { name = "types-requests" },
+    { name = "types-setuptools" },
 ]
 
 [package.metadata]
@@ -59,6 +60,7 @@ dev = [
     { name = "ruff" },
     { name = "types-pyyaml" },
     { name = "types-requests" },
+    { name = "types-setuptools" },
 ]
 
 [[package]]
@@ -421,6 +423,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/06/c1/cdc4f9b8cfd9130fbe6276db574f114541f4231fcc6fb29648289e6e3390/types_requests-2.32.0.20250515.tar.gz", hash = "sha256:09c8b63c11318cb2460813871aaa48b671002e59fda67ca909e9883777787581", size = 23012, upload-time = "2025-05-15T03:04:31.817Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fe/0f/68a997c73a129287785f418c1ebb6004f81e46b53b3caba88c0e03fcd04a/types_requests-2.32.0.20250515-py3-none-any.whl", hash = "sha256:f8eba93b3a892beee32643ff836993f15a785816acca21ea0ffa006f05ef0fb2", size = 20635, upload-time = "2025-05-15T03:04:30.5Z" },
+]
+
+[[package]]
+name = "types-setuptools"
+version = "80.8.0.20250521"
+source = { registry = "https://pypi.jibson.com/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e6/2e/947172e12515ff815979b78377b47c3c434df7097e02241f4c80b960d1a4/types_setuptools-80.8.0.20250521.tar.gz", hash = "sha256:7360b33b1ed3cda6e5a1f379701a61ec9dbee6e59e8bda072b88226157d8da80", size = 41323, upload-time = "2025-05-21T03:06:04.636Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/90/2f8173ea068e673a2cffeac9c96de37da6c5a5e1deaa4289834e882236f3/types_setuptools-80.8.0.20250521-py3-none-any.whl", hash = "sha256:737cd1f54aade1f68fece1381871ea563b622b3ff28393ad65a9d4ed30d6454e", size = 63261, upload-time = "2025-05-21T03:06:03.025Z" },
 ]
 
 [[package]]

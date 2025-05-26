@@ -1,5 +1,7 @@
 """Miscellaneous tests."""
 
+import pytest
+
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -16,22 +18,23 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-from unittest import TestCase
-
 from audiolibrarian import cli
 
 
-class TestMisc(TestCase):
+class TestMisc:
     """Test miscellaneous functions."""
 
-    def test__check_deps_true(self) -> None:
-        """Test dependency checker."""
-        cli_ = cli.CommandLineInterface(parse_args=False)
-        cli_.required_exe = {"ls", "ps"}  # type: ignore[misc]
-        self.assertTrue(cli_._check_deps())  # noqa: SLF001
+    @pytest.fixture(scope="class")
+    def cli_(self) -> cli.CommandLineInterface:
+        """Return a cli instance."""
+        return cli.CommandLineInterface(parse_args=False)
 
-    def test__check_deps_false(self) -> None:
+    def test__check_deps_true(self, cli_: cli.CommandLineInterface) -> None:
         """Test dependency checker."""
-        cli_ = cli.CommandLineInterface(parse_args=False)
+        cli_.required_exe = {"ls", "ps"}  # type: ignore[misc]
+        assert cli_._check_deps()
+
+    def test__check_deps_false(self, cli_: cli.CommandLineInterface) -> None:
+        """Test dependency checker."""
         cli_.required_exe = {"your_mom_goes_to_college"}  # type: ignore[misc]
-        self.assertFalse(cli_._check_deps())  # noqa: SLF001
+        assert not cli_._check_deps()

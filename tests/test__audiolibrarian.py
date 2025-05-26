@@ -18,97 +18,98 @@
 #
 from argparse import Namespace
 from pathlib import Path
-from unittest import TestCase
+from typing import Final
+
+import pytest
 
 from audiolibrarian.base import Base
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
-class TestAudioLibrarian(TestCase):
+class TestAudioLibrarian:
     """Test AudioLibrarian."""
 
-    _blank_test_files = (p.resolve() for p in test_data_path.glob("00.*"))
+    AUDIO_FILE_COUNT: Final[int] = 21  # This will need updated if test files are added.
 
-    def test__single_media(self) -> None:
+    @pytest.fixture(scope="class")
+    def al_base(self) -> Base:
+        """Return a Base instance with a blank namespace."""
+        return Base(args=Namespace())
+
+    def test__single_media(self, al_base: Base) -> None:
         """Test single media."""
-        al = Base(args=Namespace())
+        assert not al_base._multi_disc
+        assert al_base._flac_filenames == []
+        assert al_base._m4a_filenames == []
+        assert al_base._mp3_filenames == []
+        assert al_base._source_filenames == []
+        assert al_base._wav_filenames == []
 
-        self.assertFalse(al._multi_disc)
-
-        self.assertListEqual([], al._flac_filenames)
-        self.assertListEqual([], al._m4a_filenames)
-        self.assertListEqual([], al._mp3_filenames)
-        self.assertListEqual([], al._source_filenames)
-        self.assertListEqual([], al._wav_filenames)
-
-        with self.assertWarns(RuntimeWarning):
-            al._convert()
-        with self.assertWarns(RuntimeWarning):
-            al._summary()
+        with pytest.warns(RuntimeWarning):
+            al_base._convert()
+        with pytest.warns(RuntimeWarning):
+            al_base._summary()
 
     def test__multi_media(self) -> None:
         """Test multi-media."""
         al = Base(args=Namespace(disc="2/3"))
 
-        self.assertTrue(al._multi_disc)
+        assert al._multi_disc
         searcher = al._get_searcher()
-        self.assertEqual("2", searcher.disc_number)
+        assert searcher.disc_number == "2"
 
-    def test__find_audio_files(self) -> None:
+    def test__find_audio_files(self, al_base: Base) -> None:
         """Test find-audio-files."""
-        al = Base(args=Namespace())
-        audio_files = list(al._find_audio_files([]))
-        self.assertEqual([], audio_files)
+        audio_files = list(al_base._find_audio_files([]))
+        assert audio_files == []
 
-        audio_files = list(al._find_audio_files([test_data_path]))
-        self.assertEqual(21, len(audio_files))  # This will need updated if test files are added.
+        audio_files = list(al_base._find_audio_files([test_data_path]))
+        assert len(audio_files) == self.AUDIO_FILE_COUNT
 
-    def test__manifests(self) -> None:
+    def test__manifests(self, al_base: Base) -> None:
         """Test manifests."""
-        al = Base(args=Namespace())
-        manifests = list(al._find_manifests([]))
-        self.assertEqual([], manifests)
+        manifests = list(al_base._find_manifests([]))
+        assert manifests == []
 
-        manifests = al._find_manifests([test_data_path])
-        self.assertEqual(1, len(manifests))
-        self.assertEqual(al._manifest_file, manifests[0].name)
+        manifests = al_base._find_manifests([test_data_path])
+        assert len(manifests) == 1
+        assert al_base._manifest_file == manifests[0].name
 
-        manifest = al._read_manifest(manifests[0])
-        self.assertEqual("The Secret", manifest.get("album"))
+        manifest = al_base._read_manifest(manifests[0])
+        assert manifest.get("album") == "The Secret"
 
-    def test__get_searcher(self) -> None:
+    @pytest.mark.parametrize(
+        ("namespace", "expected"),
+        [
+            (Namespace(), ("", "", "", "", "", "")),
+            (Namespace(artist="your mom"), ("your mom", "", "", "", "", "")),
+            (
+                Namespace(artist="your mom", album="the college years"),
+                ("your mom", "the college years", "", "", "", ""),
+            ),
+            (
+                Namespace(
+                    artist="your mom",
+                    album="the college years",
+                    mb_artist_id="aid",
+                    mb_release_id="rid",
+                ),
+                ("your mom", "the college years", "", "", "aid", "rid"),
+            ),
+        ],
+    )
+    def test__get_searcher(
+        self, namespace: Namespace, expected: tuple[str, str, str, str, str, str]
+    ) -> None:
         """Test searcher."""
-        al = Base(args=Namespace())
-        searcher = al._get_searcher()
-        self.assertEqual("", searcher.artist)
-        self.assertEqual("", searcher.album)
-        self.assertEqual("", searcher.disc_id)
-        self.assertEqual("", searcher.disc_mcn)
-        self.assertEqual("", searcher.mb_artist_id)
-        self.assertEqual("", searcher.mb_release_id)
-
-        al = Base(args=Namespace(artist="your mom"))
-        searcher = al._get_searcher()
-        self.assertEqual("your mom", searcher.artist)
-        self.assertEqual("", searcher.album)
-        self.assertEqual("", searcher.disc_id)
-        self.assertEqual("", searcher.disc_mcn)
-        self.assertEqual("", searcher.mb_artist_id)
-        self.assertEqual("", searcher.mb_release_id)
-
-        al = Base(
-            args=Namespace(
-                artist="your mom",
-                album="the college years",
-                mb_artist_id="aid",
-                mb_release_id="rid",
-            )
-        )
-        searcher = al._get_searcher()
-        self.assertEqual("your mom", searcher.artist)
-        self.assertEqual("the college years", searcher.album)
-        self.assertEqual("", searcher.disc_id)
-        self.assertEqual("", searcher.disc_mcn)
-        self.assertEqual("aid", searcher.mb_artist_id)
-        self.assertEqual("rid", searcher.mb_release_id)
+        al_base = Base(args=namespace)
+        searcher = al_base._get_searcher()
+        assert (
+            searcher.artist,
+            searcher.album,
+            searcher.disc_id,
+            searcher.disc_mcn,
+            searcher.mb_artist_id,
+            searcher.mb_release_id,
+        ) == expected
