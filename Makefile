@@ -39,6 +39,7 @@ check: lint test  ## Check the code.
 clean:  ## Clean up.
 	@find . -name "__pycache__" | grep -v "/.venv/" | xargs rm -rf
 	@rm -rf .pytest_cache tests/.pytest_cache
+	@rm -rf htmlcov .coverage
 	@rm -rf .pytype
 	@rm -rf .ruff_cache .mypy_cache
 	@$(UV) clean
@@ -86,7 +87,7 @@ test: dep  ## Run unit tests.
 .PHONY: test-coverage
 test-coverage:  ## Run unit tests and generate a coverage report.
 	rm -rf htmlconv
-	coverage run -m unittest discover tests/
+	coverage run -m pytest tests/
 	coverage html
 	$(BROWSER) htmlcov/index.html
 
