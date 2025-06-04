@@ -61,7 +61,7 @@ class ListF(list[Any]):
         return self[0] if self else None
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class Record:
     """Base class for records.
 
@@ -78,7 +78,7 @@ class Record:
 
 
 # Primitive Record Types
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class FileInfo(Record):
     """File information."""
 
@@ -88,7 +88,7 @@ class FileInfo(Record):
     type: FileType | None = None
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class FrontCover(Record):
     """A front cover."""
 
@@ -97,7 +97,7 @@ class FrontCover(Record):
     mime: str | None = None
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class Performer(Record):
     """A performer with an instrument."""
 
@@ -105,7 +105,7 @@ class Performer(Record):
     instrument: str | None = None
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class Track(Record):
     """A track."""
 
@@ -134,7 +134,7 @@ class Track(Record):
 
 
 # Combined Record Types (fields + other record types)
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class Medium(Record):
     """A medium."""
 
@@ -144,7 +144,7 @@ class Medium(Record):
     tracks: dict[int, Track] | None = None
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class People(Record):
     """People."""
 
@@ -159,7 +159,7 @@ class People(Record):
     writers: list[str] | None = None
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class Release(Record):
     """A release."""
 
@@ -225,7 +225,7 @@ class Release(Record):
         )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class OneTrack(Record):
     """A single track."""
 
