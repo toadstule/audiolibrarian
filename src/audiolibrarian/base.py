@@ -77,36 +77,36 @@ class Base:
 
     @property
     def _flac_filenames(self) -> list[pathlib.Path]:
-        # Return the current list of flac files in the work directory.
+        """Return the current list of flac files in the work directory."""
         return sorted(self._flac_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
     def _m4a_filenames(self) -> list[pathlib.Path]:
-        # Return the current list of m4a files in the work directory.
+        """Return the current list of m4a files in the work directory."""
         return sorted(self._m4a_dir.glob("*.m4a"), key=text.alpha_numeric_key)
 
     @property
     def _mp3_filenames(self) -> list[pathlib.Path]:
-        # Return the current list of mp3 files in the work directory.
+        """Return the current list of mp3 files in the work directory."""
         return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
 
     @property
     def _multi_disc(self) -> bool:
-        # Return True if this is part of a multi-disc set.
+        """Return True if this is part of a multi-disc set."""
         return (self._disc_number, self._disc_count) != (1, 1)
 
     @property
     def _source_filenames(self) -> list[pathlib.Path]:
-        # Return the current list of source files in the work directory.
+        """Return the current list of source files in the work directory."""
         return sorted(self._source_dir.glob("*.flac"), key=text.alpha_numeric_key)
 
     @property
     def _wav_filenames(self) -> list[pathlib.Path]:
-        # Return the current list of wav files in the work directory.
+        """Return the current list of wav files in the work directory."""
         return sorted(self._wav_dir.glob("*.wav"), key=text.alpha_numeric_key)
 
     def _convert(self, *, make_source: bool = True) -> None:
-        # Perform all the steps of ripping, normalizing, converting and moving the files.
+        """Perform all the steps of ripping, normalizing, converting and moving the files."""
         if self._audio_source is None:
             warnings.warn(
                 "Cannot convert; no audio_source is defined.", RuntimeWarning, stacklevel=2
@@ -127,7 +127,7 @@ class Base:
 
     @staticmethod
     def _find_audio_files(directories: list[str | pathlib.Path]) -> Iterable[audiofile.AudioFile]:
-        # Yield audiofile objects found in the given directories.
+        """Yield audiofile objects found in the given directories."""
         paths: list[pathlib.Path] = []
         # Grab all the paths first because thing may change as files are renamed.
         for directory in directories:
@@ -144,7 +144,7 @@ class Base:
                 continue
 
     def _find_manifests(self, directories: list[str | pathlib.Path]) -> list[pathlib.Path]:
-        # Return a sorted, unique list of manifest files anywhere in the given directories.
+        """Return a sorted, unique list of manifest files anywhere in the given directories."""
         manifests = set()
         for directory in directories:
             path = pathlib.Path(directory)
@@ -153,7 +153,7 @@ class Base:
         return sorted(manifests)
 
     def _get_searcher(self) -> musicbrainz.Searcher:
-        # Return a Searcher object populated with data from the audio source and cli args.
+        """Return a Searcher object populated with data from the audio source and cli args."""
         search_data: dict[str, str] = (
             self._audio_source.get_search_data() if self._audio_source is not None else {}
         )
@@ -172,6 +172,14 @@ class Base:
         return searcher
 
     def _get_tag_info(self) -> None:
+        """Gather search information from user-provided options and source files.
+
+        Set `self._release` and `self._medium` based on the search results.
+        If the search results don't have a front cover, use the front cover from the source files.
+        Print a summary of the results and prompt the user to confirm.
+        If the track count does not match the file count, print an error message.
+        If the user does not confirm, exit the program.
+        """
         print("Gathering search information...")
         searcher = self._get_searcher()
         skip_confirm = bool(searcher.mb_artist_id and searcher.mb_release_id)
@@ -194,17 +202,18 @@ class Base:
             sys.exit(1)
 
     def _make_clean_workdirs(self) -> None:
-        # Erase everything from the workdir and create the empty directory structure.
+        """Erase everything from the workdir and create the empty directory structure."""
         if self._work_dir.is_dir():
             shutil.rmtree(self._work_dir)
         for path in self._flac_dir, self._m4a_dir, self._mp3_dir, self._source_dir, self._wav_dir:
             path.mkdir(parents=True)
 
     def _make_flac(self, *, source: bool = False) -> None:
-        # Convert the wav files into flac files; tag them.
-        #
-        # If source is True, it stores the flac files in the source directory,
-        # otherwise, it stores them in the flac directory.
+        """Convert the wav files into flac files; tag them.
+
+        If source is True, it stores the flac files in the source directory,
+        otherwise, it stores them in the flac directory.
+        """
         out_dir = self._source_dir if source else self._flac_dir
         commands: list[tuple[str, ...]] = [
             ("flac", "--silent", f"--output-prefix={out_dir}/", str(f))
@@ -216,7 +225,7 @@ class Base:
         self._tag_files(filenames)
 
     def _make_m4a(self) -> None:
-        # Convert the wav files into m4a files; tag them.
+        """Convert the wav files into m4a files; tag them."""
         commands: list[tuple[str, ...]] = []
         for filename in self._wav_filenames:
             dst_file = self._m4a_dir / filename.name.replace(".wav", ".m4a")
@@ -228,7 +237,7 @@ class Base:
         self._tag_files(self._m4a_filenames)
 
     def _make_mp3(self) -> None:
-        # Convert the wav files into mp3 files; tag them.
+        """Convert the wav files into mp3 files; tag them."""
         commands: list[tuple[str, ...]] = []
         for filename in self._wav_filenames:
             dst_file = self._mp3_dir / filename.name.replace(".wav", ".mp3")
@@ -238,15 +247,16 @@ class Base:
         self._tag_files(self._mp3_filenames)
 
     def _make_source(self) -> None:
-        # Convert the files into flac files; store them in the source dir; read their tags.
-        #
-        # The files are defined by the audio source; they could be wav files from a CD
-        # or another type of audio file.
+        """Convert the files into flac files; store them in the source dir; read their tags.
+
+        The files are defined by the audio source; they could be wav files from a CD
+        or another type of audio file.
+        """
         self._make_flac(source=True)
         self._source_example = audiofile.AudioFile.open(self._source_filenames[0]).read_tags()
 
     def _move_files(self, *, move_source: bool = True) -> None:
-        # Move converted/tagged files from the work directory into the library directory.
+        """Move converted/tagged files from the work directory into the library directory."""
         artist_album_dir = self._release.get_artist_album_path()
         flac_dir = self._library_dir / "flac" / artist_album_dir
         m4a_dir = self._library_dir / "m4a" / artist_album_dir
@@ -272,7 +282,7 @@ class Base:
                 path.rename(source_dir / path.name)
 
     def _normalize(self) -> None:
-        # Normalize the wav files using wavegain.
+        """Normalize the wav files using wavegain."""
         print("Normalizing wav files...")
         command = ["wavegain", "--radio", "--gain=5", "--apply"]
         command.extend(str(f) for f in self._wav_filenames)
@@ -288,7 +298,7 @@ class Base:
             return dict(yaml.safe_load(manifest_file))
 
     def _rename_wav(self) -> None:
-        # Rename the wav files to a filename-sane representation of the track title.
+        """Rename the wav files to a filename-sane representation of the track title."""
         for old_path in self._wav_filenames:
             track_number = text.get_track_number(str(old_path.name))
             title_filename = self._medium.tracks[track_number].get_filename(".wav")
@@ -298,12 +308,13 @@ class Base:
                 old_path.rename(new_path)
 
     def _summary(self) -> tuple[str, bool]:
-        # Return a summary of the conversion/tagging process and an "ok" flag indicating issues.
-        #
-        # The summary is a nicely formatted table showing the album, artist and track info.
-        # The "ok" flag indicating issues will be true if:
-        #   - the file count does not match the song count from the MusicBrainz database
-        # (https://jrgraphix.net/r/Unicode/2500-257F)
+        """Return a summary of the conversion/tagging process and an "ok" flag indicating issues.
+
+        The summary is a nicely formatted table showing the album, artist and track info.
+        The "ok" flag indicating issues will be true if:
+          - the file count does not match the song count from the MusicBrainz database
+        (https://jrgraphix.net/r/Unicode/2500-257F)
+        """
         if self._audio_source is None or self._release is None:
             warnings.warn(
                 "Cannot provide summary; missing audio_source and/or release.",
@@ -364,7 +375,7 @@ class Base:
         return "\n".join(lines), okay
 
     def _tag_files(self, filenames: list[pathlib.Path]) -> None:
-        # Tag the given list of files.
+        """Tag the given list of files."""
         for filename in filenames:
             song = audiofile.AudioFile.open(filename)
             song.one_track = records.OneTrack(
@@ -375,7 +386,7 @@ class Base:
             song.write_tags()
 
     def _write_manifest(self) -> None:
-        # Write out a manifest file with release information.
+        """Write out a manifest file with release information."""
         release = self._release  # We use this a lot below.
         file_info = self._source_example.track.file_info
         manifest = {

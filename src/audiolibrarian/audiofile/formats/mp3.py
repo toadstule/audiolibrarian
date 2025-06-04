@@ -123,7 +123,11 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
                         lyricists=get_l("TEXT"),
                         mixers=[name for role, name in tipl if role == "mix"] or None,
                         producers=[name for role, name in tipl if role == "producer"] or None,
-                        performers=[records.Performer(n, r) for r, n in tipl if r not in roles]
+                        performers=[
+                            records.Performer(name=n, instrument=i)
+                            for i, n in tipl
+                            if i not in roles
+                        ]
                         or None,
                         writers=[name for role, name in tipl if role == "writer"] or None,
                     )

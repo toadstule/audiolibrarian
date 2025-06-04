@@ -98,7 +98,7 @@ class CDAudioSource(AudioSource):
         self._cd = discid.read(features=["mcn"])
 
     def get_search_data(self) -> dict[str, str]:
-        """See base class."""
+        """Return a dictionary of search data useful for doing a MusicBrainz search."""
         return {"disc_id": self._cd.id, "disc_mcn": self._cd.mcn}
 
     def get_source_filenames(self) -> list[pathlib.Path]:
@@ -139,7 +139,7 @@ class FilesAudioSource(AudioSource):
         self._file_type = self._filenames[0].suffix.lstrip(".")
 
     def get_front_cover(self) -> records.FrontCover | None:
-        """See base class."""
+        """Return a FrontCover record or None."""
         for filename in self._filenames:
             one_track = audiofile.AudioFile.open(filename).one_track
             release = one_track.release
@@ -148,7 +148,7 @@ class FilesAudioSource(AudioSource):
         return None
 
     def get_search_data(self) -> dict[str, str]:
-        """See base class."""
+        """Return a dictionary of search data useful for doing a MusicBrainz search."""
         for filename in self._filenames:
             one_track = audiofile.AudioFile.open(filename).one_track
             release = one_track.release
@@ -179,7 +179,11 @@ class FilesAudioSource(AudioSource):
         return self._filenames
 
     def prepare_source(self) -> None:
-        """Convert the source files to wav files."""
+        """Convert the source files to wav files.
+
+        Raises:
+             ValueError if the file type is not supported.
+        """
         decoders: dict[str, Callable[[str, str], tuple[str, ...]]] = {
             "flac": lambda i, o: ("flac", "--silent", "--decode", f"--output-name={o}", i),
             "m4a": lambda i, o: ("faad", "-q", "-o", o, i),
