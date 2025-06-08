@@ -28,6 +28,7 @@ from collections.abc import Callable  # noqa: TC003
 import discid
 
 from audiolibrarian import audiofile, records, sh, text
+from audiolibrarian.settings import SETTINGS
 
 log = logging.getLogger(__name__)
 
@@ -95,7 +96,7 @@ class CDAudioSource(AudioSource):
     def __init__(self) -> None:
         """Initialize a CDAudioSource."""
         super().__init__()
-        self._cd = discid.read(features=["mcn"])
+        self._cd = discid.read(SETTINGS.discid_device, features=["mcn"])
 
     def get_search_data(self) -> dict[str, str]:
         """Return a dictionary of search data useful for doing a MusicBrainz search."""

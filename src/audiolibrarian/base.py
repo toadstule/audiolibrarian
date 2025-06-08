@@ -34,6 +34,7 @@ import filelock
 import yaml
 
 from audiolibrarian import audiofile, audiosource, musicbrainz, records, sh, text
+from audiolibrarian.settings import SETTINGS
 
 log = logging.getLogger(__name__)
 
@@ -57,8 +58,8 @@ class Base:
             self._disc_number, self._disc_count = 1, 1
 
         # Directories.
-        self._library_dir = pathlib.Path("library").resolve()
-        self._work_dir = pathlib.Path("/var/tmp/audiolibrarian")  # noqa: S108
+        self._library_dir = SETTINGS.library_dir
+        self._work_dir = SETTINGS.work_dir
         self._flac_dir = self._work_dir / "flac"
         self._m4a_dir = self._work_dir / "m4a"
         self._mp3_dir = self._work_dir / "mp3"
@@ -284,7 +285,12 @@ class Base:
     def _normalize(self) -> None:
         """Normalize the wav files using wavegain."""
         print("Normalizing wav files...")
-        command = ["wavegain", "--radio", "--gain=5", "--apply"]
+        command = [
+            "wavegain",
+            f"--{SETTINGS.normalize_preset}",
+            f"--gain={SETTINGS.normalize_gain}",
+            "--apply",
+        ]
         command.extend(str(f) for f in self._wav_filenames)
         result = subprocess.run(command, capture_output=True, check=False)  # noqa: S603
         for line in str(result.stderr).split(r"\n"):
@@ -396,7 +402,7 @@ class Base:
             "media": release.media[self._disc_number].formats.first,
             "genre": release.genres.first,
             "disc_number": self._disc_number,
-            "disc_total": self._disc_count,
+            "disc_count": self._disc_count,
             "original_year": release.original_year,
             "date": release.date,
             "musicbrainz_info": {

@@ -32,6 +32,8 @@ dependencies = [
     "python-levenshtein",
     "pyyaml",
     "requests",
+    "pydantic-settings",
+    "xdg-base-dirs",
 ]
 dynamic = [
     "version",

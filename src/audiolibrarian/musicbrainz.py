@@ -30,7 +30,8 @@ import requests
 from fuzzywuzzy import fuzz
 from requests import auth
 
-from audiolibrarian import __version__, config, records, text
+from audiolibrarian import __version__, records, text
+from audiolibrarian.settings import SETTINGS
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -47,7 +48,7 @@ class MusicBrainzSession:
     It can be for things that are not supported by the musicbrainzngs library.
     """
 
-    _api_rate = dt.timedelta(seconds=1.5)
+    _api_rate = dt.timedelta(seconds=SETTINGS.musicbrainz.rate_limit)
     _last_api_call = dt.datetime.now(tz=dt.UTC)
 
     def __init__(self) -> None:
@@ -63,9 +64,9 @@ class MusicBrainzSession:
     def _session(self) -> requests.Session:
         if self.__session is None:
             self.__session = requests.Session()
-            cfg = config.Config()
-            if ((username := cfg.get("musicbrainz", {}).get("username")) is not None) and (
-                (password := cfg.get("musicbrainz", {}).get("password")) is not None
+
+            if (username := SETTINGS.musicbrainz.username) and (
+                password := SETTINGS.musicbrainz.password.get_secret_value()
             ):
                 self._session.auth = auth.HTTPDigestAuth(username, password)
             self._session.headers.update(

@@ -22,7 +22,7 @@ import pathlib
 import re
 from typing import Any
 
-from audiolibrarian import __version__, audiofile, audiosource, base, config, genremanager
+from audiolibrarian import __version__, audiofile, audiosource, base, genremanager
 
 log = logging.getLogger(__name__)
 
@@ -37,18 +37,6 @@ class _Command:
         """Validate command line arguments."""
         _ = args
         return True
-
-
-class Config(_Command):
-    """Edit the configuration."""
-
-    command = "config"
-    help = "edit the configuration"
-
-    def __init__(self, args: argparse.Namespace) -> None:
-        """Initialize a Config command handler."""
-        _ = args
-        config.Config().edit()
 
 
 class Convert(_Command, base.Base):
@@ -292,4 +280,4 @@ def _validate_disc_arg(args: argparse.Namespace) -> bool:
     return True
 
 
-COMMANDS: set[Any] = {Config, Convert, Genre, Manifest, Reconvert, Rename, Rip, Version}
+COMMANDS: set[Any] = {Convert, Genre, Manifest, Reconvert, Rename, Rip, Version}
