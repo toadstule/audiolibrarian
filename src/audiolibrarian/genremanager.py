@@ -30,6 +30,7 @@ import mutagen.id3
 import mutagen.mp4
 
 from audiolibrarian import musicbrainz, text
+from audiolibrarian.settings import SETTINGS
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class GenreManager:
     """Manage genres."""
 
     def __init__(self, args: argparse.Namespace) -> None:
-        """Initialize a GenreManager."""
+        """Initialize a GenreManager instance."""
         self._args = args
         self._mb = musicbrainz.MusicBrainzSession()
         self._paths = self._get_all_paths()
@@ -52,7 +53,7 @@ class GenreManager:
 
     @typing.no_type_check  # The mutagen library doesn't provide type hints.
     def _update_tags(self) -> None:
-        # Set the genre tags for all songs to the user-based genre.
+        """Set the genre tags for all songs to the user-based genre."""
         for artist_id, paths in self._paths_by_artist.items():
             genre = self._user_genres_by_artist.get(artist_id)
             if not genre:
@@ -82,11 +83,13 @@ class GenreManager:
                         print(f"{path}: {current_genre} --> {genre}")
 
     def _update_user_artists(self) -> None:
-        # Pull up a web page to allow the user to set the genre for all artists that
-        # only have community-base genres.
+        """Pull up a web page to allow the user to set the genre.
+
+        Update the genre for all artists that only have community-base genres.
+        """
         for artist_id, artist in sorted(
             self._community_genres_by_artist.items(),
-            key=lambda x: x[1]["name"],  # xtype: ignore
+            key=lambda x: x[1]["name"],
         ):
             artist_name = artist["name"]
             i = (
@@ -100,16 +103,14 @@ class GenreManager:
                 webbrowser.open(f"https://musicbrainz.org/artist/{artist_id}/tags")
 
     def _get_all_paths(self) -> list[pathlib.Path]:
-        # Return a list of paths (pathlib.Path objects) for all files in the directories
-        # specified in the args.
+        """Return a list of paths for all files in the directories specified in the args."""
         paths = []
         for directory in self._args.directory:
             paths.extend([p for p in list(pathlib.Path(directory).glob("**/*")) if p.is_file()])
         return paths
 
     def _get_paths_by_artist(self) -> dict[str, list[pathlib.Path]]:
-        # Return a dict mapping Musicbrainz-artist-ID to a list of paths (pathlib.Path objects)
-        # representing audio files by that artist.
+        """Return a map of artist-IDs to paths representing audio files by that artist."""
         artists: dict[str, list[pathlib.Path]] = {}
         for path in self._paths:
             artist_id = None
@@ -138,14 +139,17 @@ class GenreManager:
     def _get_genres_by_artist(
         self,
     ) -> tuple[dict[str, str], dict[str, dict[str, Any]]]:
-        # Return two dicts mapping Musicbrainz-artist-ID to:
-        # user: a single genre, set in Musicbrainz by this app's user
-        # community: a list genre records (dicts) set in Musicbrainz by the community
-        #            with "name" and "count" fields
+        """Return two dicts mapping Musicbrainz-artist-ID to user and community.
+
+        Returns:
+          user: a single genre, set in Musicbrainz by this app's user
+          community: a list genre records (dicts) set in Musicbrainz by the community
+                     with "name" and "count" fields
+        """
         user: dict[str, str] = {}
         community: dict[str, dict[str, Any]] = {}
         user_modified = False
-        cache_file = pathlib.Path.home() / ".cache" / "audiolibrarian" / "user-genres.pickle"
+        cache_file = SETTINGS.work_dir / "user-genres.pickle"
         if cache_file.exists():
             with cache_file.open(mode="rb") as cache_file_obj:
                 user = pickle.load(cache_file_obj)  # noqa: S301
