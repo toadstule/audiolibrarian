@@ -50,7 +50,7 @@ dep:  ## Install dependencies.
 	@$(UV) sync
 
 .PHONY: dep-upgrade
-dep-upgrade:  # Upgrade dependencies.
+dep-upgrade:  ## Upgrade dependencies.
 	$(UV) lock --upgrade
 
 .PHONY: format
@@ -106,6 +106,9 @@ ifndef PYTHON_VERSION
 	$(error this should only be executed in a Python virtual environment)
 endif
 endif
+
+uv.lock:
+	@$(UV) lock
 
 $(WHEEL): $(PY_FILES) pyproject.toml uv.lock dep
 	@$(UV) build
