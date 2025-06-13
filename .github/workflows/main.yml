@@ -23,6 +23,7 @@ jobs:
         enable-cache: true
         cache-dependency-glob: |
           **/pyproject.toml
+          **/.python_version
           **/uv.lock
         version: latest
 

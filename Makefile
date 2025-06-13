@@ -47,7 +47,7 @@ clean:  ## Clean up.
 
 .PHONY: dep
 dep:  ## Install dependencies.
-	@$(UV) sync
+	@$(UV) sync --locked --all-extras --dev
 
 .PHONY: dep-upgrade
 dep-upgrade:  ## Upgrade dependencies.
