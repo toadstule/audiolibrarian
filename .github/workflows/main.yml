@@ -26,6 +26,9 @@ jobs:
           **/uv.lock
         version: latest
 
+    - name: Install dependencies
+      run: make dep
+
     - name: Build package
       run: make
 
