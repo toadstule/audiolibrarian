@@ -26,8 +26,10 @@ jobs:
           **/uv.lock
         version: latest
 
-    - name: Install dependencies
+    - name: Install libdiscid
       run: sudo apt update && sudo apt install -y libdiscid0
+
+    - name: Install dependencies
       run: make dep
 
     - name: Build package
