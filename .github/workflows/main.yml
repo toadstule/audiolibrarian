@@ -27,6 +27,7 @@ jobs:
         version: latest
 
     - name: Install dependencies
+      run: sudo apt update && sudo apt install -y libdiscid0
       run: make dep
 
     - name: Build package
