@@ -45,16 +45,10 @@ Whether you're digitizing a CD collection, organizing existing music files, or m
 
 ### Install from PyPI ###
 
-`audiolibrarian` is not available on PyPI, but it can be installed from a local PyPI.
+`audiolibrarian` is available on PyPI:
 
 ```bash
-pip install --user --extra-index-url=https://pypi.example.com/simple audiolibrarian
-```
-
-### Install from Bitbucket ###
-
-```bash
-pip install --user git+https://bitbucket.org/toadstule/audiolibrarian
+pip install audiolibrarian
 ```
 
 ## Configuration ##

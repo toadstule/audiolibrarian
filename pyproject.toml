@@ -46,7 +46,7 @@ requires-python = "==3.13.*"
 audiolibrarian = "audiolibrarian:cli.main"
 
 [project.urls]
-Repository = "https://bitbucket.org/toadstule/audiolibrarian/"
+Repository = "https://github.com/toadstule/audiolibrarian"
 
 [tool.hatch.build.targets.sdist]
 exclude= [
