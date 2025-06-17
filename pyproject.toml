@@ -7,6 +7,7 @@ dev = [
     "coverage",
     "hatchling",
     "mypy",
+    "pymarkdownlnt",
     "pytest",
     "ruff",
     "types-pyyaml",
@@ -76,6 +77,12 @@ strict = true
 [[tool.mypy.overrides]]
 module = "picard_src.*"
 ignore_errors = true  # This is not our code.
+
+[tool.pymarkdown]
+plugins.md013.line_length = 100
+plugins.md013.code_block_line_length = 100
+#plugins.md007.enabled = true
+#plugins.md007.code_block_line_length = 160
 
 [tool.ruff]
 extend-exclude = [

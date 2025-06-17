@@ -2,8 +2,9 @@
 
 ## Overview ##
 
-`audiolibrarian` is a powerful command-line tool for managing digital music libraries. It provides a streamlined 
-workflow for ripping, converting, organizing, and tagging audio files with high-quality metadata from MusicBrainz.
+`audiolibrarian` is a command-line tool for ripping audio from CDs (or taking
+high-quality audio from local files), tagging them with comprehensive metadata from MusicBrainz,
+converting them to multiple formats, and organizing them in a clean directory structure.
 
 ### Key Features ###
 
@@ -20,28 +21,32 @@ workflow for ripping, converting, organizing, and tagging audio files with high-
 - **Consistent Quality**: Maintains audio quality through the conversion process
 - **Accurate Metadata**: Leverages MusicBrainz for comprehensive music information
 - **Automated Workflow**: Reduces manual work in organizing and tagging music
-- **Scriptable**: Perfect for automating large music library management tasks
 - **Open Source**: Free to use and modify under the GPL-3.0 license
 
-Whether you're digitizing a CD collection, organizing existing music files, or managing a large digital library, 
-`audiolibrarian` provides the tools you need to keep your music collection well-organized and properly tagged.
-
+Whether you're digitizing a CD collection, organizing existing music files, or managing a large
+digital library, `audiolibrarian` provides the tools you need to keep your music collection
+well-organized and properly tagged.
 
 ## Installation ##
+
+> **NOTE:** This library has only been tested on Linux. It may not work on other operating
+> systems.
 
 ### External Requirements ###
 
 `audiolibrarian` uses a few command-line tools to run:
 
-* `cd-paranoia`: [cd-paranoia](https://www.gnu.org/software/libcdio/)
-* `eject`: [util-linux](https://github.com/util-linux/util-linux)
-* `faad`: [faad2](https://github.com/knik0/faad2)
-* `fdkaac`: [fdkaac](https://github.com/nu774/fdkaac)
-* `flac`: [flac](https://github.com/xiph/flac)
-* `lame`: [lame](https://lame.sourceforge.io/)
-* `mpg123`: [mpg123](https://www.mpg123.de/)
-* `sndfile-convert`: [libsndfile](https://github.com/libsndfile/libsndfile)
-* `wavegain`: [wavegain](https://rarewares.org/others.php) 
+- [cd-paranoia](https://www.gnu.org/software/libcdio/)
+- [util-linux](https://github.com/util-linux/util-linux)
+- [faad2](https://github.com/knik0/faad2)
+- [fdkaac](https://github.com/nu774/fdkaac)
+- [flac](https://github.com/xiph/flac)
+- [lame](https://lame.sourceforge.io/)
+- [mpg123](https://www.mpg123.de/)
+- [libsndfile](https://github.com/libsndfile/libsndfile)
+- [wavegain](https://github.com/MestreLion/wavegain)
+
+It also requires the [libdiscid](https://musicbrainz.org/doc/libdiscid) library.
 
 ### Install from PyPI ###
 
@@ -53,38 +58,41 @@ pip install audiolibrarian
 
 ## Configuration ##
 
-`audiolibrarian` uses a flexible configuration system that supports multiple configuration sources, listed in order of precedence:
+`audiolibrarian` uses a flexible configuration system that supports multiple configuration sources,
+listed in order of precedence:
 
 1. **Environment Variables** (highest precedence)
    - Prefix: `AUDIOLIBRARIAN__`
    - Nested fields: Use `__` as delimiter (e.g., `AUDIOLIBRARIAN__MUSICBRAINZ__USERNAME`)
    - Example:
+
      ```bash
-     # Override library directory
+     # Override library directory (library_dir)
      export AUDIOLIBRARIAN__LIBRARY_DIR="/mnt/music/library"
      
-     # Set MusicBrainz credentials
+     # Set MusicBrainz credentials (musicbrainz.username and musicbrainz.password)
      export AUDIOLIBRARIAN__MUSICBRAINZ__USERNAME="your_username"
      export AUDIOLIBRARIAN__MUSICBRAINZ__PASSWORD="your_password"
      ```
 
-2. **YAML Configuration File**
-   - Location: `~/.config/audiolibrarian/config.yaml` (or `$XDG_CONFIG_HOME/audiolibrarian/config.yaml` if set)
+2. **YAML Configuration File** (medium precedence)
+   - Default location: `~/.config/audiolibrarian/config.yaml`
    - Example:
+
      ```yaml
      # Base directory for your music library
      library_dir: "~/music/library"
-     
+
      # Cache and working directory
      work_dir: "~/.cache/audiolibrarian"
-     
+
      # CD/DVD device path (use null for default device)
      discid_device: null
-     
+
      # Audio normalization settings
      normalize_gain: 5  # dB gain for normalization
      normalize_preset: "radio"  # "album" or "radio"
-     
+
      # MusicBrainz API settings (optional)
      musicbrainz:
        username: "your_username"  # For personal genre preferences
@@ -97,18 +105,23 @@ pip install audiolibrarian
 
 ### Available Settings ###
 
-| Setting                  | Default                          | Description                               |
-|--------------------------|----------------------------------|-------------------------------------------|
-| `library_dir`            | `library` (in the current dir)   | Directory for storing audio files         |
-| `work_dir`               | `$XDG_CACHE_HOME/audiolibrarian` | Directory for temporary files             |
-| `discid_device`          | `null`                           | CD device path (null for default device)  |
-| `normalize_gain`         | `5`                              | Normalization gain in dB                  |
-| `normalize_preset`       | `"radio"`                        | Normalization preset ("album" or "radio") |
-| `musicbrainz.username`   | (not set)                        | MusicBrainz username                      |
-| `musicbrainz.password`   | (not set)                        | MusicBrainz password                      |
-| `musicbrainz.rate_limit` | `1.5`                            | Seconds between requests                  |
+| Setting                  | Default                   | Description                               |
+|--------------------------|---------------------------|-------------------------------------------|
+| `library_dir`            | `./library`               | Directory for storing audio files         |
+| `work_dir`               | `~/.cache/audiolibrarian` | Directory for temporary files             |
+| `discid_device`          | `null`                    | CD device path (null for default device)  |
+| `normalize_gain`         | `5`                       | Normalization gain in dB                  |
+| `normalize_preset`       | `"radio"`                 | Normalization preset ("album" or "radio") |
+| `musicbrainz.username`   | (not set)                 | MusicBrainz username                      |
+| `musicbrainz.password`   | (not set)                 | MusicBrainz password                      |
+| `musicbrainz.rate_limit` | `1.5`                     | Seconds between requests                  |
 
-> **Note**: The `musicbrainz` section is optional but recommended for accessing personal genre preferences on [MusicBrainz](https://musicbrainz.org/).
+> **Notes**:
+>
+> - The `musicbrainz` username and password are optional but recommended for accessing personal genre
+>   preferences on [MusicBrainz](https://musicbrainz.org/).
+> - The `work_dir` default is actually `$XDG_CACHE_HOME/audiolibrarian`, which defaults to
+>   `~/.cache/audiolibrarian` on Linux and macOS.
 
 ## Usage ##
 
@@ -137,31 +150,40 @@ audiolibrarian genre /path/to/audio/directories --tag  # Update tags with MB gen
 audiolibrarian --help
 ```
 
-### Combining Configuration Sources ###
+### Directory Structure ###
 
-Configuration sources are combined with the following precedence (highest to lowest):
-1. Environment variables
-2. YAML configuration file
-3. Default values
+`audiolibrarian` organizes files in the following structure:
 
-For example, with this `config.yaml`:
+**Processed audio files** (organized by format):
 
-```yaml
-# config.yaml
-library_dir: /media/music/library
-normalize_gain: 5.0
-```
-
-And this environment variable:
-```bash
-export AUDIOLIBRARIAN__NORMALIZE_GAIN="8.0"
-```
-
-The effective value of `normalize_gain` will be `8.0` (from the environment variable), while `library_dir` will be set to `/media/music/library` from the YAML file.
+   ```text
+   library/
+   ├── flac/
+   │   └── Artist/
+   │       └── YYYY__Album/
+   │           ├── 01__Track_Title.flac
+   │           └── 02__Another_Track.flac
+   ├── m4a/
+   │   └── Artist/
+   │       └── YYYY__Album/
+   │           ├── 01__Track_Title.m4a
+   │           └── 02__Another_Track.m4a
+   ├── mp3/
+   │   └── Artist/
+   │   └── YYYY__Album/
+   │           ├── 01__Track_Title.mp3
+   │           └── 02__Another_Track.mp3
+   ├── source/
+   │   └── Artist/
+   │       └── YYYY__Album/
+   │           ├── 01__Track_Title.flac
+   │           ├── 02__Another_Track.flac
+   │           └── Manifest.yaml
+   ```
 
 ### Advanced Usage ###
 
-1. **Ripping CDs**
+#### Ripping CDs ####
 
 ```bash
 # Basic CD rip
@@ -177,7 +199,7 @@ audiolibrarian rip --mb-release-id "12345678-1234-1234-1234-123456789012"
 audiolibrarian rip --disc "1/2"  # First disc of two
 ```
 
-2. **Converting Audio Files**
+#### Converting Audio Files ####
 
 ```bash
 # Convert with specific artist and album
@@ -190,7 +212,7 @@ audiolibrarian convert --mb-release-id "12345678-1234-1234-1234-123456789012" /p
 audiolibrarian convert --disc "1/2" /path/to/disc1/files
 ```
 
-2. **Working with Manifests**
+#### Working with Manifests ####
 
 ```bash
 # Create manifest for existing files
@@ -200,11 +222,13 @@ audiolibrarian manifest /path/to/audio/files
 audiolibrarian manifest --cd /path/to/audio/files
 
 # Specify MusicBrainz artist and release IDs
-audiolibrarian manifest --mb-artist-id "12345678-1234-1234-1234-123456789012" \
-    --mb-release-id "12345678-1234-1234-1234-123456789012" /path/to/audio/files
+audiolibrarian manifest \
+    --mb-artist-id "12345678-1234-1234-1234-123456789012" \
+    --mb-release-id "87654321-4321-4321-4321-210987654321" \
+    /path/to/audio/files
 ```
 
-3. **Reconverting Files**
+#### Reconverting Files ####
 
 ```bash
 # Reconvert all files in directory
@@ -214,7 +238,7 @@ audiolibrarian reconvert /path/to/source/directories
 audiolibrarian reconvert --dry-run /path/to/source/directories
 ```
 
-4. **Renaming Files**
+#### Renaming Files ####
 
 ```bash
 # Rename files based on tags
@@ -224,7 +248,7 @@ audiolibrarian rename /path/to/audio/directories
 audiolibrarian rename --dry-run /path/to/audio/directories
 ```
 
-5. **Using Different Normalization Presets**
+#### Using Different Normalization Presets ####
 
 ```bash
 # Use radio normalization preset (default)
@@ -234,9 +258,33 @@ export AUDIOLIBRARIAN__NORMALIZE_PRESET="radio"
 export AUDIOLIBRARIAN__NORMALIZE_PRESET="album"
 ```
 
+#### Combining Configuration Sources ####
+
+Configuration sources are combined with the following precedence (highest to lowest):
+1. Environment variables
+2. YAML configuration file
+3. Default values
+
+For example, with this `config.yaml`:
+
+```yaml
+# config.yaml
+library_dir: /media/music/library
+normalize_gain: 5.0
+```
+
+And this environment variable:
+
+```bash
+export AUDIOLIBRARIAN__NORMALIZE_GAIN="8.0"
+```
+
+The effective value of `normalize_gain` will be `8.0` (from the environment variable), while
+`library_dir` will be set to `/media/music/library` from the YAML file.
+
 ### Troubleshooting ###
 
-1. **Increasing Verbosity**
+#### Increasing Verbosity ####
 
 ```bash
 # Show more detailed output
@@ -246,58 +294,15 @@ audiolibrarian --log-level INFO cd
 audiolibrarian --log-level DEBUG cd
 ```
 
-2. **Checking Dependencies**
-
-```bash
-# Verify all required tools are installed
-audiolibrarian --log-level DEBUG cd
-```
-
-3. **MusicBrainz Issues**
+#### MusicBrainz Issues ####
 
 If you encounter MusicBrainz-related errors:
 
 1. Verify your credentials are correct
-2. Check your internet connection
+2. Check your Internet connection
 3. Use the debug log level to get more information
 4. Increase the rate limit if you're hitting rate limits
 
 ```bash
 export AUDIOLIBRARIAN__MUSICBRAINZ__RATE_LIMIT="2.0"
 ```
-
-### Directory Structure ###
-
-`audiolibrarian` organizes files in the following structure:
-
-1. **Source files** (original audio files):
-   ```
-   library/source/
-   └── Artist/
-       └── YYYY__Album/
-           ├── 01__Track_Title.flac
-           ├── 02__Another_Track.flac
-           └── Manifest.yaml
-   ```
-
-2. **Processed audio files** (organized by format):
-   ```
-   library/
-   ├── flac/
-   │   └── Artist/
-   │       └── YYYY__Album/
-   │           ├── 01__Track_Title.flac
-   │           └── 02__Another_Track.flac
-   ├── m4a/
-   │   └── Artist/
-   │       └── YYYY__Album/
-   │           ├── 01__Track_Title.m4a
-   │           └── 02__Another_Track.m4a
-   └── mp3/
-       └── Artist/
-           └── YYYY__Album/
-               ├── 01__Track_Title.mp3
-               └── 02__Another_Track.mp3
-   ```
-
-Each track filename follows the format: `track_number__track_name.extension` (e.g., `01__Call_to_Arms.flac`).

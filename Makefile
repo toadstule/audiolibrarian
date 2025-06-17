@@ -4,6 +4,7 @@
 PRESET_VARS := $(.VARIABLES)
 
 # Project variables
+MD_FILES        := $(shell find . -name '*.md' | grep -v "/.venv/" | grep -v "/dist/")
 PROJECT_NAME    := $(shell grep -e '^name =' pyproject.toml | cut -d'"' -f2)
 PY_FILES        := $(shell find . -name '*.py' | grep -v "/.venv/" | grep -v "/dist/")
 PYTHON_VERSION_ := $(shell cat .python-version)
@@ -15,6 +16,7 @@ BROWSER  := $(shell command -v chromium || command -v google-chrome-stable || co
 PYTHON   := $(shell command -v python$(PYTHON_VERSION_))
 UV       := $(shell command -v uv)
 COVERAGE := $(UV) run coverage
+MDLINT   := $(UV) run pymarkdownlnt
 MYPY     := $(UV) run mypy
 PIP      := $(UV) pip
 PYTEST   := $(UV) run pytest
@@ -71,6 +73,7 @@ lint: format  ## Lint the code.
 	@$(RUFF) format --check src
 	@$(RUFF) check src
 	@$(MYPY) --non-interactive $(PY_FILES)
+	@$(MDLINT) scan $(MD_FILES)
 
 .PHONY: publish
 publish: $(WHEEL)  ## Publish the package to PyPI.
@@ -107,7 +110,7 @@ ifndef PYTHON_VERSION
 endif
 endif
 
-uv.lock:
+uv.lock: pyproject.toml
 	@$(UV) lock
 
 $(WHEEL): $(PY_FILES) pyproject.toml uv.lock dep
