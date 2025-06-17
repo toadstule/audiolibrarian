@@ -110,7 +110,7 @@ ifndef PYTHON_VERSION
 endif
 endif
 
-uv.lock:
+uv.lock: pyproject.toml
 	@$(UV) lock
 
 $(WHEEL): $(PY_FILES) pyproject.toml uv.lock dep

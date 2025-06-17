@@ -84,7 +84,7 @@ dev = [
     { name = "coverage" },
     { name = "hatchling" },
     { name = "mypy" },
-    { name = "pymarkdownlnt", specifier = ">=0.9.30" },
+    { name = "pymarkdownlnt" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "types-pyyaml" },
