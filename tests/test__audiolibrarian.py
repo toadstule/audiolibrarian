@@ -1,5 +1,4 @@
 """Test AudioLibrarian."""
-
 #
 #  Copyright (c) 2020 Stephen Jibson
 #
@@ -16,13 +15,14 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+
 from argparse import Namespace
 from pathlib import Path
 from typing import Final
 
 import pytest
 
-from audiolibrarian.base import Base
+from audiolibrarian import base
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 
@@ -32,12 +32,12 @@ class TestAudioLibrarian:
 
     AUDIO_FILE_COUNT: Final[int] = 21  # This will need updated if test files are added.
 
-    @pytest.fixture(scope="class")
-    def al_base(self) -> Base:
+    @pytest.fixture
+    def al_base(self) -> base.Base:
         """Return a Base instance with a blank namespace."""
-        return Base(args=Namespace())
+        return base.Base(args=Namespace())
 
-    def test__single_media(self, al_base: Base) -> None:
+    def test__single_media(self, al_base: base.Base) -> None:
         """Test single media."""
         assert not al_base._multi_disc
         assert al_base._flac_filenames == []
@@ -53,13 +53,13 @@ class TestAudioLibrarian:
 
     def test__multi_media(self) -> None:
         """Test multi-media."""
-        al = Base(args=Namespace(disc="2/3"))
+        al = base.Base(args=Namespace(disc="2/3"))
 
         assert al._multi_disc
         searcher = al._get_searcher()
         assert searcher.disc_number == "2"
 
-    def test__find_audio_files(self, al_base: Base) -> None:
+    def test__find_audio_files(self, al_base: base.Base) -> None:
         """Test find-audio-files."""
         audio_files = list(al_base._find_audio_files([]))
         assert audio_files == []
@@ -67,7 +67,7 @@ class TestAudioLibrarian:
         audio_files = list(al_base._find_audio_files([test_data_path]))
         assert len(audio_files) == self.AUDIO_FILE_COUNT
 
-    def test__manifests(self, al_base: Base) -> None:
+    def test__manifests(self, al_base: base.Base) -> None:
         """Test manifests."""
         manifests = list(al_base._find_manifests([]))
         assert manifests == []
@@ -103,7 +103,7 @@ class TestAudioLibrarian:
         self, namespace: Namespace, expected: tuple[str, str, str, str, str, str]
     ) -> None:
         """Test searcher."""
-        al_base = Base(args=namespace)
+        al_base = base.Base(args=namespace)
         searcher = al_base._get_searcher()
         assert (
             searcher.artist,

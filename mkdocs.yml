@@ -1,0 +1,89 @@
+site_name: audiolibrarian
+site_url: https://audiolibrarian.readthedocs.io/
+repo_url: https://github.com/toadstule/audiolibrarian
+
+theme:
+  name: readthedocs
+  highlightjs: true
+  include_search_page: false
+  search_bar_position: navbar
+  navigation_depth: 4
+  
+  # Logo and favicon (uncomment and add your files if needed)
+  # logo: img/logo.png
+  # favicon: img/favicon.ico
+  
+  # ReadTheDocs theme features
+  features:
+    - navigation.tracking
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - toc.follow
+    - toc.sticky
+
+markdown_extensions:
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_heading: false
+            show_root_full_path: false
+            show_root_members_full_path: false
+            show_object_full_path: false
+            show_category_heading: false
+            show_if_no_docstring: true
+            separate_signature: true
+            merge_init_into_class: true
+
+watch:
+  - src/audiolibrarian
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - User Guide:
+      - Installation: user-guide/installation.md
+      - Configuration: user-guide/configuration.md
+      - Getting Started: user-guide/getting-started.md
+      - Advanced Topics: user-guide/advanced.md
+  - API Reference:
+      - audiolibrarian: api/audiolibrarian.md
+  - Development:
+      - Contributing: development/contributing.md
+      - Changelog: development/changelog.md
+
+# Extra configuration
+extra_copyright: Copyright &copy; 2025 Steve Jibson
+extra:
+  # Add links to show in the footer
+  links:
+    - type: github
+      link: https://github.com/toadstule/audiolibrarian
+    - type: pypi
+      link: https://pypi.org/project/audiolibrarian/
+
+# Google Analytics (optional)
+# google_analytics:
+#   - UA-XXXXX-XX
+#   - auto

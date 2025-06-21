@@ -139,11 +139,11 @@ class GenreManager:
     def _get_genres_by_artist(
         self,
     ) -> tuple[dict[str, str], dict[str, dict[str, Any]]]:
-        """Return two dicts mapping Musicbrainz-artist-ID to user and community.
+        """Return two dicts mapping MusicBrainz-artist-ID to user and community.
 
         Returns:
-          user: a single genre, set in Musicbrainz by this app's user
-          community: a list genre records (dicts) set in Musicbrainz by the community
+          user: a single genre, set in MusicBrainz by this app's user
+          community: a list genre records (dicts) set in MusicBrainz by the community
                      with "name" and "count" fields
         """
         user: dict[str, str] = {}

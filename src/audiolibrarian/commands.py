@@ -51,8 +51,8 @@ class Convert(_Command, base.Base):
     parser = argparse.ArgumentParser()
     parser.add_argument("--artist", "-a", help="provide artist (ignore tags)")
     parser.add_argument("--album", "-m", help="provide album (ignore tags)")
-    parser.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
-    parser.add_argument("--mb-release-id", help="Musicbrainz release ID")
+    parser.add_argument("--mb-artist-id", help="MusicBrainz artist ID")
+    parser.add_argument("--mb-release-id", help="MusicBrainz release ID")
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
@@ -79,14 +79,14 @@ class Genre(_Command):
     parser = argparse.ArgumentParser(
         description=(
             "Process all audio files in the given directory(ies), allowing the user to *update* "
-            "the genre in Musicbrainz or *tag* audio files with the user-defined genre in "
-            "Musicbrainz."
+            "the genre in MusicBrainz or *tag* audio files with the user-defined genre in "
+            "MusicBrainz."
         )
     )
     parser.add_argument("directory", nargs="+", help="root of directory tree to process")
     parser_action = parser.add_mutually_exclusive_group()
     parser_action.add_argument("--tag", action="store_true", help="update tags")
-    parser_action.add_argument("--update", action="store_true", help="update Musicbrainz")
+    parser_action.add_argument("--update", action="store_true", help="update MusicBrainz")
 
     def __init__(self, args: argparse.Namespace) -> None:
         """Initialize a Genre command handler."""
@@ -106,8 +106,8 @@ class Manifest(_Command, base.Base):
     parser.add_argument("--artist", "-a", help="provide artist (ignore tags)")
     parser.add_argument("--album", "-m", help="provide album (ignore tags)")
     parser.add_argument("--cd", "-c", action="store_true", help="original source was a CD")
-    parser.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
-    parser.add_argument("--mb-release-id", help="Musicbrainz release ID")
+    parser.add_argument("--mb-artist-id", help="MusicBrainz artist ID")
+    parser.add_argument("--mb-release-id", help="MusicBrainz release ID")
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
@@ -229,8 +229,8 @@ class Rip(_Command, base.Base):
     parser = argparse.ArgumentParser()
     parser.add_argument("--artist", "-a", help="provide artist")
     parser.add_argument("--album", "-m", help="provide album")
-    parser.add_argument("--mb-artist-id", help="Musicbrainz artist ID")
-    parser.add_argument("--mb-release-id", help="Musicbrainz release ID")
+    parser.add_argument("--mb-artist-id", help="MusicBrainz artist ID")
+    parser.add_argument("--mb-release-id", help="MusicBrainz release ID")
     parser.add_argument("--disc", "-d", help="x/y: disc x of y; multi-disc release")
 
     def __init__(self, args: argparse.Namespace) -> None:

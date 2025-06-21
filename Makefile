@@ -44,11 +44,24 @@ clean:  ## Clean up.
 	@rm -rf htmlcov .coverage
 	@rm -rf .pytype
 	@rm -rf .ruff_cache .mypy_cache
+	@rm -rf site .cache .mkdocs
 	@$(UV) clean
 	@rm -rf dist
 
+.PHONY: docs
+docs: docs-build  ## Build and serve the documentation
+	@mkdocs serve
+
+.PHONY: docs-build
+docs-build: dep  ## Build the documentation
+	@mkdocs build --clean
+
+.PHONY: docs-deploy
+docs-deploy: dep  ## Deploy the documentation to GitHub Pages
+	@mkdocs gh-deploy --force
+
 .PHONY: dep
-dep:  ## Install dependencies.
+dep: uv.lock  ## Install dependencies.
 	@$(UV) sync --locked --all-extras --dev
 
 .PHONY: dep-upgrade
