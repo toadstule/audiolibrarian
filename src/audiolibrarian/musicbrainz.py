@@ -417,7 +417,7 @@ class Searcher:
             log.info("RELEASE_GROUPS: {release_group_ids}")
             release_id = self._prompt_release_id(release_group_ids)
         else:
-            release_id = self._prompt_uuid("Musicbrainz Release ID: ")
+            release_id = self._prompt_uuid("MusicBrainz Release ID: ")
 
         return MusicBrainzRelease(release_id).get_release()
 

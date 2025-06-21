@@ -16,3 +16,16 @@ workdir/
 venv/
 
 NOTES.md
+
+# MkDocs build output
+site/
+.cache/
+
+# Local development
+.mkdocs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
