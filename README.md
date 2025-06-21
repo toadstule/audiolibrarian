@@ -1,4 +1,4 @@
-# audiolibrarian #
+# audiolibrarian
 
 [![PyPI](https://img.shields.io/pypi/v/audiolibrarian)](https://pypi.org/project/audiolibrarian/)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -29,12 +29,11 @@ audiolibrarian convert /path/to/audio/files
 audiolibrarian --help
 ```
 
-## Documentation 
+## Documentation
 
 For complete documentation, including installation instructions, configuration, and advanced usage, visit:
 
 [https://audiolibrarian.readthedocs.io/](https://audiolibrarian.readthedocs.io/)
-
 
 ## License
 
