@@ -118,10 +118,10 @@ class CDAudioSource(AudioSource):
         cwd = pathlib.Path.cwd()
         os.chdir(self._temp_dir)
         try:
-            subprocess.run(("cd-paranoia", "-B"), check=True)  # noqa: S603
+            subprocess.run(("cd-paranoia", "-B"), check=True)
         finally:
             os.chdir(cwd)
-        subprocess.run(("eject",), check=False)  # noqa: S603
+        subprocess.run(("eject",), check=False)
 
 
 class FilesAudioSource(AudioSource):
