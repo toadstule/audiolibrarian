@@ -28,6 +28,3 @@ mkdocs:
 formats:
   - pdf
   - epub
-
-# Path to the documentation source
-doc_path: docs
