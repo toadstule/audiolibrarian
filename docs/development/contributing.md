@@ -21,41 +21,64 @@ contributions, we appreciate your help in making audiolibrarian better.
    cd audiolibrarian
    ```
 
-2. Install development dependencies:
+2. Install dependencies using the Makefile:
 
    ```bash
-   pip install -e ".[dev]"
+   make dep
    ```
 
-3. Install pre-commit hooks:
+   This will install all required dependencies in a virtual environment.
 
-   ```bash
-   pre-commit install
-   ```
+## Development Workflow
 
-## Running Tests
+### Running Tests
 
-```bash
-pytest
-```
-
-## Code Style
-
-We use `ruff` for code formatting and linting. Please ensure your code passes all checks:
+Run the test suite:
 
 ```bash
-ruff check .
+make test
 ```
 
-## Documentation
-
-To build the documentation locally:
+For tests with coverage report:
 
 ```bash
-mkdocs serve
+make test-coverage
 ```
 
-Then open `http://127.0.0.1:8000` in your browser.
+### Code Style and Linting
+
+We use `ruff` for code formatting and linting. The Makefile provides these helpful commands:
+
+```bash
+make format    # Format the code and sort imports
+make lint      # Run all linters and type checking
+```
+
+### Building Documentation
+
+To build and serve the documentation locally:
+
+```bash
+make docs
+```
+
+This will start a local server at `http://127.0.0.1:8000` where you can preview the documentation.
+
+### Building the Package
+
+To build the package:
+
+```bash
+make build
+```
+
+### Updating Dependencies
+
+To upgrade all dependencies:
+
+```bash
+make dep-upgrade
+```
 
 ## Reporting Issues
 
@@ -80,3 +103,11 @@ We welcome feature requests! Please open an issue and describe:
 
 This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code.
+
+## Available Make Commands
+
+For a complete list of available commands, run:
+
+```bash
+make help
+```
