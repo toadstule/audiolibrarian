@@ -9,22 +9,20 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.13"
+  jobs:
+    pre_create_environment:
+      - asdf plugin add uv
+      - asdf install uv latest
+      - asdf global uv latest
+    create_environment:
+      - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
+    install:
+      - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group dev
 
 # MkDocs configuration
 mkdocs:
   configuration: mkdocs.yml
   fail_on_warning: false
-
-# Python environment setup
-python:
-  pre_install:
-    - curl -sSf https://astral.sh/uv/install.sh | sh
-
-  install:
-    - method: uv
-      path: .
-      extra_requirements: ["dev"]
-      use_system_python: true
 
 # Build PDF and ePub output
 formats:
