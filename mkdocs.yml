@@ -71,7 +71,6 @@ nav:
       - audiolibrarian: api/audiolibrarian.md
   - Development:
       - Contributing: development/contributing.md
-      - Changelog: development/changelog.md
 
 # Extra configuration
 extra_copyright: Copyright &copy; 2025 Steve Jibson

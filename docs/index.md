@@ -31,6 +31,5 @@ converting them to multiple formats, and organizing them in a clean directory st
 
 - Found a bug? [Open an issue](https://github.com/toadstule/audiolibrarian/issues).
 - Want to contribute? Read our [contributing guide](development/contributing.md).
-- Check out the [changelog](development/changelog.md) for recent updates.
 
 [MusicBrainz]: https://musicbrainz.org
