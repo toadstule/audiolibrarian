@@ -53,4 +53,4 @@ print(f"Found track: {track_info.title} from {track_info.album}")
 
 ## Contributing
 
-If you want to contribute to the development of audiolibrarian, please read our [contributing guidelines](development/contributing.md).
+If you want to contribute to the development of audiolibrarian, please read our [contributing guidelines](../development/contributing.md).

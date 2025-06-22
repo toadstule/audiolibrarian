@@ -11,40 +11,40 @@ listed in order of precedence:
 - **Nested fields**: Use `__` as delimiter (e.g., `AUDIOLIBRARIAN__MUSICBRAINZ__USERNAME`)
 - **Example**:
 
-    ```bash
-    # Override library directory (library_dir)
-    export AUDIOLIBRARIAN__LIBRARY_DIR="/mnt/music/library"
-  
-    # Set MusicBrainz credentials (musicbrainz.username and musicbrainz.password)
-    export AUDIOLIBRARIAN__MUSICBRAINZ__USERNAME="your_username"
-    export AUDIOLIBRARIAN__MUSICBRAINZ__PASSWORD="your_password"
-    ```
+```bash
+# Override library directory (library_dir)
+export AUDIOLIBRARIAN__LIBRARY_DIR="/mnt/music/library"
+
+# Set MusicBrainz credentials (musicbrainz.username and musicbrainz.password)
+export AUDIOLIBRARIAN__MUSICBRAINZ__USERNAME="your_username"
+export AUDIOLIBRARIAN__MUSICBRAINZ__PASSWORD="your_password"
+```
 
 ### 2. YAML Configuration File (medium precedence)
 
 - **Default location**: `~/.config/audiolibrarian/config.yaml`
 - **Example**:
 
-    ```yaml
-    # Base directory for your music library
-    library_dir: "~/music/library"
+```yaml
+# Base directory for your music library
+library_dir: "~/music/library"
 
-    # Cache and working directory
-    work_dir: "~/.cache/audiolibrarian"
+# Cache and working directory
+work_dir: "~/.cache/audiolibrarian"
 
-    # CD/DVD device path (use null for default device)
-    discid_device: null
+# CD/DVD device path (use null for default device)
+discid_device: null
 
-    # Audio normalization settings
-    normalize_gain: 5  # dB gain for normalization
-    normalize_preset: "radio"  # "album" or "radio"
+# Audio normalization settings
+normalize_gain: 5  # dB gain for normalization
+normalize_preset: "radio"  # "album" or "radio"
 
-    # MusicBrainz API settings (optional)
-    musicbrainz:
-      username: "your_username"  # For personal genre preferences
-      password: "your_password"  # Will be stored securely
-      rate_limit: 1.5  # Seconds between API requests
-    ```
+# MusicBrainz API settings (optional)
+musicbrainz:
+  username: "your_username"  # For personal genre preferences
+  password: "your_password"  # Will be stored securely
+  rate_limit: 1.5  # Seconds between API requests
+```
 
 ### 3. Default Values (lowest precedence)
 

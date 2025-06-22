@@ -99,11 +99,6 @@ We welcome feature requests! Please open an issue and describe:
 - Why this feature would be useful
 - Any suggestions for implementation
 
-## Code of Conduct
-
-This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
-By participating, you are expected to uphold this code.
-
 ## Available Make Commands
 
 For a complete list of available commands, run:

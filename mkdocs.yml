@@ -1,6 +1,7 @@
 site_name: audiolibrarian
 site_url: https://audiolibrarian.readthedocs.io/
 repo_url: https://github.com/toadstule/audiolibrarian
+copyright: Copyright &copy; 2025 Steve Jibson
 
 theme:
   name: readthedocs
@@ -22,14 +23,17 @@ theme:
     - toc.follow
     - toc.sticky
 
-#markdown_extensions:
+markdown_extensions:
 #  - footnotes
 #  - toc:
 #      permalink: true
-#  - pymdownx.highlight:
+#  - pymdownx.highlight
 #      anchor_linenums: true
 #      line_spans: __span
 #  - pymdownx.inlinehilite
+#  - pymdownx.inlinehilite
+#  - pymdownx.superfences
+
 #  - pymdownx.snippets
 #  - attr_list
 #  - md_in_html
@@ -72,7 +76,6 @@ nav:
       - Contributing: development/contributing.md
 
 # Extra configuration
-extra_copyright: Copyright &copy; 2025 Steve Jibson
 extra:
   # Add links to show in the footer
   links:

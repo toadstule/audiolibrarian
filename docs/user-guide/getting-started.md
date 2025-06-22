@@ -62,7 +62,7 @@ This will:
 **Sample output:**
 
 ```text
-─➤  audiolibrarian rip
+$ audiolibrarian rip
 
 Gathering search information...
 Finding MusicBrainz release information...
