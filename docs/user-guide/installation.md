@@ -5,7 +5,7 @@
 
 ## Prerequisites
 
-- Python 3.13 or higher
+- Python 3.12 or higher
 
 ### External Requirements
 
@@ -22,6 +22,9 @@
 - [wavegain](https://github.com/MestreLion/wavegain)
 
 It also requires the [libdiscid](https://musicbrainz.org/doc/libdiscid) library.
+
+Instructions for installing these required tools in commonly-used Linux distributions can be
+found below.
 
 ## Installing with pip
 
@@ -55,4 +58,59 @@ To uninstall audiolibrarian:
 
 ```bash
 pip uninstall audiolibrarian
+```
+
+## Installing External Requirements
+
+### Arch Linux
+
+```bash
+sudo pacman -S \
+    faad2 \
+    fdkaac \
+    flac \
+    lame \
+    libcdio-paranoia \
+    libdiscid \
+    libsndfile \
+    mpg123 \
+    python-pip \
+    util-linux \
+    wavegain
+```
+
+### Fedora
+
+Fedora Linux is not currently supported because `fdkaac` is not available.
+
+### Ubuntu
+
+```bash
+sudo apt update
+sudo apt install -y \
+    cdparanoia \
+    eject \
+    faad \
+    fdkaac \
+    flac \
+    lame \
+    libdiscid0 \
+    libsndfile1 \
+    mpg123 \
+    python3-pip
+```
+
+This will get you everything you need except for `wavegain`. You build and install
+`wavegain` from source as follows:
+
+```bash
+sudo apt install -y gcc wget unzip
+wget "https://www.rarewares.org/files/others/wavegain-1.3.1srcs.zip"
+unzip wavegain-1.3.1srcs.zip
+cd WaveGain-1.3.1
+gcc -fcommon *.c -o wavegain -DHAVE_CONFIG_H -lm
+# You'll get some warning here, but they can be ignored.
+sudo cp wavegain /usr/loca/bin/wavegain
+cd ..
+rm -rf WaveGain-1.3.1 wavegain-1.3.1srcs.zip
 ```
