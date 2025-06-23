@@ -15,11 +15,12 @@
 - [util-linux](https://github.com/util-linux/util-linux)
 - [faad2](https://github.com/knik0/faad2)
 - [fdkaac](https://github.com/nu774/fdkaac)
+- [ffmpeg](https://ffmpeg.org/) - optional
 - [flac](https://github.com/xiph/flac)
 - [lame](https://lame.sourceforge.io/)
 - [mpg123](https://www.mpg123.de/)
 - [libsndfile](https://github.com/libsndfile/libsndfile)
-- [wavegain](https://github.com/MestreLion/wavegain)
+- [wavegain](https://github.com/MestreLion/wavegain) - optional
 
 It also requires the [libdiscid](https://musicbrainz.org/doc/libdiscid) library.
 
@@ -68,6 +69,7 @@ pip uninstall audiolibrarian
 sudo pacman -S \
     faad2 \
     fdkaac \
+    ffmpeg \
     flac \
     lame \
     libcdio-paranoia \
@@ -92,25 +94,11 @@ sudo apt install -y \
     eject \
     faad \
     fdkaac \
+    ffmpeg \
     flac \
     lame \
     libdiscid0 \
     libsndfile1 \
     mpg123 \
     python3-pip
-```
-
-This will get you everything you need except for `wavegain`. You build and install
-`wavegain` from source as follows:
-
-```bash
-sudo apt install -y gcc wget unzip
-wget "https://www.rarewares.org/files/others/wavegain-1.3.1srcs.zip"
-unzip wavegain-1.3.1srcs.zip
-cd WaveGain-1.3.1
-gcc -fcommon *.c -o wavegain -DHAVE_CONFIG_H -lm
-# You'll get some warning here, but they can be ignored.
-sudo cp wavegain /usr/loca/bin/wavegain
-cd ..
-rm -rf WaveGain-1.3.1 wavegain-1.3.1srcs.zip
 ```

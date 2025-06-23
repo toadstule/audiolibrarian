@@ -13,6 +13,22 @@ The tests use a temporary directory structure to simulate XDG base directories:
 All tests use pytest fixtures to ensure proper environment isolation and cleanup.
 """
 
+#
+#  Copyright (c) 2000-2025 Stephen Jibson
+#
+#  This file is part of audiolibrarian.
+#
+#  Audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
+#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  Audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+#  the GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along with audiolibrarian.
+#  If not, see <https://www.gnu.org/licenses/>.
+#
 import importlib
 import os
 import pathlib
@@ -56,7 +72,7 @@ class TestSettings:
     @staticmethod
     def _get_settings() -> settings.Settings:
         """Return a fresh instance of SETTINGS."""
-        from audiolibrarian import settings
+        from audiolibrarian import settings  # noqa: PLC0415
 
         importlib.reload(settings)
         return settings.SETTINGS
@@ -69,8 +85,10 @@ class TestSettings:
         assert settings_.library_dir == pathlib.Path("library").resolve()
         assert settings_.work_dir == self._get_cache_home(tmp_path) / "audiolibrarian"
         assert settings_.discid_device is None
-        assert settings_.normalize_gain == 5  # noqa: PLR2004
-        assert settings_.normalize_preset == "radio"
+        assert settings_.normalize.normalizer == "auto"
+        assert settings_.normalize.wavegain.gain == 5  # noqa: PLR2004
+        assert settings_.normalize.wavegain.preset == "radio"
+        assert settings_.normalize.ffmpeg.target_level == -13  # noqa: PLR2004
         assert settings_.musicbrainz.rate_limit == 1.5  # noqa: PLR2004
         assert settings_.musicbrainz.username == ""
         assert isinstance(settings_.musicbrainz.password, settings.pydantic.SecretStr)
@@ -87,8 +105,13 @@ class TestSettings:
                 username: test_user
                 password: test_pass
                 rate_limit: 2
-            normalize_gain: 10
-            normalize_preset: album
+            normalize:
+                normalizer: wavegain
+                wavegain:
+                    gain: 10
+                    preset: album
+                ffmpeg:
+                    target_level: -14
         """
 
         with patch.dict(os.environ, test_env, clear=True):
@@ -104,8 +127,9 @@ class TestSettings:
             assert test_settings.musicbrainz.username == "test_user"
             assert test_settings.musicbrainz.password.get_secret_value() == "test_pass"
             assert test_settings.musicbrainz.rate_limit == 2  # noqa: PLR2004
-            assert test_settings.normalize_gain == 10  # noqa: PLR2004
-            assert test_settings.normalize_preset == "album"
+            assert test_settings.normalize.wavegain.gain == 10  # noqa: PLR2004
+            assert test_settings.normalize.wavegain.preset == "album"
+            assert test_settings.normalize.ffmpeg.target_level == -14  # noqa: PLR2004
 
     def test_env_variable_override(
         self, test_env: dict[str, str], tmp_path: pathlib.Path, config_path: pathlib.Path
@@ -126,6 +150,8 @@ class TestSettings:
             os.environ["AUDIOLIBRARIAN__LIBRARY_DIR"] = str(tmp_path / "Music_env")
             os.environ["AUDIOLIBRARIAN__WORK_DIR"] = str(tmp_path / "work_env")
             os.environ["AUDIOLIBRARIAN__MUSICBRAINZ__USERNAME"] = "test_user_env"
+            os.environ["AUDIOLIBRARIAN__NORMALIZE__NORMALIZER"] = "ffmpeg"
+            os.environ["AUDIOLIBRARIAN__NORMALIZE__FFMPEG__TARGET_LEVEL"] = "-16"
 
             # Create Settings with default YAML file location
             test_settings = self._get_settings()
@@ -133,6 +159,8 @@ class TestSettings:
             assert test_settings.library_dir == tmp_path / "Music_env"
             assert test_settings.work_dir == tmp_path / "work_env"
             assert test_settings.musicbrainz.username == "test_user_env"
+            assert test_settings.normalize.normalizer == "ffmpeg"
+            assert test_settings.normalize.ffmpeg.target_level == -16  # noqa: PLR2004
 
     def test_invalid_yaml(self, test_env: dict[str, str], config_path: pathlib.Path) -> None:
         """Test handling of invalid YAML file."""

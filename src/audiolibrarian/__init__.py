@@ -1,7 +1,7 @@
 """The audiolibrarian package."""
 
 #
-#  Copyright (c) 2020 Stephen Jibson
+#  Copyright (c) 2000-2025 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
 #
@@ -16,4 +16,4 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-__version__ = "0.16.5"
+__version__ = "0.17.0"

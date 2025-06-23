@@ -1,7 +1,7 @@
 """Audiolibrarian command line interface."""
 
 #
-#  Copyright (c) 2021 Stephen Jibson
+#  Copyright (c) 2000-2025 Stephen Jibson
 #
 #  This file is part of audiolibrarian.
 #
@@ -40,7 +40,6 @@ class CommandLineInterface:
         "lame",
         "mpg123",
         "sndfile-convert",
-        "wavegain",
     }
 
     def __init__(self, *, parse_args: bool = True) -> None:
