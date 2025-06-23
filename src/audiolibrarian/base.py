@@ -27,9 +27,10 @@ import subprocess
 import sys
 import warnings
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, Final
 
 import colors
+import ffmpeg_normalize
 import filelock
 import yaml
 
@@ -46,6 +47,7 @@ class Base:
     """
 
     command: str | None = None
+    _manifest_file: Final[str] = "Manifest.yaml"
 
     def __init__(self, args: argparse.Namespace) -> None:
         """Initialize the base."""
@@ -66,8 +68,9 @@ class Base:
         self._source_dir = self._work_dir / "source"
         self._wav_dir = self._work_dir / "wav"
 
-        self._manifest_file = "Manifest.yaml"
         self._lock = filelock.FileLock(str(self._work_dir) + ".lock")
+
+        self._normalizer = self._which_normalizer()
 
         # Initialize stuff that will be defined later.
         self._audio_source: audiosource.AudioSource | None = None
@@ -125,24 +128,6 @@ class Base:
             self._make_m4a()
             self._make_mp3()
             self._move_files(move_source=make_source)
-
-    @staticmethod
-    def _find_audio_files(directories: list[str | pathlib.Path]) -> Iterable[audiofile.AudioFile]:
-        """Yield audiofile objects found in the given directories."""
-        paths: list[pathlib.Path] = []
-        # Grab all the paths first because thing may change as files are renamed.
-        for directory in directories:
-            path = pathlib.Path(directory)
-            for ext in audiofile.AudioFile.extensions():
-                paths.extend(path.rglob(f"*{ext}"))
-        paths = sorted(set(paths))
-        # Using yield rather than returning a list saves us from simultaneously storing
-        # potentially thousands of AudioFile objects in memory at the same time.
-        for path in paths:
-            try:
-                yield audiofile.AudioFile.open(path)
-            except FileNotFoundError:
-                continue
 
     def _find_manifests(self, directories: list[str | pathlib.Path]) -> list[pathlib.Path]:
         """Return a sorted, unique list of manifest files anywhere in the given directories."""
@@ -283,25 +268,36 @@ class Base:
                 path.rename(source_dir / path.name)
 
     def _normalize(self) -> None:
-        """Normalize the wav files using wavegain."""
-        print("Normalizing wav files...")
-        command = [
-            "wavegain",
-            f"--{SETTINGS.normalize_preset}",
-            f"--gain={SETTINGS.normalize_gain}",
-            "--apply",
-        ]
-        command.extend(str(f) for f in self._wav_filenames)
-        result = subprocess.run(command, capture_output=True, check=False)  # noqa: S603
-        for line in str(result.stderr).split(r"\n"):
-            line_trunc = line[:137] + "..." if len(line) > 140 else line  # noqa: PLR2004
-            log.info("WAVEGAIN: %s", line_trunc)
-        result.check_returncode()
+        """Normalize the wav files using the selected normalizer."""
+        if self._normalizer == "none":
+            return
+        print(f"Normalizing wav files using {self._normalizer}...")
 
-    @staticmethod
-    def _read_manifest(manifest_path: pathlib.Path) -> dict[Any, Any]:
-        with manifest_path.open(encoding="utf-8") as manifest_file:
-            return dict(yaml.safe_load(manifest_file))
+        if self._normalizer == "wavegain":
+            command = [
+                "wavegain",
+                f"--{SETTINGS.normalize.wavegain.preset}",
+                f"--gain={SETTINGS.normalize.wavegain.gain}",
+                "--apply",
+            ]
+            command.extend(str(f) for f in self._wav_filenames)
+            result = subprocess.run(command, capture_output=True, check=False)  # noqa: S603
+            for line in str(result.stderr).split(r"\n"):
+                line_trunc = line[:137] + "..." if len(line) > 140 else line  # noqa: PLR2004
+                log.info("WAVEGAIN: %s", line_trunc)
+            result.check_returncode()
+            return
+
+        normalizer = ffmpeg_normalize.FFmpegNormalize(
+            extension="wav",
+            keep_loudness_range_target=True,
+            target_level=SETTINGS.normalize.ffmpeg.target_level,
+        )
+        for wav_file in self._wav_filenames:
+            normalizer.add_media_file(str(wav_file), str(wav_file))
+        log.info("NORMALIZER: starting ffmpeg normalization...")
+        normalizer.run_normalization()
+        log.info("NORMALIZER: ffmpeg normalization completed successfully")
 
     def _rename_wav(self) -> None:
         """Rename the wav files to a filename-sane representation of the track title."""
@@ -431,3 +427,54 @@ class Base:
         with pathlib.Path(manifest_filename).open("w", encoding="utf-8") as manifest_file:
             yaml.dump(manifest, manifest_file)
         print(f"Wrote {manifest_filename}")
+
+    @staticmethod
+    def _which_normalizer() -> str:
+        """Determine which normalizer to use based on settings and availability.
+
+        Returns:
+            str: The name of the normalizer to use ("wavegain", "ffmpeg" or "none")
+        """
+        normalizer = SETTINGS.normalize.normalizer
+        if normalizer == "none":
+            return "none"
+
+        wavegain_found = shutil.which("wavegain")
+        if normalizer in ("auto", "wavegain") and wavegain_found:
+            return "wavegain"
+
+        ffmpeg_found = shutil.which("ffmpeg")
+        if normalizer in ("auto", "ffmpeg") and ffmpeg_found:
+            return "ffmpeg"
+
+        if wavegain_found:
+            log.warning("ffmpeg not found, using wavegain for normalization")
+            return "wavegain"
+        if ffmpeg_found:
+            log.warning("wavegain not found, using ffmpeg for normalization")
+            return "ffmpeg"
+        log.warning("wavegain not found, ffmpeg not found, using no normalization")
+        return "none"
+
+    @staticmethod
+    def _find_audio_files(directories: list[str | pathlib.Path]) -> Iterable[audiofile.AudioFile]:
+        """Yield audiofile objects found in the given directories."""
+        paths: list[pathlib.Path] = []
+        # Grab all the paths first because thing may change as files are renamed.
+        for directory in directories:
+            path = pathlib.Path(directory)
+            for ext in audiofile.AudioFile.extensions():
+                paths.extend(path.rglob(f"*{ext}"))
+        paths = sorted(set(paths))
+        # Using yield rather than returning a list saves us from simultaneously storing
+        # potentially thousands of AudioFile objects in memory at the same time.
+        for path in paths:
+            try:
+                yield audiofile.AudioFile.open(path)
+            except FileNotFoundError:
+                continue
+
+    @staticmethod
+    def _read_manifest(manifest_path: pathlib.Path) -> dict[Any, Any]:
+        with manifest_path.open(encoding="utf-8") as manifest_file:
+            return dict(yaml.safe_load(manifest_file))
