@@ -40,7 +40,6 @@ class CommandLineInterface:
         "lame",
         "mpg123",
         "sndfile-convert",
-        "wavegain",
     }
 
     def __init__(self, *, parse_args: bool = True) -> None:
