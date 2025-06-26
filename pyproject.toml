@@ -13,6 +13,7 @@ dev = [
     "pymarkdownlnt",
     "pytest",
     "pytest-env",
+    "pytest-mock",
     "ruff",
     "types-pyyaml",
     "types-requests",
@@ -49,7 +50,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 
 [project.scripts]
-audiolibrarian = "audiolibrarian:cli.main"
+audiolibrarian = "audiolibrarian.entrypoints.cli:main"
 
 [project.urls]
 Repository = "https://github.com/toadstule/audiolibrarian"

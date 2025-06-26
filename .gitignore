@@ -6,6 +6,7 @@ MANIFEST
 __pycache__/
 .mypy_cache/
 .pytype/
+.scratch/
 .venv/
 audiolibrarian.egg-info/
 dist/
@@ -14,8 +15,6 @@ library/
 new_library/
 workdir/
 venv/
-
-NOTES.md
 
 # MkDocs build output
 site/

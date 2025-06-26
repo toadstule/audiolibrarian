@@ -48,28 +48,33 @@ import xdg_base_dirs
 logger = logging.getLogger(__name__)
 
 
-class MusicBrainzSettings(pydantic_settings.BaseSettings):
+class EmptySettings(pydantic.BaseModel):
+    """Empty settings."""
+
+
+class MusicBrainzSettings(pydantic.BaseModel):
     """Configuration settings for MusicBrainz."""
 
     password: pydantic.SecretStr = pydantic.SecretStr("")
     username: str = ""
     rate_limit: pydantic.PositiveFloat = 1.5  # Seconds between requests.
+    work_dir: pathlib.Path = xdg_base_dirs.xdg_cache_home() / "audiolibrarian"
 
 
-class NormalizeFFmpegSettings(pydantic_settings.BaseSettings):
+class NormalizeFFmpegSettings(pydantic.BaseModel):
     """Configuration settings for ffmpeg normalization."""
 
     target_level: float = -13
 
 
-class NormalizeWavegainSettings(pydantic_settings.BaseSettings):
+class NormalizeWavegainSettings(pydantic.BaseModel):
     """Configuration settings for wavegain normalization."""
 
     gain: int = 5  # dB
     preset: Literal["album", "radio"] = "radio"
 
 
-class NormalizeSettings(pydantic_settings.BaseSettings):
+class NormalizeSettings(pydantic.BaseModel):
     """Configuration settings for audio normalization."""
 
     normalizer: Literal["auto", "wavegain", "ffmpeg", "none"] = "auto"
@@ -102,13 +107,10 @@ class Settings(pydantic_settings.BaseSettings):
         dotenv_settings: pydantic_settings.PydanticBaseSettingsSource,
         file_secret_settings: pydantic_settings.PydanticBaseSettingsSource,
     ) -> tuple[pydantic_settings.PydanticBaseSettingsSource, ...]:
+        """Customize settings sources."""
         del dotenv_settings, file_secret_settings  # Unused.
         return (
+            init_settings,  # Used for tests.
             env_settings,
             pydantic_settings.YamlConfigSettingsSource(settings_cls),
-            init_settings,
         )
-
-
-SETTINGS = Settings()
-__all__ = ["SETTINGS"]

@@ -34,7 +34,7 @@ import pytest
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-from audiolibrarian import cli
+from audiolibrarian.entrypoints import cli
 
 
 class TestMisc:

@@ -23,7 +23,7 @@ import subprocess
 import sys
 from typing import Final
 
-from audiolibrarian import commands
+from audiolibrarian import commands, config
 
 log = logging.getLogger("audiolibrarian")
 
@@ -57,7 +57,7 @@ class CommandLineInterface:
             if self._args.command == cmd.command:
                 if not cmd.validate_args(self._args):
                     sys.exit(2)
-                cmd(self._args)
+                cmd(self._args, config.Settings())
                 break
         if self._args.log_level == logging.DEBUG:
             print(pathlib.Path("/proc/self/status").read_text(encoding="utf-8"))

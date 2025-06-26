@@ -30,8 +30,7 @@ import requests
 from fuzzywuzzy import fuzz
 from requests import auth
 
-from audiolibrarian import __version__, records, text
-from audiolibrarian.settings import SETTINGS
+from audiolibrarian import __version__, config, records, text
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -48,11 +47,11 @@ class MusicBrainzSession:
     It can be for things that are not supported by the musicbrainzngs library.
     """
 
-    _api_rate = dt.timedelta(seconds=SETTINGS.musicbrainz.rate_limit)
     _last_api_call = dt.datetime.now(tz=dt.UTC)
 
-    def __init__(self) -> None:
+    def __init__(self, settings: config.MusicBrainzSettings) -> None:
         """Initialize a MusicBrainzSession."""
+        self._settings = settings
         self.__session: requests.Session | None = None
 
     def __del__(self) -> None:
@@ -65,8 +64,8 @@ class MusicBrainzSession:
         if self.__session is None:
             self.__session = requests.Session()
 
-            if (username := SETTINGS.musicbrainz.username) and (
-                password := SETTINGS.musicbrainz.password.get_secret_value()
+            if (username := self._settings.username) and (
+                password := self._settings.password.get_secret_value()
             ):
                 self._session.auth = auth.HTTPDigestAuth(username, password)
             self._session.headers.update(
@@ -108,14 +107,17 @@ class MusicBrainzSession:
             params["inc"] = "+".join(includes)
         return self._get(f"release-group/{release_group_id}", params=params)
 
-    @staticmethod
-    def sleep() -> None:
+    def sleep(self) -> None:
         """Sleep so we don't abuse the MusicBrainz API service.
 
         See https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
         """
         since_last = dt.datetime.now(tz=dt.UTC) - MusicBrainzSession._last_api_call
-        if (sleep_seconds := (MusicBrainzSession._api_rate - since_last).total_seconds()) > 0:
+        if (
+            sleep_seconds := (
+                dt.timedelta(seconds=self._settings.rate_limit) - since_last
+            ).total_seconds()
+        ) > 0:
             log.debug("Sleeping %s to avoid throttling...", sleep_seconds)
             time.sleep(sleep_seconds)
             MusicBrainzSession._last_api_call = dt.datetime.now(tz=dt.UTC)
@@ -137,11 +139,17 @@ class MusicBrainzRelease:
         "work-level-rels",
     ]
 
-    def __init__(self, release_id: str, *, verbose: bool = False) -> None:
+    def __init__(
+        self,
+        release_id: str,
+        settings: config.MusicBrainzSettings,
+        *,
+        verbose: bool = False,
+    ) -> None:
         """Initialize an MusicBrainzRelease."""
         self._release_id = release_id
         self._verbose = verbose
-        self._session = MusicBrainzSession()
+        self._session = MusicBrainzSession(settings=settings)
         self._session.sleep()
         self._release = mb.get_release_by_id(release_id, includes=self._includes)["release"]
         self._release_record: records.Release | None = None
@@ -392,10 +400,16 @@ class Searcher:
     mb_release_id: str = ""
     __mb_session: MusicBrainzSession | None = None
 
+    settings: dataclasses.InitVar[config.MusicBrainzSettings] = None
+
+    def __post_init__(self, settings: config.MusicBrainzSettings) -> None:
+        """Process additional variables."""
+        self._settings = settings
+
     @property
     def _mb_session(self) -> MusicBrainzSession:
         if self.__mb_session is None:
-            self.__mb_session = MusicBrainzSession()
+            self.__mb_session = MusicBrainzSession(settings=self._settings)
         return self.__mb_session
 
     def find_music_brains_release(self) -> records.Release | None:
@@ -419,7 +433,7 @@ class Searcher:
         else:
             release_id = self._prompt_uuid("MusicBrainz Release ID: ")
 
-        return MusicBrainzRelease(release_id).get_release()
+        return MusicBrainzRelease(release_id=release_id, settings=self._settings).get_release()
 
     def _get_release_group_ids(self) -> list[str]:
         # Return release groups that fuzzy-match the search criteria.

@@ -29,8 +29,7 @@ import mutagen.flac
 import mutagen.id3
 import mutagen.mp4
 
-from audiolibrarian import musicbrainz, text
-from audiolibrarian.settings import SETTINGS
+from audiolibrarian import config, musicbrainz, text
 
 log = logging.getLogger(__name__)
 
@@ -38,10 +37,11 @@ log = logging.getLogger(__name__)
 class GenreManager:
     """Manage genres."""
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.MusicBrainzSettings) -> None:
         """Initialize a GenreManager instance."""
         self._args = args
-        self._mb = musicbrainz.MusicBrainzSession()
+        self._settings = settings
+        self._mb = musicbrainz.MusicBrainzSession(settings=settings)
         self._paths = self._get_all_paths()
         self._paths_by_artist = self._get_paths_by_artist()
         _u, _c = self._get_genres_by_artist()
@@ -149,7 +149,7 @@ class GenreManager:
         user: dict[str, str] = {}
         community: dict[str, dict[str, Any]] = {}
         user_modified = False
-        cache_file = SETTINGS.work_dir / "user-genres.pickle"
+        cache_file = self._settings.work_dir / "user-genres.pickle"
         if cache_file.exists():
             with cache_file.open(mode="rb") as cache_file_obj:
                 user = pickle.load(cache_file_obj)  # noqa: S301

@@ -22,7 +22,7 @@ import pathlib
 import re
 from typing import Any
 
-from audiolibrarian import __version__, audiofile, audiosource, base, genremanager
+from audiolibrarian import __version__, audiofile, audiosource, base, config, genremanager
 
 log = logging.getLogger(__name__)
 
@@ -56,9 +56,9 @@ class Convert(_Command, base.Base):
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize a Convert command handler."""
-        super().__init__(args)
+        super().__init__(args, settings)
         self._source_is_cd = False
         self._audio_source = audiosource.FilesAudioSource([pathlib.Path(x) for x in args.filename])
         self._get_tag_info()
@@ -88,9 +88,9 @@ class Genre(_Command):
     parser_action.add_argument("--tag", action="store_true", help="update tags")
     parser_action.add_argument("--update", action="store_true", help="update MusicBrainz")
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize a Genre command handler."""
-        genremanager.GenreManager(args)
+        genremanager.GenreManager(args=args, settings=settings.musicbrainz)
 
 
 class Manifest(_Command, base.Base):
@@ -111,9 +111,9 @@ class Manifest(_Command, base.Base):
     parser.add_argument("--disc", "-d", help="format: x/y: disc x of y for multi-disc release")
     parser.add_argument("filename", nargs="+", help="directory name or audio file name")
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize a Manifest command handler."""
-        super().__init__(args)
+        super().__init__(args, settings)
         self._source_is_cd = args.cd
         self._audio_source = audiosource.FilesAudioSource([pathlib.Path(x) for x in args.filename])
         source_filenames = self._audio_source.get_source_filenames()
@@ -139,9 +139,9 @@ class Reconvert(_Command, base.Base):
     parser = argparse.ArgumentParser()
     parser.add_argument("directories", nargs="+", help="source directories")
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize a Reconvert command handler."""
-        super().__init__(args)
+        super().__init__(args, settings)
         self._source_is_cd = False
         manifest_paths = self._find_manifests(args.directories)
         count = len(manifest_paths)
@@ -172,9 +172,9 @@ class Rename(_Command, base.Base):
     parser.add_argument("--dry-run", action="store_true", help="don't actually rename files")
     parser.add_argument("directories", nargs="+", help="audio file directories")
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize a Rename command handler."""
-        super().__init__(args)
+        super().__init__(args, settings)
         self._source_is_cd = False
         print("Finding audio files...")
         for audio_file in self._find_audio_files(args.directories):
@@ -233,11 +233,11 @@ class Rip(_Command, base.Base):
     parser.add_argument("--mb-release-id", help="MusicBrainz release ID")
     parser.add_argument("--disc", "-d", help="x/y: disc x of y; multi-disc release")
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize a Rip command handler."""
-        super().__init__(args)
+        super().__init__(args, settings)
         self._source_is_cd = True
-        self._audio_source = audiosource.CDAudioSource()
+        self._audio_source = audiosource.CDAudioSource(settings)
         self._get_tag_info()
         self._convert()
         self._write_manifest()
@@ -254,9 +254,9 @@ class Version(_Command):
     command = "version"
     help = "display the program version"
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize a Version command handler."""
-        _ = args
+        del args, settings  # Unused.
         print(f"audiolibrarian {__version__}")
 
 
