@@ -2,12 +2,12 @@
 
 These tests verify that settings are loaded correctly from various sources:
 - Default values
-- YAML configuration file
+- TOML configuration file
 - Environment variables
-- Proper override order (env > yaml > defaults)
+- Proper override order (env > toml > defaults)
 
 The tests use a temporary directory structure to simulate XDG base directories:
-- XDG_CONFIG_HOME/audiolibrarian/config.yaml
+- XDG_CONFIG_HOME/audiolibrarian/config.toml
 - XDG_CACHE_HOME/audiolibrarian/
 
 All tests use pytest fixtures to ensure proper environment isolation and cleanup.
@@ -32,11 +32,11 @@ All tests use pytest fixtures to ensure proper environment isolation and cleanup
 import importlib
 import os
 import pathlib
+import tomllib
 from unittest.mock import patch
 
 import pydantic
 import pytest
-import yaml.scanner
 
 from audiolibrarian import config
 
@@ -47,7 +47,7 @@ class TestSettings:
     @pytest.fixture
     def config_path(self, tmp_path: pathlib.Path) -> pathlib.Path:
         """Return a temporary configuration directory."""
-        config_path = self._get_config_home(tmp_path) / "audiolibrarian" / "config.yaml"
+        config_path = self._get_config_home(tmp_path) / "audiolibrarian" / "config.toml"
         config_path.parent.mkdir(parents=True, exist_ok=True)
         return config_path
 
@@ -78,7 +78,7 @@ class TestSettings:
 
         assert settings.library_dir == pathlib.Path("library").resolve()
         assert settings.work_dir == self._get_cache_home(tmp_path) / "audiolibrarian"
-        assert settings.discid_device is None
+        assert settings.discid_device == ""
         assert settings.normalize.normalizer == "auto"
         assert settings.normalize.wavegain.gain == 5  # noqa: PLR2004
         assert settings.normalize.wavegain.preset == "radio"
@@ -87,31 +87,33 @@ class TestSettings:
         assert settings.musicbrainz.username == ""
         assert isinstance(settings.musicbrainz.password, pydantic.SecretStr)
 
-    def test_yaml_config_loading(
+    def test_toml_config_loading(
         self, test_env: dict[str, str], tmp_path: pathlib.Path, config_path: pathlib.Path
     ) -> None:
-        """Test loading settings from a YAML file."""
-        test_yaml = f"""---
-            library_dir: '{tmp_path / "Music_overridden"}'
-            work_dir: '{tmp_path / "test_work_overridden"}'
-            discid_device: /dev/sr0
-            musicbrainz:
-                username: test_user
-                password: test_pass
-                rate_limit: 2
-            normalize:
-                normalizer: wavegain
-                wavegain:
-                    gain: 10
-                    preset: album
-                ffmpeg:
-                    target_level: -14
+        """Test loading settings from a TOML file."""
+        test_toml = f"""
+            library_dir = "{tmp_path / "Music_overridden"}"
+            work_dir = "{tmp_path / "test_work_overridden"}"
+            discid_device = "/dev/sr0"
+
+            [musicbrainz]
+            username = "test_user"
+            password = "test_pass"
+            rate_limit = 2
+
+            [normalize]
+            normalizer = "wavegain"
+
+            [normalize.wavegain]
+            gain = 10
+            preset = "album"
+
+            [normalize.ffmpeg]
+            target_level = -14
         """
-        # Write the test configuration file
-        config_path.write_text(test_yaml)
+        config_path.write_text(test_toml)
 
         with patch.dict(os.environ, test_env, clear=True):
-            # Create Settings with default YAML file location
             importlib.reload(config)
             test_settings = config.Settings()
 
@@ -121,22 +123,23 @@ class TestSettings:
         assert test_settings.musicbrainz.username == "test_user"
         assert test_settings.musicbrainz.password.get_secret_value() == "test_pass"
         assert test_settings.musicbrainz.rate_limit == 2  # noqa: PLR2004
+        assert test_settings.normalize.normalizer == "wavegain"
         assert test_settings.normalize.wavegain.gain == 10  # noqa: PLR2004
         assert test_settings.normalize.wavegain.preset == "album"
         assert test_settings.normalize.ffmpeg.target_level == -14  # noqa: PLR2004
 
-    def test_env_variable_override(
+    def test_environment_variables_override_toml(
         self, test_env: dict[str, str], tmp_path: pathlib.Path, config_path: pathlib.Path
     ) -> None:
-        """Test that environment variables override YAML settings."""
-        test_yaml = f"""---
-            library_dir: '{tmp_path / "Music_yaml"}'
-            work_dir: '{tmp_path / "work_yaml"}'
-            musicbrainz:
-                username: test_user_yaml
+        """Test that environment variables override TOML settings."""
+        test_toml = f"""
+            library_dir = "{tmp_path / "Music_toml"}"
+            work_dir = "{tmp_path / "work_toml"}"
+
+            [musicbrainz]
+            username = "test_user_toml"
         """
-        # Write the test configuration file
-        config_path.write_text(test_yaml)
+        config_path.write_text(test_toml)
 
         with patch.dict(
             os.environ,
@@ -160,12 +163,11 @@ class TestSettings:
         assert test_settings.normalize.ffmpeg.target_level == -16  # noqa: PLR2004
 
     def test_invalid_yaml(self, test_env: dict[str, str], config_path: pathlib.Path) -> None:
-        """Test handling of invalid YAML file."""
-        invalid_yaml = "invalid: yaml: file"
-        # Write the invalid YAML file
-        config_path.write_text(invalid_yaml)
+        """Test handling of invalid TOML file."""
+        invalid_toml = "invalid: yaml: [file"
+        config_path.write_text(invalid_toml)
 
         with patch.dict(os.environ, test_env, clear=True):
             importlib.reload(config)
-            with pytest.raises(yaml.scanner.ScannerError):
+            with pytest.raises(tomllib.TOMLDecodeError):
                 config.Settings()

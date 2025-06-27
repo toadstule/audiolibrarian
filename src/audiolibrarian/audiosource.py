@@ -95,7 +95,7 @@ class CDAudioSource(AudioSource):
     def __init__(self, settings: config.Settings) -> None:
         """Initialize a CDAudioSource."""
         super().__init__()
-        self._cd = discid.read(settings.discid_device, features=["mcn"])
+        self._cd = discid.read(settings.discid_device or None, features=["mcn"])
 
     def get_search_data(self) -> dict[str, str]:
         """Return a dictionary of search data useful for doing a MusicBrainz search."""

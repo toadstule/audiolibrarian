@@ -31,7 +31,7 @@
 from audiolibrarian import AudioLibrarian
 
 # Initialize with custom config
-al = AudioLibrarian(config_path="custom_config.yaml")
+al = AudioLibrarian(config_path="custom_config.toml")
 
 # Scan a directory
 al.scan("/path/to/music")
