@@ -7,8 +7,8 @@ sources of configuration:
    - Prefix: "AUDIOLIBRARIAN__"
    - Nested fields: Use "__" as delimiter (e.g., AUDIOLIBRARIAN__MUSICBRAINZ__USERNAME)
 
-2. YAML Configuration File:
-   - Location: $XDG_CONFIG_HOME/audiolibrarian/config.yaml
+2. TOML Configuration File:
+   - Location: $XDG_CONFIG_HOME/audiolibrarian/config.toml
    - Supports nested structure for MusicBrainz settings
 
 3. Default Values:
@@ -85,7 +85,7 @@ class NormalizeSettings(pydantic.BaseModel):
 class Settings(pydantic_settings.BaseSettings):
     """Configuration settings for AudioLibrarian."""
 
-    discid_device: str | None = None  # Use default device.
+    discid_device: str = ""  # Use default device.
     library_dir: pathlib.Path = pathlib.Path("library").resolve()
     musicbrainz: MusicBrainzSettings = MusicBrainzSettings()
     normalize: NormalizeSettings = NormalizeSettings()
@@ -94,7 +94,7 @@ class Settings(pydantic_settings.BaseSettings):
     model_config = pydantic_settings.SettingsConfigDict(
         env_nested_delimiter="__",
         env_prefix="AUDIOLIBRARIAN__",
-        yaml_file=str(xdg_base_dirs.xdg_config_home() / "audiolibrarian" / "config.yaml"),
+        toml_file=str(xdg_base_dirs.xdg_config_home() / "audiolibrarian" / "config.toml"),
         frozen=True,  # Make settings immutable.
     )
 
@@ -112,5 +112,5 @@ class Settings(pydantic_settings.BaseSettings):
         return (
             init_settings,  # Used for tests.
             env_settings,
-            pydantic_settings.YamlConfigSettingsSource(settings_cls),
+            pydantic_settings.TomlConfigSettingsSource(settings_cls),
         )

@@ -20,35 +20,37 @@ export AUDIOLIBRARIAN__MUSICBRAINZ__USERNAME="your_username"
 export AUDIOLIBRARIAN__MUSICBRAINZ__PASSWORD="your_password"
 ```
 
-### 2. YAML Configuration File (medium precedence)
+### 2. TOML Configuration File (medium precedence)
 
-- **Default location**: `~/.config/audiolibrarian/config.yaml`
+- **Default location**: `~/.config/audiolibrarian/config.toml`
 - **Example**:
 
-```yaml
+```toml
 # Base directory for your music library
-library_dir: "~/music/library"
+library_dir = "~/music/library"
 
 # Cache and working directory
-work_dir: "~/.cache/audiolibrarian"
+work_dir = "~/.cache/audiolibrarian"
 
-# CD/DVD device path (use null for default device)
-discid_device: null
+# CD/DVD device path (use empty string for default device)
+discid_device = ""
 
 # Audio normalization settings
-normalize:
-  normalizer: "auto"  # "auto", "wavegain", "ffmpeg", or "none"
-  ffmpeg:
-    target_level: -13  # Target LUFS level for ffmpeg normalization
-  wavegain:
-    gain: 5  # dB gain for wavegain normalization (0-10)
-    preset: "radio"  # "album" or "radio"
+[normalize]
+normalizer = "auto"  # "auto", "wavegain", "ffmpeg", or "none"
+
+[normalize.ffmpeg]
+target_level = -13  # Target LUFS level for ffmpeg normalization
+
+[normalize.wavegain]
+gain = 5  # dB gain for wavegain normalization (0-10)
+preset = "radio"  # "album" or "radio"
 
 # MusicBrainz API settings (optional)
-musicbrainz:
-  username: "your_username"  # For personal genre preferences
-  password: "your_password"  # Will be stored securely
-  rate_limit: 1.5  # Seconds between API requests
+[musicbrainz]
+username = "your_username"  # For personal genre preferences
+password = "your_password"  # Will be stored securely
+rate_limit = 1.5  # Seconds between API requests
 ```
 
 ### 3. Default Values (lowest precedence)
@@ -61,7 +63,7 @@ musicbrainz:
 |---------------------------------|------------------|-------------------------------------------|
 | `library_dir`                   | `./library`      | Directory for storing audio files         |
 | `work_dir`                      | (see below)[^wd] | Directory for temporary files             |
-| `discid_device`                 | `null`           | CD device path (null for default device)  |
+| `discid_device`                 | ``               | CD device path (null for default device)  |
 | `normalize.normalizer`          | `"auto"`         | "auto", "wavegain", "ffmpeg", or "none"   |
 | `normalize.ffmpeg.target_level` | `-13`            | Target LUFS level (ffmpeg)                |
 | `normalize.wavegain.gain`       | `5`              | Normalization gain in dB (0-10, wavegain) |
