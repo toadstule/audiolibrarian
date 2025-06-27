@@ -23,19 +23,25 @@ import argparse
 import logging
 import pathlib
 import shutil
-import subprocess
 import sys
 import warnings
 from collections.abc import Iterable
 from typing import Any, Final
 
 import colors
-import ffmpeg_normalize
 import filelock
 import yaml
 
-from audiolibrarian import audiofile, audiosource, musicbrainz, records, sh, text
-from audiolibrarian.settings import SETTINGS
+from audiolibrarian import (
+    audiofile,
+    audiosource,
+    config,
+    musicbrainz,
+    normalizer,
+    records,
+    sh,
+    text,
+)
 
 log = logging.getLogger(__name__)
 
@@ -49,8 +55,9 @@ class Base:
     command: str | None = None
     _manifest_file: Final[str] = "Manifest.yaml"
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize the base."""
+        self._settings = settings
         # Pull in stuff from args.
         search_keys = ("album", "artist", "mb_artist_id", "mb_release_id")
         self._provided_search_data = {k: v for k, v in vars(args).items() if k in search_keys}
@@ -60,8 +67,8 @@ class Base:
             self._disc_number, self._disc_count = 1, 1
 
         # Directories.
-        self._library_dir = SETTINGS.library_dir
-        self._work_dir = SETTINGS.work_dir
+        self._library_dir = self._settings.library_dir
+        self._work_dir = self._settings.work_dir
         self._flac_dir = self._work_dir / "flac"
         self._m4a_dir = self._work_dir / "m4a"
         self._mp3_dir = self._work_dir / "mp3"
@@ -70,7 +77,7 @@ class Base:
 
         self._lock = filelock.FileLock(str(self._work_dir) + ".lock")
 
-        self._normalizer = self._which_normalizer()
+        self._normalizer = normalizer.Normalizer.factory(self._settings.normalize)
 
         # Initialize stuff that will be defined later.
         self._audio_source: audiosource.AudioSource | None = None
@@ -143,7 +150,7 @@ class Base:
         search_data: dict[str, str] = (
             self._audio_source.get_search_data() if self._audio_source is not None else {}
         )
-        searcher = musicbrainz.Searcher(**search_data)  # type: ignore[arg-type]
+        searcher = musicbrainz.Searcher(settings=self._settings.musicbrainz, **search_data)  # type: ignore[arg-type]
         searcher.disc_number = str(self._disc_number)
         # Override with user-provided info.
         if value := self._provided_search_data.get("artist"):
@@ -269,35 +276,7 @@ class Base:
 
     def _normalize(self) -> None:
         """Normalize the wav files using the selected normalizer."""
-        if self._normalizer == "none":
-            return
-        print(f"Normalizing wav files using {self._normalizer}...")
-
-        if self._normalizer == "wavegain":
-            command = [
-                "wavegain",
-                f"--{SETTINGS.normalize.wavegain.preset}",
-                f"--gain={SETTINGS.normalize.wavegain.gain}",
-                "--apply",
-            ]
-            command.extend(str(f) for f in self._wav_filenames)
-            result = subprocess.run(command, capture_output=True, check=False)  # noqa: S603
-            for line in str(result.stderr).split(r"\n"):
-                line_trunc = line[:137] + "..." if len(line) > 140 else line  # noqa: PLR2004
-                log.info("WAVEGAIN: %s", line_trunc)
-            result.check_returncode()
-            return
-
-        normalizer = ffmpeg_normalize.FFmpegNormalize(
-            extension="wav",
-            keep_loudness_range_target=True,
-            target_level=SETTINGS.normalize.ffmpeg.target_level,
-        )
-        for wav_file in self._wav_filenames:
-            normalizer.add_media_file(str(wav_file), str(wav_file))
-        log.info("NORMALIZER: starting ffmpeg normalization...")
-        normalizer.run_normalization()
-        log.info("NORMALIZER: ffmpeg normalization completed successfully")
+        self._normalizer.normalize(set(self._wav_filenames))
 
     def _rename_wav(self) -> None:
         """Rename the wav files to a filename-sane representation of the track title."""
@@ -427,34 +406,6 @@ class Base:
         with pathlib.Path(manifest_filename).open("w", encoding="utf-8") as manifest_file:
             yaml.dump(manifest, manifest_file)
         print(f"Wrote {manifest_filename}")
-
-    @staticmethod
-    def _which_normalizer() -> str:
-        """Determine which normalizer to use based on settings and availability.
-
-        Returns:
-            str: The name of the normalizer to use ("wavegain", "ffmpeg" or "none")
-        """
-        normalizer = SETTINGS.normalize.normalizer
-        if normalizer == "none":
-            return "none"
-
-        wavegain_found = shutil.which("wavegain")
-        if normalizer in ("auto", "wavegain") and wavegain_found:
-            return "wavegain"
-
-        ffmpeg_found = shutil.which("ffmpeg")
-        if normalizer in ("auto", "ffmpeg") and ffmpeg_found:
-            return "ffmpeg"
-
-        if wavegain_found:
-            log.warning("ffmpeg not found, using wavegain for normalization")
-            return "wavegain"
-        if ffmpeg_found:
-            log.warning("wavegain not found, using ffmpeg for normalization")
-            return "ffmpeg"
-        log.warning("wavegain not found, ffmpeg not found, using no normalization")
-        return "none"
 
     @staticmethod
     def _find_audio_files(directories: list[str | pathlib.Path]) -> Iterable[audiofile.AudioFile]:

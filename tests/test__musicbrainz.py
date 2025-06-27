@@ -22,6 +22,7 @@ from pathlib import Path
 
 import pytest
 
+from audiolibrarian import config
 from audiolibrarian.audiofile import audiofile
 from audiolibrarian.musicbrainz import MusicBrainzRelease
 from audiolibrarian.records import Source
@@ -38,8 +39,13 @@ class TestMusicBrainzRelease:
     maxDiff = None
     _blank_test_files = (p.resolve() for p in test_data_path.glob("00.*"))
 
+    @pytest.fixture
+    def settings(self) -> config.Settings:
+        """Return a Settings instance."""
+        return config.Settings()
+
     @pytest.mark.skipif(not os.getenv("EXTERNAL_TESTS"), reason="EXTERNAL_TESTS not defined")
-    def test__musicbrainz_release(self) -> None:
+    def test__musicbrainz_release(self, settings: config.Settings) -> None:
         """Verify that data we pull from MB service matches data from a picard-generated file."""
         extensions = (".flac", ".m4a", ".mp3")
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
@@ -51,7 +57,10 @@ class TestMusicBrainzRelease:
                 medium_number = f._one_track.medium_number
                 track_number = f._one_track.track_number
 
-            got = MusicBrainzRelease(expected.musicbrainz_album_id).get_release()
+            got = MusicBrainzRelease(
+                release_id=expected.musicbrainz_album_id,
+                settings=settings.musicbrainz,
+            ).get_release()
 
             # Remove stuff we don't want to compare.
             expected.genres, got.genres = None, None  # Genres should be ignored.

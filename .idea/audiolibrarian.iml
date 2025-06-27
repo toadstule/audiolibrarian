@@ -6,6 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
       <excludeFolder url="file://$MODULE_DIR$/library" />
+      <excludeFolder url="file://$MODULE_DIR$/.scratch" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.13 virtualenv at ~/scm/audiolibrarian/.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

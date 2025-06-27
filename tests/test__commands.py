@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 # noinspection PyProtectedMember
-from audiolibrarian import __version__, commands
+from audiolibrarian import __version__, commands, config
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 
@@ -30,9 +30,14 @@ test_data_path = (Path(__file__).parent / "test_data").resolve()
 class TestCommands:
     """Test commands."""
 
-    def test__version(self, capsys: pytest.CaptureFixture[str]) -> None:
+    @pytest.fixture
+    def settings(self) -> config.Settings:
+        """Return a Settings instance."""
+        return config.Settings()
+
+    def test__version(self, capsys: pytest.CaptureFixture[str], settings: config.Settings) -> None:
         """Test version command."""
-        commands.Version(Namespace())
+        commands.Version(args=Namespace(), settings=settings)
         output: str = capsys.readouterr().out.strip()
         assert output == f"audiolibrarian {__version__}"
 

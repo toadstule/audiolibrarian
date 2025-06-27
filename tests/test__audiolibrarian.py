@@ -22,7 +22,7 @@ from typing import Final
 
 import pytest
 
-from audiolibrarian import base
+from audiolibrarian import base, config
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 
@@ -33,9 +33,14 @@ class TestAudioLibrarian:
     AUDIO_FILE_COUNT: Final[int] = 21  # This will need updated if test files are added.
 
     @pytest.fixture
-    def al_base(self) -> base.Base:
+    def settings(self) -> config.Settings:
+        """Return a Settings instance."""
+        return config.Settings()
+
+    @pytest.fixture
+    def al_base(self, settings: config.Settings) -> base.Base:
         """Return a Base instance with a blank namespace."""
-        return base.Base(args=Namespace())
+        return base.Base(args=Namespace(), settings=settings)
 
     def test__single_media(self, al_base: base.Base) -> None:
         """Test single media."""
@@ -51,9 +56,9 @@ class TestAudioLibrarian:
         with pytest.warns(RuntimeWarning):
             al_base._summary()
 
-    def test__multi_media(self) -> None:
+    def test__multi_media(self, settings: config.Settings) -> None:
         """Test multi-media."""
-        al = base.Base(args=Namespace(disc="2/3"))
+        al = base.Base(args=Namespace(disc="2/3"), settings=settings)
 
         assert al._multi_disc
         searcher = al._get_searcher()
@@ -100,10 +105,13 @@ class TestAudioLibrarian:
         ],
     )
     def test__get_searcher(
-        self, namespace: Namespace, expected: tuple[str, str, str, str, str, str]
+        self,
+        namespace: Namespace,
+        settings: config.Settings,
+        expected: tuple[str, str, str, str, str, str],
     ) -> None:
         """Test searcher."""
-        al_base = base.Base(args=namespace)
+        al_base = base.Base(args=namespace, settings=settings)
         searcher = al_base._get_searcher()
         assert (
             searcher.artist,
