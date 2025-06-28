@@ -1,0 +1,36 @@
+# AudioLibrarian Configuration
+#
+# This file was automatically generated. Modify as needed.
+#
+
+# Path to your music library
+# library_dir = "~/Music/Library"
+
+# Disc ID device (default: system default)
+# discid_device = "/dev/sr0"
+
+# Working directory for temporary files
+# work_dir = "~/.cache/audiolibrarian"
+
+
+[musicbrainz]
+# MusicBrainz username and password (optional)
+# username = ""
+# password = ""  # Will be stored in plain text!
+
+# Rate limit in seconds between requests
+# rate_limit = 1.5
+
+[normalize]
+# Normalizer to use: "auto", "wavegain", "ffmpeg", or "none"
+# normalizer = "auto"
+
+[normalize.ffmpeg]
+# Target level in dB for ffmpeg normalization
+# target_level = -13.0
+
+[normalize.wavegain]
+# Album gain preset: "album" or "radio"
+# preset = "radio"
+# Gain in dB for wavegain
+# gain = 5

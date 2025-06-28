@@ -39,13 +39,22 @@ Sensitive fields (like passwords) are handled using pydantic.SecretStr for secur
 #
 import logging
 import pathlib
-from typing import Literal
+from typing import Annotated, Final, Literal
 
 import pydantic
 import pydantic_settings
 import xdg_base_dirs
 
+CONFIG_PATH: Final[pathlib.Path] = (
+    xdg_base_dirs.xdg_config_home() / "audiolibrarian" / "config.toml"
+)
+
 logger = logging.getLogger(__name__)
+
+ExpandedPath = Annotated[
+    pathlib.Path,
+    pydantic.AfterValidator(lambda v: v.expanduser()),
+]
 
 
 class EmptySettings(pydantic.BaseModel):
@@ -58,7 +67,7 @@ class MusicBrainzSettings(pydantic.BaseModel):
     password: pydantic.SecretStr = pydantic.SecretStr("")
     username: str = ""
     rate_limit: pydantic.PositiveFloat = 1.5  # Seconds between requests.
-    work_dir: pathlib.Path = xdg_base_dirs.xdg_cache_home() / "audiolibrarian"
+    work_dir: ExpandedPath = xdg_base_dirs.xdg_cache_home() / "audiolibrarian"
 
 
 class NormalizeFFmpegSettings(pydantic.BaseModel):
@@ -86,15 +95,15 @@ class Settings(pydantic_settings.BaseSettings):
     """Configuration settings for AudioLibrarian."""
 
     discid_device: str = ""  # Use default device.
-    library_dir: pathlib.Path = pathlib.Path("library").resolve()
+    library_dir: ExpandedPath = pathlib.Path("library").resolve()
     musicbrainz: MusicBrainzSettings = MusicBrainzSettings()
     normalize: NormalizeSettings = NormalizeSettings()
-    work_dir: pathlib.Path = xdg_base_dirs.xdg_cache_home() / "audiolibrarian"
+    work_dir: ExpandedPath = xdg_base_dirs.xdg_cache_home() / "audiolibrarian"
 
     model_config = pydantic_settings.SettingsConfigDict(
         env_nested_delimiter="__",
         env_prefix="AUDIOLIBRARIAN__",
-        toml_file=str(xdg_base_dirs.xdg_config_home() / "audiolibrarian" / "config.toml"),
+        toml_file=str(CONFIG_PATH),
         frozen=True,  # Make settings immutable.
     )
 
@@ -114,3 +123,30 @@ class Settings(pydantic_settings.BaseSettings):
             env_settings,
             pydantic_settings.TomlConfigSettingsSource(settings_cls),
         )
+
+
+def init_config_file() -> None:
+    """Initialize a new config file with default values.
+
+    The config file will be created at the location specified by CONFIG_PATH.
+    If the parent directory doesn't exist, it will be created.
+
+    Raises:
+        FileExistsError: If the config file already exists
+        OSError: If there's an error creating the file or directories
+        FileNotFoundError: If the template file cannot be found
+    """
+    if CONFIG_PATH.exists():
+        msg = f"Config file already exists at {CONFIG_PATH}"
+        logger.warning(msg)
+        raise FileExistsError(msg)
+
+    # Create the config directory if it doesn't exist
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    # Get the directory where this file is located
+    template_dir = pathlib.Path(__file__).parent / "templates"
+    template_file = template_dir / CONFIG_PATH.name
+
+    # Read the template and write to the config file
+    CONFIG_PATH.write_text(template_file.read_text(encoding="utf-8"), encoding="utf-8")
