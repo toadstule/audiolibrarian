@@ -87,6 +87,7 @@ ignore_errors = true  # This is not our code.
 [tool.pymarkdown]
 plugins.md013.line_length = 100
 plugins.md013.code_block_line_length = 100
+plugins.md024.enabled = false
 #plugins.md007.enabled = true
 #plugins.md007.code_block_line_length = 160
 
