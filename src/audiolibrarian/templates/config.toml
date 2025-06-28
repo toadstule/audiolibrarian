@@ -6,7 +6,7 @@
 # Path to your music library
 # library_dir = "~/Music/Library"
 
-# Disc ID device (default: system default)
+# Disc ID device
 # discid_device = "/dev/sr0"
 
 # Working directory for temporary files
@@ -17,7 +17,6 @@
 # MusicBrainz username and password (optional)
 # username = ""
 # password = ""  # Will be stored in plain text!
-
 # Rate limit in seconds between requests
 # rate_limit = 1.5
 

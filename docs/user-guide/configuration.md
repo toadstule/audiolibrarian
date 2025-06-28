@@ -26,31 +26,39 @@ export AUDIOLIBRARIAN__MUSICBRAINZ__PASSWORD="your_password"
 - **Example**:
 
 ```toml
-# Base directory for your music library
-library_dir = "~/music/library"
+# AudioLibrarian Configuration
+#
+# This file was automatically generated. Modify as needed.
 
-# Cache and working directory
+# Path to your music library
+library_dir = "~/Music/Library"
+
+# Disc ID device (default: system default)
+discid_device = "/dev/sr0"
+
+# Working directory for temporary files
 work_dir = "~/.cache/audiolibrarian"
 
-# CD/DVD device path (use empty string for default device)
-discid_device = ""
+[musicbrainz]
+# MusicBrainz username and password (optional)
+username = "your_username"
+password = "your_password"  # Will be stored in plain text!
+# Rate limit in seconds between requests
+rate_limit = 1.5
 
-# Audio normalization settings
 [normalize]
-normalizer = "auto"  # "auto", "wavegain", "ffmpeg", or "none"
+# Normalizer to use: "auto", "wavegain", "ffmpeg", or "none"
+normalizer = "auto"
 
 [normalize.ffmpeg]
-target_level = -13  # Target LUFS level for ffmpeg normalization
+# Target level in dB for ffmpeg normalization
+target_level = -13.0
 
 [normalize.wavegain]
-gain = 5  # dB gain for wavegain normalization (0-10)
-preset = "radio"  # "album" or "radio"
-
-# MusicBrainz API settings (optional)
-[musicbrainz]
-username = "your_username"  # For personal genre preferences
-password = "your_password"  # Will be stored securely
-rate_limit = 1.5  # Seconds between API requests
+# Album gain preset: "album" or "radio"
+preset = "radio"
+# Gain in dB for wavegain
+gain = 5
 ```
 
 ### 3. Default Values (lowest precedence)
@@ -78,7 +86,7 @@ rate_limit = 1.5  # Seconds between API requests
 [^mb]: The `musicbrainz` username and password are optional but recommended for accessing personal genre
   preferences on [MusicBrainz](https://musicbrainz.org/).
 
-## Audio Normalization
+### Audio Normalization
 
 Audio normalization ensures consistent volume levels across tracks. The following options are available:
 
@@ -87,11 +95,53 @@ Audio normalization ensures consistent volume levels across tracks. The followin
 - `ffmpeg`: Uses the `ffmpeg-normalize` Python package
 - `none`: Skips normalization entirely
 
-### Wavegain Settings
+#### Wavegain Settings
 
 - `gain`: Adjusts the target volume level (in dB, typically 0-10)
 - `preset`: "album" (loudness normalization) or "radio" (peak normalization)
 
-### FFmpeg Settings
+#### FFmpeg Settings
 
 - `target_level`: Target LUFS level (typically between -16 and -12)
+
+## Managing Configuration
+
+The `audiolibrarian config` command helps you manage your configuration:
+
+### Viewing Configuration
+
+To view your current configuration file location and contents:
+
+```bash
+audiolibrarian config
+```
+
+This will:
+1. Show the path to your config file
+2. Display the contents of the file if it exists
+
+### Creating a New Configuration
+
+To create a new configuration file with default values:
+
+```bash
+audiolibrarian config --init
+```
+
+This will:
+
+1. Create a new config file at the default location (`~/.config/audiolibrarian/config.toml`)
+2. Populate it with default values
+3. Preserve any existing config file (will not overwrite)
+
+### Path Expansion
+
+Configuration paths support the following special expansions:
+
+- `~` is expanded to your home directory
+
+For example:
+
+```toml
+library_dir = "~/music/library"  # Expands to /home/username/music/library
+```
