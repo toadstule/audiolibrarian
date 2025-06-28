@@ -39,6 +39,46 @@ class _Command:
         return True
 
 
+class Config(_Command, base.Base):
+    """AudioLibrarian tool for working with a config file.
+
+    This class performs all of its tasks on instantiation and provides no public members or
+    methods.
+    """
+
+    command = "config"
+    help = "work with the config file"
+    parser = argparse.ArgumentParser(description="Manage AudioLibrarian configuration")
+    parser.add_argument(
+        "--init",
+        "-i",
+        action="store_true",
+        help="initialize a new config file if it doesn't exist",
+    )
+
+    def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
+        """Initialize a Config command handler."""
+        super().__init__(args, settings)
+
+        if args.init:
+            try:
+                config.init_config_file()
+            except FileExistsError as e:
+                msg = f"Config file already exists at {config.CONFIG_PATH}"
+                raise SystemExit(msg) from e
+            except Exception:
+                log.exception("Error creating config file")
+                raise
+            print(f"Created new config file at {config.CONFIG_PATH}")
+        else:
+            print(f"Config file location: {config.CONFIG_PATH}")
+            if config.CONFIG_PATH.exists():
+                print("\n=== Config file contents ===")
+                print(config.CONFIG_PATH.read_text(encoding="utf-8"))
+            else:
+                print("Config file does not exist. Use '--init' to create it.")
+
+
 class Convert(_Command, base.Base):
     """AudioLibrarian tool for converting and tagging audio files.
 
@@ -256,6 +296,7 @@ class Version(_Command):
 
     def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
         """Initialize a Version command handler."""
+        _, _ = args, settings
         del args, settings  # Unused.
         print(f"audiolibrarian {__version__}")
 
@@ -280,4 +321,4 @@ def _validate_disc_arg(args: argparse.Namespace) -> bool:
     return True
 
 
-COMMANDS: set[Any] = {Convert, Genre, Manifest, Reconvert, Rename, Rip, Version}
+COMMANDS: set[Any] = {Config, Convert, Genre, Manifest, Reconvert, Rename, Rip, Version}
