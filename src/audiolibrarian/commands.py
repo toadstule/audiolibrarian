@@ -39,44 +39,27 @@ class _Command:
         return True
 
 
-class Config(_Command, base.Base):
+class Config(_Command):
     """AudioLibrarian tool for working with a config file.
 
-    This class performs all of its tasks on instantiation and provides no public members or
-    methods.
+    This class provides a command-line interface for managing the AudioLibrarian
+    configuration file. It delegates all operations to the ConfigManager class.
     """
 
     command = "config"
     help = "work with the config file"
     parser = argparse.ArgumentParser(description="Manage AudioLibrarian configuration")
-    parser.add_argument(
-        "--init",
-        "-i",
-        action="store_true",
-        help="initialize a new config file if it doesn't exist",
-    )
+    parser.add_argument("--init", "-i", action="store_true", help="initialize a new config file")
 
     def __init__(self, args: argparse.Namespace, settings: config.Settings) -> None:
-        """Initialize a Config command handler."""
-        super().__init__(args, settings)
+        """Audiolibrarian tool for working with the config file.
 
-        if args.init:
-            try:
-                config.init_config_file()
-            except FileExistsError as e:
-                msg = f"Config file already exists at {config.CONFIG_PATH}"
-                raise SystemExit(msg) from e
-            except Exception:
-                log.exception("Error creating config file")
-                raise
-            print(f"Created new config file at {config.CONFIG_PATH}")
-        else:
-            print(f"Config file location: {config.CONFIG_PATH}")
-            if config.CONFIG_PATH.exists():
-                print("\n=== Config file contents ===")
-                print(config.CONFIG_PATH.read_text(encoding="utf-8"))
-            else:
-                print("Config file does not exist. Use '--init' to create it.")
+        This class performs all of its tasks on instantiation and provides no public members or
+        methods.
+        """
+        _ = settings
+        del settings  # Unused.
+        config.ConfigManager(args=args)
 
 
 class Convert(_Command, base.Base):

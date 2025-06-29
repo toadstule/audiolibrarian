@@ -37,6 +37,7 @@ Sensitive fields (like passwords) are handled using pydantic.SecretStr for secur
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
+import argparse
 import logging
 import pathlib
 from typing import Annotated, Final, Literal
@@ -125,28 +126,47 @@ class Settings(pydantic_settings.BaseSettings):
         )
 
 
-def init_config_file() -> None:
-    """Initialize a new config file with default values.
+class ConfigManager:
+    """Manage AudioLibrarian configuration.
 
-    The config file will be created at the location specified by CONFIG_PATH.
-    If the parent directory doesn't exist, it will be created.
-
-    Raises:
-        FileExistsError: If the config file already exists
-        OSError: If there's an error creating the file or directories
-        FileNotFoundError: If the template file cannot be found
+    This class handles all configuration-related operations including creating,
+    reading, and managing the configuration file.
     """
-    if CONFIG_PATH.exists():
-        msg = f"Config file already exists at {CONFIG_PATH}"
-        logger.warning(msg)
-        raise FileExistsError(msg)
 
-    # Create the config directory if it doesn't exist
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, args: argparse.Namespace) -> None:
+        """Initialize and execute the ConfigManager."""
+        self._config_path = CONFIG_PATH
+        print(f"Config file location: {self._config_path}")
+        if args.init:
+            if self._config_path.exists():
+                print("Config file already exists")
+                return
+            self.init_config_file()
+            print("Created new config file")
+            return
+        if self._config_path.exists():
+            print("\n=== Config file contents ===")
+            print(self._config_path.read_text(encoding="utf-8"))
+            return
+        print("Config file does not exist. Use '--init' to create it.")
 
-    # Get the directory where this file is located
-    template_dir = pathlib.Path(__file__).parent / "templates"
-    template_file = template_dir / CONFIG_PATH.name
+    def init_config_file(self) -> None:
+        """Initialize a new config file with default values.
 
-    # Read the template and write to the config file
-    CONFIG_PATH.write_text(template_file.read_text(encoding="utf-8"), encoding="utf-8")
+        The config file will be created at the location specified by self._config_path.
+        If the parent directory doesn't exist, it will be created.
+
+        Raises:
+            FileExistsError: If the config file already exists.
+            OSError: If there's an error creating the file or directories.
+            FileNotFoundError: If the template file cannot be found.
+        """
+        # Create the config directory if it doesn't exist
+        self._config_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Get the directory where this file is located
+        template_dir = pathlib.Path(__file__).parent / "templates"
+        template_file = template_dir / self._config_path.name
+
+        # Read the template and write to the config file
+        self._config_path.write_text(template_file.read_text(encoding="utf-8"), encoding="utf-8")
