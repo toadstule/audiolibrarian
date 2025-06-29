@@ -14,20 +14,21 @@ contributions, we appreciate your help in making audiolibrarian better.
 
 ## Development Setup
 
-1. Clone the repository:
+### Clone the repository
 
-   ```bash
-   git clone https://github.com/toadstule/audiolibrarian.git
-   cd audiolibrarian
-   ```
+```bash
+git clone https://github.com/toadstule/audiolibrarian.git
+cd audiolibrarian
+```
 
-2. Install dependencies using the Makefile:
+### Install dependencies using the Makefile
 
-   ```bash
-   make dep
-   ```
+```bash
+make dep
+source .venv/bin/activate
+```
 
-   This will install all required dependencies in a virtual environment.
+This will install all required dependencies in a virtual environment and activate that environment.
 
 ## Development Workflow
 
@@ -79,6 +80,16 @@ To upgrade all dependencies:
 ```bash
 make dep-upgrade
 ```
+
+### Before Committing
+
+Before committing changes:
+
+```text
+make check
+```
+
+This will run the linters and all the tests.
 
 ## Reporting Issues
 
