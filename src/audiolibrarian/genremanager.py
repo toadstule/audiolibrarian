@@ -149,7 +149,7 @@ class GenreManager:
         user: dict[str, str] = {}
         community: dict[str, dict[str, Any]] = {}
         user_modified = False
-        cache_file = self._settings.work_dir / "user-genres.pickle"
+        cache_file = self._settings.work_dir / "user-genres.pkl"
         if cache_file.exists():
             with cache_file.open(mode="rb") as cache_file_obj:
                 user = pickle.load(cache_file_obj)  # noqa: S301
