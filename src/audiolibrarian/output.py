@@ -18,6 +18,7 @@
 #
 import sys
 from types import TracebackType
+from typing import Self
 
 
 class Dots:
@@ -34,7 +35,7 @@ class Dots:
         """Initialize a Dots object."""
         self._out(message)
 
-    def __enter__(self) -> "Dots":
+    def __enter__(self) -> Self:
         """Enter the context manager."""
         return self
 

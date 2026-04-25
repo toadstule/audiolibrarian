@@ -117,10 +117,10 @@ class CDAudioSource(AudioSource):
         cwd = pathlib.Path.cwd()
         os.chdir(self._temp_dir)
         try:
-            subprocess.run(("cd-paranoia", "-B"), check=True)
+            subprocess.run(("/usr/bin/cd-paranoia", "-B"), check=True)
         finally:
             os.chdir(cwd)
-        subprocess.run(("eject",), check=False)
+        subprocess.run(("/usr/bin/eject",), check=False)
 
 
 class FilesAudioSource(AudioSource):
@@ -208,7 +208,12 @@ class FilesAudioSource(AudioSource):
         sh.touch(tmp_dir.glob("*.wav"))
         for filename in sorted(tmp_dir.glob("*.wav"), key=text.alpha_numeric_key):
             subprocess.run(  # noqa: S603
-                ("sndfile-convert", "-pcm16", filename, str(filename).replace("/__tmp__/", "/")),
+                (
+                    "/usr/bin/sndfile-convert",
+                    "-pcm16",
+                    filename,
+                    str(filename).replace("/__tmp__/", "/"),
+                ),
                 check=True,
             )
         shutil.rmtree(tmp_dir)

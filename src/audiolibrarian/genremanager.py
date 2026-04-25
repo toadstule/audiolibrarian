@@ -49,7 +49,7 @@ class GenreManager:
         if self._args.update:
             self._update_user_artists()
         elif self._args.tag:
-            self._update_tags()  # type: ignore[no-untyped-call]
+            self._update_tags()
 
     @typing.no_type_check  # The mutagen library doesn't provide type hints.
     def _update_tags(self) -> None:
