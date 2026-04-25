@@ -24,7 +24,6 @@ site/
 .mkdocs/
 
 # IDE
-.idea/
 .vscode/
 *.swp
 *~

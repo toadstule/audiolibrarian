@@ -16,4 +16,6 @@
 #  You should have received a copy of the GNU General Public License along with audiolibrarian.
 #  If not, see <https://www.gnu.org/licenses/>.
 #
-__version__ = "0.18.0"
+import importlib.metadata
+
+__version__ = importlib.metadata.version("audiolibrarian")

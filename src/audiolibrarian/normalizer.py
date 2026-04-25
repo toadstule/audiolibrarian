@@ -144,7 +144,9 @@ class FFmpegNormalizer(Normalizer[config.NormalizeFFmpegSettings]):
         log.info("Normalizing %d files with ffmpeg-normalize...", len(paths))
 
         normalizer = ffmpeg_normalize.FFmpegNormalize(
+            audio_codec="pcm_s16le",
             extension="wav",
+            extra_output_options=["-ar:a", "44100"],
             keep_loudness_range_target=True,
             target_level=self._settings.target_level,
         )

@@ -53,6 +53,7 @@ class MusicBrainzSession:
         """Initialize a MusicBrainzSession."""
         self._settings = settings
         self.__session: requests.Session | None = None
+        self._has_credentials = bool(settings.username and settings.password.get_secret_value())
 
     def __del__(self) -> None:
         """Close a MusicBrainzSession."""
@@ -179,29 +180,30 @@ class MusicBrainzRelease:
 
     def _get_genre(self, release_group_id: str, artist_id: str) -> str:
         # Try to find the genre using the following methods (in order):
-        # - release-group user-genres
-        # - artist user-genres
+        # - release-group user-genres (requires auth)
+        # - artist user-genres (requires auth)
         # - release-group genres
-        # - release-group tags
+        # - artist genres
         # - user input
 
-        # user-genres and genres are not supported with the python library.
-        release_group = self._session.get_release_group_by_id(
-            release_group_id, includes=["genres", "user-genres"]
-        )
+        includes = ["genres"]
+        if self._session._has_credentials:  # noqa: SLF001
+            includes.append("user-genres")
+
+        release_group = self._session.get_release_group_by_id(release_group_id, includes=includes)
         log.info("RELEASE_GROUP_GENRES: %s", release_group)
-        artist = self._session.get_artist_by_id(artist_id, includes=["genres", "user-genres"])
+        artist = self._session.get_artist_by_id(artist_id, includes=includes)
         log.info("ARTIST_GENRES: %s", artist)
         x_count: Callable[[Any], int] = lambda x: int(x["count"])  # noqa: E731
-        if release_group["user-genres"]:
+        if release_group.get("user-genres"):
             return str(release_group["user-genres"][0]["name"])
-        if artist["user-genres"]:
+        if artist.get("user-genres"):
             return str(artist["user-genres"][0]["name"])
-        if release_group["genres"]:
+        if release_group.get("genres"):
             return str(
                 next(g["name"] for g in sorted(release_group["genres"], key=x_count, reverse=True))
             )
-        if artist["genres"]:
+        if artist.get("genres"):
             return str(
                 next(g["name"] for g in sorted(artist["genres"], key=x_count, reverse=True))
             )

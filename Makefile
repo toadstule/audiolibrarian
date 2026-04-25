@@ -4,7 +4,7 @@
 PRESET_VARS := $(.VARIABLES)
 
 # Project variables
-MD_FILES        := $(shell find . -name '*.md' | grep -v "/.venv/" | grep -v "/dist/")
+MD_FILES        := $(shell find . -name '*.md' | grep -v "/.venv/" | grep -v "/dist/" | grep -v "/.pytest_cache/")
 PROJECT_NAME    := $(shell grep -e '^name =' pyproject.toml | cut -d'"' -f2)
 PY_FILES        := $(shell find . -name '*.py' | grep -v "/.venv/" | grep -v "/dist/")
 PYTHON_VERSION_ := $(shell cat .python-version)

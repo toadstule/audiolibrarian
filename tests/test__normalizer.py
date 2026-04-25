@@ -94,7 +94,9 @@ def test_ffmpeg_normalizer_success(
 
     # Verify FFmpegNormalize was called correctly
     mock_ffmpeg.assert_called_once_with(
+        audio_codec="pcm_s16le",
         extension="wav",
+        extra_output_options=["-ar:a", "44100"],
         keep_loudness_range_target=True,
         target_level=-13.0,
     )
