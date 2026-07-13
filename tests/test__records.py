@@ -35,7 +35,8 @@ class TestOneTrack:
     """Test one track."""
 
     @pytest.fixture(scope="class")
-    def one_track(self) -> OneTrack:
+    @classmethod
+    def one_track(cls) -> OneTrack:
         """Return a populated OneTrack instance."""
         return OneTrack(
             release=Release(

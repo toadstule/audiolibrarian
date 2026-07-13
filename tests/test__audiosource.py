@@ -33,12 +33,14 @@ class TestAudioSource:
     _TEST_TRACK_NUMBER: Final[int] = 9
 
     @pytest.fixture(scope="class")
-    def audio_source(self) -> FilesAudioSource:
+    @classmethod
+    def audio_source(cls) -> FilesAudioSource:
         """Return a FLAC audio source instance."""
-        return FilesAudioSource([test_data_path / f"0{self._TEST_TRACK_NUMBER}.flac"])
+        return FilesAudioSource([test_data_path / f"0{cls._TEST_TRACK_NUMBER}.flac"])
 
     @pytest.fixture(scope="class")
-    def blank_audio_source(self) -> FilesAudioSource:
+    @classmethod
+    def blank_audio_source(cls) -> FilesAudioSource:
         """Return an MP3 audio source instance."""
         return FilesAudioSource([test_data_path / "00.mp3"])
 

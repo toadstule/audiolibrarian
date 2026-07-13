@@ -41,7 +41,8 @@ class TestMisc:
     """Test miscellaneous functions."""
 
     @pytest.fixture(scope="class")
-    def cli_(self) -> cli.CommandLineInterface:
+    @classmethod
+    def cli_(cls) -> cli.CommandLineInterface:
         """Return a cli instance."""
         return cli.CommandLineInterface(parse_args=False)
 
