@@ -27,3 +27,5 @@ site/
 .vscode/
 *.swp
 *~
+
+*.backup/

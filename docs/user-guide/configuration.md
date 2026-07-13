@@ -117,6 +117,7 @@ audiolibrarian config
 ```
 
 This will:
+
 1. Show the path to your config file
 2. Display the contents of the file if it exists
 
