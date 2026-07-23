@@ -46,9 +46,7 @@ import pydantic
 import pydantic_settings
 import xdg_base_dirs
 
-CONFIG_PATH: Final[pathlib.Path] = (
-    xdg_base_dirs.xdg_config_home() / "audiolibrarian" / "config.toml"
-)
+CONFIG_PATH: Final[pathlib.Path] = xdg_base_dirs.xdg_config_home() / "audiolibrarian" / "config.toml"
 
 logger = logging.getLogger(__name__)
 

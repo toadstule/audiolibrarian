@@ -24,9 +24,7 @@ from typing import Any
 import picard_src
 
 _DIGIT_REGEX = re.compile(r"([0-9]+)")
-_UUID_REGEX = re.compile(
-    r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.IGNORECASE
-)
+_UUID_REGEX = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.IGNORECASE)
 
 
 def alpha_numeric_key(text: str | pathlib.Path) -> list[Any]:

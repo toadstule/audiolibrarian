@@ -65,13 +65,9 @@ class MusicBrainzSession:
         if self.__session is None:
             self.__session = requests.Session()
 
-            if (username := self._settings.username) and (
-                password := self._settings.password.get_secret_value()
-            ):
+            if (username := self._settings.username) and (password := self._settings.password.get_secret_value()):
                 self._session.auth = auth.HTTPDigestAuth(username, password)
-            self._session.headers.update(
-                {"User-Agent": f"{_USER_AGENT_NAME}/{__version__} ({_USER_AGENT_CONTACT})"}
-            )
+            self._session.headers.update({"User-Agent": f"{_USER_AGENT_NAME}/{__version__} ({_USER_AGENT_CONTACT})"})
         return self.__session
 
     def _get(self, path: str, params: dict[str, str]) -> dict[Any, Any]:
@@ -90,18 +86,14 @@ class MusicBrainzSession:
             raise RuntimeError(msg)
         return dict(result.json())
 
-    def get_artist_by_id(
-        self, artist_id: str, includes: list[str] | None = None
-    ) -> dict[str, Any]:
+    def get_artist_by_id(self, artist_id: str, includes: list[str] | None = None) -> dict[str, Any]:
         """Return artist for the given musicbrainz-artist ID."""
         params = {}
         if includes is not None:
             params["inc"] = "+".join(includes)
         return self._get(f"artist/{artist_id}", params=params)
 
-    def get_release_group_by_id(
-        self, release_group_id: str, includes: list[str] | None = None
-    ) -> dict[str, Any]:
+    def get_release_group_by_id(self, release_group_id: str, includes: list[str] | None = None) -> dict[str, Any]:
         """Return release-group for the given musicbrainz-release-group ID."""
         params = {}
         if includes is not None:
@@ -114,11 +106,7 @@ class MusicBrainzSession:
         See https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
         """
         since_last = dt.datetime.now(tz=dt.UTC) - MusicBrainzSession._last_api_call
-        if (
-            sleep_seconds := (
-                dt.timedelta(seconds=self._settings.rate_limit) - since_last
-            ).total_seconds()
-        ) > 0:
+        if (sleep_seconds := (dt.timedelta(seconds=self._settings.rate_limit) - since_last).total_seconds()) > 0:
             log.debug("Sleeping %s to avoid throttling...", sleep_seconds)
             time.sleep(sleep_seconds)
             MusicBrainzSession._last_api_call = dt.datetime.now(tz=dt.UTC)
@@ -200,13 +188,9 @@ class MusicBrainzRelease:
         if artist.get("user-genres"):
             return str(artist["user-genres"][0]["name"])
         if release_group.get("genres"):
-            return str(
-                next(g["name"] for g in sorted(release_group["genres"], key=x_count, reverse=True))
-            )
+            return str(next(g["name"] for g in sorted(release_group["genres"], key=x_count, reverse=True)))
         if artist.get("genres"):
-            return str(
-                next(g["name"] for g in sorted(artist["genres"], key=x_count, reverse=True))
-            )
+            return str(next(g["name"] for g in sorted(artist["genres"], key=x_count, reverse=True)))
         return text.input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
     def _get_media(self) -> dict[int, records.Medium] | None:
@@ -246,17 +230,13 @@ class MusicBrainzRelease:
                 mixers.append(name)
             elif type_ == "instrument":
                 performers.append(
-                    records.Performer(
-                        name=name, instrument=text.fix(text.join(relation["attribute-list"]))
-                    )
+                    records.Performer(name=name, instrument=text.fix(text.join(relation["attribute-list"])))
                 )
             elif type_ == "vocal":
                 performers.append(records.Performer(name=name, instrument="lead vocals"))
                 if attrs := relation.get("attribute-list"):
                     if attrs := [x for x in attrs if x != "lead vocals"]:
-                        performers.append(
-                            records.Performer(name=name, instrument=text.fix(text.join(attrs)))
-                        )
+                        performers.append(records.Performer(name=name, instrument=text.fix(text.join(attrs))))
                 else:
                     performers.append(records.Performer(name=name, instrument="vocals"))
             elif type_ == "producer":
@@ -304,9 +284,7 @@ class MusicBrainzRelease:
             artist_ids,
         ) = self._process_artist_credit(release["artist-credit"])
         artist_phrase = text.fix(release.get("artist-credit-phrase", ""))
-        year = release.get("release-event-list", [{}])[0].get("date") or text.input_(
-            "Release year: "
-        )
+        year = release.get("release-event-list", [{}])[0].get("date") or text.input_("Release year: ")
         album_type = [release_group["primary-type"].lower()]
         if release_group["type"].lower() != album_type[0]:
             album_type.append(release_group["type"].lower())
@@ -314,9 +292,7 @@ class MusicBrainzRelease:
         labels = list(dict.fromkeys([x["label"]["name"] for x in release["label-info-list"]]))
 
         key = "catalog-number"
-        catalog_numbers = list(
-            dict.fromkeys([x[key] for x in release.get("label-info-list", []) if x.get(key)])
-        )
+        catalog_numbers = list(dict.fromkeys([x[key] for x in release.get("label-info-list", []) if x.get(key)]))
         return records.Release(
             album=text.fix(release["title"]),
             album_artists=records.ListF([artist_phrase or album_artist_names_str]),
@@ -447,9 +423,7 @@ class Searcher:
             return []
         artist_id = artist_list[0]["id"]
         self._mb_session.sleep()
-        release_group_list = mb.browse_release_groups(artist=artist_id, limit=500)[
-            "release-group-list"
-        ]
+        release_group_list = mb.browse_release_groups(artist=artist_id, limit=500)["release-group-list"]
         log.info("RELEASE_GROUPS: %s", release_group_list)
         if log.getEffectiveLevel() == logging.DEBUG:
             pprint.pp("== RELEASE_GROUPS ===================")

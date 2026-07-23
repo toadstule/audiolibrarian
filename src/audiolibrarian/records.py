@@ -128,9 +128,7 @@ class Track(Record):
         if self.title is None or self.track_number is None:
             msg = "Unable to generate a filename for Track with missing number and/or title"
             raise ValueError(msg)
-        return (
-            str(self.track_number).zfill(2) + "__" + text.filename_from_title(self.title) + suffix
-        )
+        return str(self.track_number).zfill(2) + "__" + text.filename_from_title(self.title) + suffix
 
 
 # Combined Record Types (fields + other record types)
@@ -209,10 +207,7 @@ class Release(Record):
             msg = "Missing release information"
             raise ValueError(msg)
         tracks = "\n".join(
-            (
-                f"  {str(n).zfill(2)}: {t.title}"
-                for n, t in sorted(self.media[medium_number].tracks.items())
-            )
+            (f"  {str(n).zfill(2)}: {t.title}" for n, t in sorted(self.media[medium_number].tracks.items()))
         )
         return "\n".join(
             (

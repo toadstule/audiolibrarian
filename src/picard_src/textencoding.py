@@ -454,9 +454,7 @@ def unicode_simplify_combinations(string):  # STJ #
 
 
 def unicode_simplify_accents(string):
-    result = "".join(
-        c for c in unicodedata.normalize("NFKD", string) if not unicodedata.combining(c)
-    )
+    result = "".join(c for c in unicodedata.normalize("NFKD", string) if not unicodedata.combining(c))
     return result
 
 

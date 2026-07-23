@@ -54,9 +54,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
         track_count = int(mut["TRCK"][0].split("/")[1]) if mut.get("TRCK") else None
         track_number = int(mut["TRCK"][0].split("/")[0]) if mut.get("TRCK") else None
         bitrate = mut.info.bitrate // 1000
-        bitrate_mode = records.BitrateMode.__members__[
-            str(mut.info.bitrate_mode).rsplit(".", maxsplit=1)[-1]
-        ]
+        bitrate_mode = records.BitrateMode.__members__[str(mut.info.bitrate_mode).rsplit(".", maxsplit=1)[-1]]
         # Shortcut for common CBRs.
         if bitrate_mode == records.BitrateMode.UNKNOWN and bitrate in (128, 160, 192, 320):
             bitrate_mode = records.BitrateMode.CBR
@@ -90,13 +88,8 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
                                 ),
                                 isrcs=get_l("TSRC"),
                                 musicbrainz_artist_ids=get_l("TXXX:MusicBrainz Artist Id"),
-                                musicbrainz_release_track_id=mut.get(
-                                    "TXXX:MusicBrainz Release Track Id", [None]
-                                )[0],
-                                musicbrainz_track_id=mut.get(
-                                    f"UFID:{MB_UFID}", UFID()
-                                ).data.decode("utf8")
-                                or None,
+                                musicbrainz_release_track_id=mut.get("TXXX:MusicBrainz Release Track Id", [None])[0],
+                                musicbrainz_track_id=mut.get(f"UFID:{MB_UFID}", UFID()).data.decode("utf8") or None,
                                 title=mut.get("TIT2", [None])[0],
                                 track_number=track_number,
                             )
@@ -110,9 +103,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
                 medium_count=medium_count,
                 musicbrainz_album_artist_ids=get_l("TXXX:MusicBrainz Album Artist Id"),
                 musicbrainz_album_id=mut.get("TXXX:MusicBrainz Album Id", [None])[0],
-                musicbrainz_release_group_id=mut.get("TXXX:MusicBrainz Release Group Id", [None])[
-                    0
-                ],
+                musicbrainz_release_group_id=mut.get("TXXX:MusicBrainz Release Group Id", [None])[0],
                 original_year=str((mut["TDOR"][0]).year) if mut.get("TDOR") else None,
                 people=(
                     records.People(
@@ -123,12 +114,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
                         lyricists=get_l("TEXT"),
                         mixers=[name for role, name in tipl if role == "mix"] or None,
                         producers=[name for role, name in tipl if role == "producer"] or None,
-                        performers=[
-                            records.Performer(name=n, instrument=i)
-                            for i, n in tipl
-                            if i not in roles
-                        ]
-                        or None,
+                        performers=[records.Performer(name=n, instrument=i) for i, n in tipl if i not in roles] or None,
                         writers=[name for role, name in tipl if role == "writer"] or None,
                     )
                     or None
@@ -142,9 +128,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
         )
         if release:
             release.source = records.Source.TAGS
-        return records.OneTrack(
-            release=release, medium_number=medium_number, track_number=track_number
-        )
+        return records.OneTrack(release=release, medium_number=medium_number, track_number=track_number)
 
     @no_type_check  # The mutagen library doesn't provide type hints.
     def write_tags(self) -> None:  # noqa: C901, PLR0912, PLR0915
@@ -161,10 +145,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
             + [["engineer", x] for x in (release.people and release.people.engineers) or []]
             + [["mix", x] for x in (release.people and release.people.mixers) or []]
             + [["producer", x] for x in (release.people and release.people.producers) or []]
-            + [
-                [p.instrument, p.name]
-                for p in (release.people and release.people.performers) or []
-            ]
+            + [[p.instrument, p.name] for p in (release.people and release.people.performers) or []]
             + [["writer", x] for x in (release.people and release.people.writers) or []]
         )
         tags: list[mutagen.id3.Frame] = []
@@ -221,9 +202,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
         if tag := release.musicbrainz_album_id:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Album Id", text=tag))
         if tag := release.release_countries:
-            tags.append(
-                TXXX(encoding=1, desc="MusicBrainz Album Release Country", text=slash(tag))
-            )
+            tags.append(TXXX(encoding=1, desc="MusicBrainz Album Release Country", text=slash(tag)))
         if tag := release.release_statuses:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Album Status", text=slash(tag)))
         if tag := release.release_types:
@@ -241,9 +220,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
         if id_ := track.musicbrainz_track_id:
             tags.append(UFID(owner=MB_UFID, data=bytes(id_, "utf8")))
         if (cover := release.front_cover) is not None:
-            tags.append(
-                APIC(encoding=0, mime=cover.mime, type=3, desc=cover.desc, data=cover.data)
-            )
+            tags.append(APIC(encoding=0, mime=cover.mime, type=3, desc=cover.desc, data=cover.data))
 
         try:
             id3 = mutagen.id3.ID3(self.filepath)

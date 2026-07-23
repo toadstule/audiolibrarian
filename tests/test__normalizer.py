@@ -48,9 +48,7 @@ def test_noop_normalizer(tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixtur
     assert any("Skipping audio normalization" in msg for msg in log_messages)
 
 
-def test_wavegain_normalizer_success(
-    tmp_path: pathlib.Path, mocker: pytest_mock.MockFixture
-) -> None:
+def test_wavegain_normalizer_success(tmp_path: pathlib.Path, mocker: pytest_mock.MockFixture) -> None:
     """Test WaveGainNormalizer with successful execution."""
     # Setup
     test_file = tmp_path / "test.wav"
@@ -76,9 +74,7 @@ def test_wavegain_normalizer_success(
     assert str(test_file) in args[0]
 
 
-def test_ffmpeg_normalizer_success(
-    tmp_path: pathlib.Path, mocker: pytest_mock.MockFixture
-) -> None:
+def test_ffmpeg_normalizer_success(tmp_path: pathlib.Path, mocker: pytest_mock.MockFixture) -> None:
     """Test FFmpegNormalizer with successful execution."""
     # Setup
     test_file = tmp_path / "test.wav"
@@ -114,9 +110,7 @@ def test_normalizer_factory_none() -> None:
 def test_normalizer_factory_wavegain(monkeypatch: MonkeyPatch) -> None:
     """Test factory returns WaveGainNormalizer when wavegain is available."""
     # Mock shutil.which to simulate wavegain being available
-    monkeypatch.setattr(
-        shutil, "which", lambda x: "/fake/path/wavegain" if x == "wavegain" else None
-    )
+    monkeypatch.setattr(shutil, "which", lambda x: "/fake/path/wavegain" if x == "wavegain" else None)
 
     settings = config.NormalizeSettings(normalizer="wavegain")
     normalizer = normalizer_.Normalizer.factory(settings)
@@ -136,9 +130,7 @@ def test_normalizer_factory_ffmpeg(monkeypatch: MonkeyPatch) -> None:
 def test_normalizer_factory_auto_wavegain(monkeypatch: MonkeyPatch) -> None:
     """Test factory returns WaveGainNormalizer in auto mode when wavegain is available."""
     # Mock shutil.which to simulate wavegain being available
-    monkeypatch.setattr(
-        shutil, "which", lambda x: "/fake/path/wavegain" if x == "wavegain" else None
-    )
+    monkeypatch.setattr(shutil, "which", lambda x: "/fake/path/wavegain" if x == "wavegain" else None)
 
     settings = config.NormalizeSettings(normalizer="auto")
     normalizer = normalizer_.Normalizer.factory(settings)

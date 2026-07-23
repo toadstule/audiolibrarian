@@ -12,15 +12,16 @@ VERSION         := $(shell grep -e '^version =' pyproject.toml | cut -d'"' -f2)
 WHEEL           := dist/$(PROJECT_NAME)-$(VERSION)-py3-none-any.whl
 
 # Tool variables
-BROWSER  := $(shell command -v chromium || command -v google-chrome-stable || command -v firefox )
-PYTHON   := $(shell command -v python$(PYTHON_VERSION_))
-UV       := $(shell command -v uv)
-COVERAGE := $(UV) run coverage
-MDLINT   := $(UV) run pymarkdownlnt
-MYPY     := $(UV) run mypy
-PIP      := $(UV) pip
-PYTEST   := $(UV) run pytest
-RUFF     := $(UV) run ruff
+BROWSER      := $(shell command -v chromium || command -v google-chrome-stable || command -v firefox )
+PYTHON       := $(shell command -v python$(PYTHON_VERSION_))
+UV           := $(shell command -v uv)
+COVERAGE     := $(UV) run coverage
+IMPORTLINTER := $(UV) run import-linter
+MDLINT       := $(UV) run pymarkdownlnt
+MYPY         := $(UV) run mypy
+PIP          := $(UV) pip
+PYTEST       := $(UV) run pytest
+RUFF         := $(UV) run ruff
 
 # Verify that we have the required tools.
 ifndef UV
@@ -45,6 +46,7 @@ clean:  ## Clean up.
 	@rm -rf .pytype
 	@rm -rf .ruff_cache .mypy_cache
 	@rm -rf site .cache .mkdocs
+	@rm -rf .importlinter_cache
 	@$(UV) clean
 	@rm -rf dist
 
@@ -85,6 +87,7 @@ install: venv-check $(WHEEL)  ## Install the package (locally).
 lint: format  ## Lint the code.
 	@$(RUFF) format --check src
 	@$(RUFF) check src
+	@$(IMPORTLINTER) lint
 	@$(MYPY) --non-interactive $(PY_FILES)
 	@$(MDLINT) scan $(MD_FILES)
 

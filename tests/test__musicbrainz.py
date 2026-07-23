@@ -87,16 +87,13 @@ class TestMusicBrainzRelease:
 
             # noinspection PyUnresolvedReferences
             assert (
-                got.media[medium_number].tracks[track_number]
-                == expected.media[medium_number].tracks[track_number]
+                got.media[medium_number].tracks[track_number] == expected.media[medium_number].tracks[track_number]
             ), f"Track failed for {src}"
             # noinspection PyUnresolvedReferences
             expected.media[medium_number].tracks, got.media[medium_number].tracks = None, None
 
             # noinspection PyUnresolvedReferences
-            assert got.media[medium_number] == expected.media[medium_number], (
-                f"Medium failed for {src}"
-            )
+            assert got.media[medium_number] == expected.media[medium_number], f"Medium failed for {src}"
             expected.media, got.media = None, None
 
             assert expected.source == Source.TAGS, f"Bad source from file read {src}"

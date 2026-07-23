@@ -60,9 +60,7 @@ class TestAudioSource:
             assert front_cover.mime == "image/jpeg"
             assert type(front_cover.data) is bytes, "cover data should be of type: bytes"
 
-    def test__get_search_data(
-        self, audio_source: FilesAudioSource, blank_audio_source: FilesAudioSource
-    ) -> None:
+    def test__get_search_data(self, audio_source: FilesAudioSource, blank_audio_source: FilesAudioSource) -> None:
         """Test search data."""
         assert blank_audio_source.get_search_data() == {}
 
@@ -72,9 +70,7 @@ class TestAudioSource:
         }
         assert audio_source.get_search_data() == expected
 
-    def test__source_list(
-        self, audio_source: FilesAudioSource, blank_audio_source: FilesAudioSource
-    ) -> None:
+    def test__source_list(self, audio_source: FilesAudioSource, blank_audio_source: FilesAudioSource) -> None:
         """Test source list."""
         assert blank_audio_source.source_list == []
         blank_audio_source.prepare_source()  # Should run w/o helper programs on an empty list.

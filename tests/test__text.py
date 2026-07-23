@@ -63,9 +63,7 @@ class TestText:
             (["aa", "bb", "cc", "dd"], "; ", "or", "aa; bb; cc or dd"),
         ],
     )
-    def test__comma_and_join(
-        self, strings: list[str], joiner: str | None, word: str | None, expected: str
-    ) -> None:
+    def test__comma_and_join(self, strings: list[str], joiner: str | None, word: str | None, expected: str) -> None:
         """Test command and join."""
         match (joiner, word):
             case None, None:

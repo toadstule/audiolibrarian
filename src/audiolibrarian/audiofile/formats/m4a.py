@@ -57,9 +57,7 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
         if mut.get("covr"):
             cover = mut["covr"][0]
             # noinspection PyUnresolvedReferences
-            mime = (
-                "image/png" if cover.imageformat == mutagen.mp4.AtomDataType.PNG else "image/jpg"
-            )
+            mime = "image/png" if cover.imageformat == mutagen.mp4.AtomDataType.PNG else "image/jpg"
             front_cover = records.FrontCover(data=bytes(cover), mime=mime)
         medium_count = int(mut["disk"][0][1]) if mut.get("disk") else None
         medium_number = int(mut["disk"][0][0]) if mut.get("disk") else None
@@ -95,9 +93,7 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
                                 ),
                                 isrcs=get_strl(f"{ITUNES}:ISRC"),
                                 musicbrainz_artist_ids=get_strl(f"{ITUNES}:MusicBrainz Artist Id"),
-                                musicbrainz_release_track_id=get_str(
-                                    f"{ITUNES}:MusicBrainz Release Track Id"
-                                ),
+                                musicbrainz_release_track_id=get_str(f"{ITUNES}:MusicBrainz Release Track Id"),
                                 musicbrainz_track_id=get_str(f"{ITUNES}:MusicBrainz Track Id"),
                                 title=mut.get("\xa9nam", [None])[0],
                                 track_number=int(mut["trkn"][0][0]) if mut.get("trkn") else None,
@@ -138,9 +134,7 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
         )
         if release:
             release.source = records.Source.TAGS
-        return records.OneTrack(
-            release=release, medium_number=medium_number, track_number=track_number
-        )
+        return records.OneTrack(release=release, medium_number=medium_number, track_number=track_number)
 
     def write_tags(self) -> None:
         """Write the tags."""
@@ -160,11 +154,7 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
         front_cover = None
         if (cover := release.front_cover) is not None:
             # noinspection PyUnresolvedReferences
-            image_format = (
-                mutagen.mp4.AtomDataType.PNG
-                if cover.mime == "image/png"
-                else mutagen.mp4.AtomDataType.JPEG
-            )
+            image_format = mutagen.mp4.AtomDataType.PNG if cover.mime == "image/png" else mutagen.mp4.AtomDataType.JPEG
             front_cover = [
                 mutagen.mp4.MP4Cover(cover.data, imageformat=image_format)  # type: ignore[no-untyped-call]
             ]

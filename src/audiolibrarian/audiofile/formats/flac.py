@@ -39,9 +39,7 @@ class FlacFile(audiofile.AudioFile, extensions={".flac"}):
         front_cover = None
         if self._mut_file.pictures:
             cover = self._mut_file.pictures[0]
-            front_cover = records.FrontCover(
-                data=cover.data, desc=cover.desc or "", mime=cover.mime
-            )
+            front_cover = records.FrontCover(data=cover.data, desc=cover.desc or "", mime=cover.mime)
         medium_count = int(mut["disctotal"][0]) if mut.get("disctotal") else None
         medium_number = int(mut["discnumber"][0]) if mut.get("discnumber") else None
         track_count = int(mut["tracktotal"][0]) if mut.get("tracktotal") else None
@@ -76,9 +74,7 @@ class FlacFile(audiofile.AudioFile, extensions={".flac"}):
                                 ),
                                 isrcs=mut.get("isrc"),
                                 musicbrainz_artist_ids=listf(mut.get("musicbrainz_artistid")),
-                                musicbrainz_release_track_id=mut.get(
-                                    "musicbrainz_releasetrackid", [None]
-                                )[0],
+                                musicbrainz_release_track_id=mut.get("musicbrainz_releasetrackid", [None])[0],
                                 musicbrainz_track_id=mut.get("musicbrainz_trackid", [None])[0],
                                 title=mut.get("title", [None])[0],
                                 track_number=track_number,
@@ -104,8 +100,7 @@ class FlacFile(audiofile.AudioFile, extensions={".flac"}):
                         engineers=mut.get("engineer"),
                         lyricists=mut.get("lyricist"),
                         mixers=mut.get("mixer"),
-                        performers=mut.get("performer")
-                        and self._parse_performer_tag(mut["performer"]),
+                        performers=mut.get("performer") and self._parse_performer_tag(mut["performer"]),
                         producers=mut.get("producer"),
                         writers=mut.get("writer"),
                     )
@@ -120,9 +115,7 @@ class FlacFile(audiofile.AudioFile, extensions={".flac"}):
         )
         if release:
             release.source = records.Source.TAGS
-        return records.OneTrack(
-            release=release, medium_number=medium_number, track_number=track_number
-        )
+        return records.OneTrack(release=release, medium_number=medium_number, track_number=track_number)
 
     def write_tags(self) -> None:
         """Write the tags."""

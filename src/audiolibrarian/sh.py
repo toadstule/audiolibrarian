@@ -29,9 +29,7 @@ def _run_command(command: tuple[str, ...]) -> None:
     subprocess.run(command, check=True)  # noqa: S603
 
 
-def parallel(
-    message: str, commands: list[tuple[str, ...]], max_workers: int | None = None
-) -> None:
+def parallel(message: str, commands: list[tuple[str, ...]], max_workers: int | None = None) -> None:
     """Execute commands in parallel using multiprocessing.
 
     Args:

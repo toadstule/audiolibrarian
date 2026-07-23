@@ -45,9 +45,7 @@ class TestTags:
             ({"key": "value"}, "key", None, {"key": "value"}),  # Update with None does nothing.
         ],
     )
-    def test__tags_modification(
-        self, initial: dict[str, str], key: str, value: str, expected: dict[str, str]
-    ) -> None:
+    def test__tags_modification(self, initial: dict[str, str], key: str, value: str, expected: dict[str, str]) -> None:
         """Test tag modification."""
         tags = Tags(initial)
         tags[key] = value

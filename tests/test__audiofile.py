@@ -139,9 +139,7 @@ class TestAudioFile:
                     )
                 },
                 medium_count=14,
-                musicbrainz_album_artist_ids=ListF(
-                    ["MB-Album-Artist-ID-1", "MB-Album-Artist-ID-2"]
-                ),
+                musicbrainz_album_artist_ids=ListF(["MB-Album-Artist-ID-1", "MB-Album-Artist-ID-2"]),
                 musicbrainz_album_id="MB-Album-ID",
                 musicbrainz_release_group_id="MB-Release-Group_ID",
                 original_date="1972-04-02",

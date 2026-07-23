@@ -119,9 +119,7 @@ class Base:
     def _convert(self, *, make_source: bool = True) -> None:
         """Perform all the steps of ripping, normalizing, converting and moving the files."""
         if self._audio_source is None:
-            warnings.warn(
-                "Cannot convert; no audio_source is defined.", RuntimeWarning, stacklevel=2
-            )
+            warnings.warn("Cannot convert; no audio_source is defined.", RuntimeWarning, stacklevel=2)
             return
         self._audio_source.prepare_source()
         with self._lock:
@@ -147,9 +145,7 @@ class Base:
 
     def _get_searcher(self) -> musicbrainz.Searcher:
         """Return a Searcher object populated with data from the audio source and cli args."""
-        search_data: dict[str, str] = (
-            self._audio_source.get_search_data() if self._audio_source is not None else {}
-        )
+        search_data: dict[str, str] = self._audio_source.get_search_data() if self._audio_source is not None else {}
         searcher = musicbrainz.Searcher(settings=self._settings.musicbrainz, **search_data)  # type: ignore[arg-type]
         searcher.disc_number = str(self._disc_number)
         # Override with user-provided info.
@@ -179,11 +175,7 @@ class Base:
         print("Finding MusicBrainz release information...")
         self._release = searcher.find_music_brains_release()
         self._medium = self._release.media[int(self._disc_number)]
-        if (
-            not self._release.front_cover
-            and self._audio_source
-            and (cover := self._audio_source.get_front_cover())
-        ):
+        if not self._release.front_cover and self._audio_source and (cover := self._audio_source.get_front_cover()):
             log.info("Using front-cover image from source file")
             self._release.front_cover = cover
         summary, okay = self._summary()
@@ -209,8 +201,7 @@ class Base:
         """
         out_dir = self._source_dir if source else self._flac_dir
         commands: list[tuple[str, ...]] = [
-            ("flac", "--silent", f"--output-prefix={out_dir}/", str(f))
-            for f in self._wav_filenames
+            ("flac", "--silent", f"--output-prefix={out_dir}/", str(f)) for f in self._wav_filenames
         ]
         sh.parallel(f"Making {len(self._wav_filenames)} flac files...", commands)
         filenames = self._source_filenames if source else self._flac_filenames
@@ -222,9 +213,7 @@ class Base:
         commands: list[tuple[str, ...]] = []
         for filename in self._wav_filenames:
             dst_file = self._m4a_dir / filename.name.replace(".wav", ".m4a")
-            commands.append(
-                ("fdkaac", "--silent", "--bitrate-mode=5", "-o", str(dst_file), str(filename))
-            )
+            commands.append(("fdkaac", "--silent", "--bitrate-mode=5", "-o", str(dst_file), str(filename)))
         sh.parallel(f"Making {len(commands)} m4a files...", commands)
         sh.touch(self._m4a_filenames)
         self._tag_files(self._m4a_filenames)
@@ -325,30 +314,16 @@ class Base:
         med = f"Disc:       {self._disc_number} of {self._disc_count}"
         mbr = f"MB Release: https://musicbrainz.org/release/{self._release.musicbrainz_album_id}"
         lines.append(f"\u2554{c1_line}\u2550{c2_line}\u2550{c3_line}\u2557")
-        lines.extend(
-            [f"\u2551 {line} {' ' * (tab_w - len(line))}\u2551" for line in (alb, art, mbr, med)]
-        )
+        lines.extend([f"\u2551 {line} {' ' * (tab_w - len(line))}\u2551" for line in (alb, art, mbr, med)])
         fmt = f"\u2551 {{c1: <{col1_w}}} \u2502 {{c2: <{col2_w}}} \u2502 {{c3: <{col3_w}}} \u2551"
         lines.append(f"\u2560{c1_line}\u2564{c2_line}\u2564{c3_line}\u2563")
         lines.append(fmt.format(c1="Source", c2="Destination", c3="Title"))
         lines.append(f"\u2560{c1_line}\u256a{c2_line}\u256a{c3_line}\u2563")
         rows = max(len(col1), len(col2), len(col3))
         for i in range(rows):
-            col1_ = (
-                ((col1[i][: width - 3] + "...") if len(col1[i]) > width else col1[i])
-                if len(col1) > i
-                else no_match
-            )
-            col2_ = (
-                ((col2[i][: width - 3] + "...") if len(col2[i]) > width else col2[i])
-                if len(col2) > i
-                else no_match
-            )
-            col3_ = (
-                ((col3[i][: width - 3] + "...") if len(col3[i]) > width else col3[i])
-                if len(col3) > i
-                else no_match
-            )
+            col1_ = ((col1[i][: width - 3] + "...") if len(col1[i]) > width else col1[i]) if len(col1) > i else no_match
+            col2_ = ((col2[i][: width - 3] + "...") if len(col2[i]) > width else col2[i]) if len(col2) > i else no_match
+            col3_ = ((col3[i][: width - 3] + "...") if len(col3[i]) > width else col3[i]) if len(col3) > i else no_match
             lines.append(fmt.format(c1=col1_, c2=col2_, c3=col3_))
             if no_match in (col1_, col2_, col3_):
                 okay = False

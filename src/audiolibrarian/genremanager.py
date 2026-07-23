@@ -92,11 +92,7 @@ class GenreManager:
             key=lambda x: x[1]["name"],
         ):
             artist_name = artist["name"]
-            i = (
-                text.input_(f"Continue with {artist_name} (YES, no, skip)[Y, n, s]: ")
-                .lower()
-                .strip()
-            )
+            i = text.input_(f"Continue with {artist_name} (YES, no, skip)[Y, n, s]: ").lower().strip()
             if i == "n":
                 break
             if i != "s":

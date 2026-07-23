@@ -107,10 +107,7 @@ class CDAudioSource(AudioSource):
         Since we're working with a CD, these files may not yet exist if they have not been
         read from the disc.
         """
-        return [
-            self._temp_dir / f"track{str(n + 1).zfill(2)}.cdda.wav"
-            for n in range(self._cd.last_track_num)
-        ]
+        return [self._temp_dir / f"track{str(n + 1).zfill(2)}.cdda.wav" for n in range(self._cd.last_track_num)]
 
     def prepare_source(self) -> None:
         """Pull audio from the CD to wav files."""
