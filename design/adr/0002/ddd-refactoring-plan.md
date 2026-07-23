@@ -260,27 +260,28 @@ tests/
   `__init__.py` files
 - Add import-linter contract enforcing the dependency rule:
   - Install `import-linter` package
-  - Create `.importlinter` configuration file with contract:
+  - Configure import-linter in pyproject.toml:
 
     ```toml
-    [[contracts]]
+    [tool.importlinter]
+    root_package = "audiolibrarian"
+
+    [[tool.importlinter.contracts]]
     name = "domain-layer-dependency-rule"
     type = "layers"
-    layers = ["domain", "application", "infrastructure", "presentation"]
-    containers = [
-        "audiolibrarian.domain",
-        "audiolibrarian.application",
-        "audiolibrarian.infrastructure",
+    layers = [
         "audiolibrarian.presentation",
+        "audiolibrarian.infrastructure",
+        "audiolibrarian.application",
+        "audiolibrarian.domain",
     ]
+    container = "audiolibrarian"
     ```
 
   - This ensures: domain imports nothing, application imports only domain,
     infrastructure imports only application+domain, presentation imports only
     application+domain+infrastructure
-- Configure import-linter in pyproject.toml:
-  - Add to dev dependencies
-  - Add pre-commit hook or CI check
+- Add pre-commit hook or CI check for import-linter
 - Add pytest-vcr to dev dependencies in pyproject.toml for MusicBrainz API testing
 - Run full test suite to ensure skeleton doesn't break anything
 
