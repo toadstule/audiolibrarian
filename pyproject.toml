@@ -36,6 +36,7 @@ classifiers = [
 description = "Manage my audio library."
 dependencies = [
     "ansicolors>=1.1.8",
+    "attrs>=26.1.0",
     "discid>=1.4.0",
     "ffmpeg-normalize>=1.37.6",
     "filelock>=3.29.0",
@@ -111,7 +112,8 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = [
-    "S101",    # Allow tests to use assert statements.
+    "PLR2004",  # Allow tests to use magic numbers.
+    "S101",  # Allow tests to use assert statements.
     "SLF001",  # Allow tests to access private members.
 ]
 

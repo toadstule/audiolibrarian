@@ -30,7 +30,12 @@ import requests
 from fuzzywuzzy import fuzz
 from requests import auth
 
-from audiolibrarian import __version__, config, records, text
+from audiolibrarian import __version__, config, text
+from audiolibrarian.domain.model import enums, values
+from audiolibrarian.domain.model.medium import Medium
+from audiolibrarian.domain.model.record import ListF
+from audiolibrarian.domain.model.release import Release
+from audiolibrarian.domain.model.track import Track
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -141,20 +146,20 @@ class MusicBrainzRelease:
         self._session = MusicBrainzSession(settings=settings)
         self._session.sleep()
         self._release = mb.get_release_by_id(release_id, includes=self._includes)["release"]
-        self._release_record: records.Release | None = None
+        self._release_record: Release | None = None
 
-    def get_release(self) -> records.Release:
+    def get_release(self) -> Release:
         """Return the Release record."""
         if self._release_record is None:
             self._release_record = self._get_release()
         return self._release_record
 
-    def _get_front_cover(self, size: int = 500) -> records.FrontCover | None:
+    def _get_front_cover(self, size: int = 500) -> values.FrontCover | None:
         # Return the FrontCover object (of None).
         if self._release["cover-art-archive"]["front"] == "true":
             self._session.sleep()
             try:
-                return records.FrontCover(
+                return values.FrontCover(
                     data=mb.get_image_front(self._release["id"], size=size),
                     desc="front",
                     mime="image/jpeg",
@@ -193,20 +198,20 @@ class MusicBrainzRelease:
             return str(next(g["name"] for g in sorted(artist["genres"], key=x_count, reverse=True)))
         return text.input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
-    def _get_media(self) -> dict[int, records.Medium] | None:
+    def _get_media(self) -> dict[int, Medium] | None:
         # Return a dict of Media objects, keyed on number or position (or None).
         media = {}
         for medium in self._release.get("medium-list", []):
             medium_number = int(medium.get("number") or medium.get("position"))
-            media[medium_number] = records.Medium(
-                formats=records.ListF([medium["format"]]),
+            media[medium_number] = Medium(
+                formats=ListF([medium["format"]]),
                 titles=[text.fix(medium["title"])] if medium.get("title") else None,
                 track_count=medium["track-count"],
                 tracks=self._get_tracks(medium_number=medium_number),
             )
         return media
 
-    def _get_people(self) -> records.People | None:  # noqa: C901, PLR0912
+    def _get_people(self) -> values.People | None:  # noqa: C901, PLR0912
         # Return a People object (or None).
         arrangers, composers, conductors, engineers, lyricists = [], [], [], [], []
         mixers, performers, producers, writers = [], [], [], []
@@ -230,15 +235,15 @@ class MusicBrainzRelease:
                 mixers.append(name)
             elif type_ == "instrument":
                 performers.append(
-                    records.Performer(name=name, instrument=text.fix(text.join(relation["attribute-list"])))
+                    values.Performer(name=name, instrument=text.fix(text.join(relation["attribute-list"])))
                 )
             elif type_ == "vocal":
-                performers.append(records.Performer(name=name, instrument="lead vocals"))
+                performers.append(values.Performer(name=name, instrument="lead vocals"))
                 if attrs := relation.get("attribute-list"):
                     if attrs := [x for x in attrs if x != "lead vocals"]:
-                        performers.append(records.Performer(name=name, instrument=text.fix(text.join(attrs))))
+                        performers.append(values.Performer(name=name, instrument=text.fix(text.join(attrs))))
                 else:
-                    performers.append(records.Performer(name=name, instrument="vocals"))
+                    performers.append(values.Performer(name=name, instrument="vocals"))
             elif type_ == "producer":
                 producers.append(name)
             elif type_ == "writer":
@@ -256,7 +261,7 @@ class MusicBrainzRelease:
             or producers
             or writers
         ):
-            return records.People(
+            return values.People(
                 arrangers=arrangers or None,
                 composers=composers or None,
                 conductors=conductors or None,
@@ -269,7 +274,7 @@ class MusicBrainzRelease:
             )
         return None
 
-    def _get_release(self) -> records.Release:
+    def _get_release(self) -> Release:
         # Return the Release object.
         release = self._release
         log.info("RELEASE %s", release)
@@ -293,20 +298,20 @@ class MusicBrainzRelease:
 
         key = "catalog-number"
         catalog_numbers = list(dict.fromkeys([x[key] for x in release.get("label-info-list", []) if x.get(key)]))
-        return records.Release(
+        return Release(
             album=text.fix(release["title"]),
-            album_artists=records.ListF([artist_phrase or album_artist_names_str]),
-            album_artists_sort=records.ListF([album_artist_sort_names]),
+            album_artists=ListF([artist_phrase or album_artist_names_str]),
+            album_artists_sort=ListF([album_artist_sort_names]),
             asins=[release["asin"]] if release.get("asin") else None,
             barcodes=[release["barcode"]] if release.get("barcode") else None,
             catalog_numbers=catalog_numbers or None,
             date=year,
             front_cover=self._get_front_cover(),
-            genres=records.ListF([self._get_genre(release_group["id"], artist_ids.first).title()]),
+            genres=ListF([self._get_genre(release_group["id"], artist_ids.first).title()]),
             labels=labels,
             media=self._get_media(),
             medium_count=release.get("medium-count", 0),
-            musicbrainz_album_artist_ids=records.ListF(artist_ids),
+            musicbrainz_album_artist_ids=ListF(artist_ids),
             musicbrainz_album_id=self._release_id,
             musicbrainz_release_group_id=release_group["id"],
             original_date=release_group.get("first-release-date", ""),
@@ -316,21 +321,21 @@ class MusicBrainzRelease:
             release_statuses=[release.get("status", "").lower()],
             release_types=album_type,
             script="Latn",
-            source=records.Source.MUSICBRAINZ,
+            source=enums.Source.MUSICBRAINZ,
         )
 
-    def _get_tracks(self, medium_number: int = 1) -> dict[int, records.Track] | None:
+    def _get_tracks(self, medium_number: int = 1) -> dict[values.TrackNumber, Track] | None:
         # Return a dict of Track objects, keyed on track number.
         tracks = {}
         for medium in self._release.get("medium-list", []):
             if int(medium["position"]) == medium_number:
                 for track in medium["track-list"]:
-                    track_number = int(track["position"])
+                    track_number = values.TrackNumber(int(track["position"]))
                     recording = track["recording"]
                     artist, artist_list, artist_sort, artist_ids = self._process_artist_credit(
                         track.get("artist-credit") or recording["artist-credit"]
                     )
-                    tracks[track_number] = records.Track(
+                    tracks[track_number] = Track(
                         artist=artist,
                         artists=artist_list,
                         artists_sort=[artist_sort],
@@ -347,12 +352,12 @@ class MusicBrainzRelease:
     @staticmethod
     def _process_artist_credit(
         artist_credit: list[str],
-    ) -> tuple[str, records.ListF, str, records.ListF]:
+    ) -> tuple[str, ListF[str], str, ListF[str]]:
         # Return artist info from an artist-credit list.
         artist_names_str = ""
-        artist_names_list = records.ListF()
+        artist_names_list: ListF[str] = ListF()
         artist_sort_names = ""
-        artist_ids = records.ListF()
+        artist_ids: ListF[str] = ListF()
         for credit in artist_credit:
             if isinstance(credit, dict):
                 artist_names_str += text.fix(credit.get("name") or credit["artist"]["name"])
@@ -390,7 +395,7 @@ class Searcher:
             self.__mb_session = MusicBrainzSession(settings=self._settings)
         return self.__mb_session
 
-    def find_music_brains_release(self) -> records.Release | None:
+    def find_music_brains_release(self) -> Release | None:
         """Return a Release object (or None) based on a search."""
         release_id = self.mb_release_id
         if not release_id and self.disc_id:

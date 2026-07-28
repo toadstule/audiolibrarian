@@ -101,7 +101,7 @@ showvars:  ## Display variables available in the Makefile.
 
 .PHONY: test
 test: dep  ## Run unit tests.
-	$(PYTEST) --verbose tests
+	$(PYTEST) --verbose -vv tests
 
 .PHONY: test-coverage
 test-coverage:  ## Run unit tests and generate a coverage report.

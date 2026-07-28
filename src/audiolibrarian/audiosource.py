@@ -27,7 +27,8 @@ from collections.abc import Callable  # noqa: TC003
 
 import discid
 
-from audiolibrarian import audiofile, config, records, sh, text
+from audiolibrarian import audiofile, config, sh, text
+from audiolibrarian.domain.model import values
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class AudioSource(abc.ABC):
     def __init__(self) -> None:
         """Initialize an AudioSource."""
         self._temp_dir: pathlib.Path = pathlib.Path(tempfile.mkdtemp())
-        self._source_list: list[pathlib.Path | None] | None = None
+        self._source_list: list[pathlib.Path | None] = []
 
     def __del__(self) -> None:
         """Remove any temp files."""
@@ -54,11 +55,11 @@ class AudioSource(abc.ABC):
         """
         if not self._source_list:
             source_filenames = self.get_source_filenames()
-            length = max(text.get_track_number(str(f.name)) for f in source_filenames)
+            length = max(text.get_track_number(str(f.name)).value for f in source_filenames)
             result: list[pathlib.Path | None] = [None] * length
             if length:
                 for filename in source_filenames:
-                    idx = text.get_track_number(str(filename.name)) - 1
+                    idx = text.get_track_number(str(filename.name)).value - 1
                     result[idx] = filename
             self._source_list = result
         return self._source_list
@@ -68,7 +69,7 @@ class AudioSource(abc.ABC):
         for filename in self.get_wav_filenames():
             shutil.copy2(filename, dest_dir / filename.name)
 
-    def get_front_cover(self) -> records.FrontCover | None:
+    def get_front_cover(self) -> values.FrontCover | None:
         """Return a FrontCover record or None."""
         return None
 
@@ -99,7 +100,10 @@ class CDAudioSource(AudioSource):
 
     def get_search_data(self) -> dict[str, str]:
         """Return a dictionary of search data useful for doing a MusicBrainz search."""
-        return {"disc_id": self._cd.id, "disc_mcn": self._cd.mcn}
+        result = {"disc_id": self._cd.id}
+        if self._cd.mcn is not None:
+            result["disc_mcn"] = self._cd.mcn
+        return result
 
     def get_source_filenames(self) -> list[pathlib.Path]:
         """Return a list of the original source file paths.
@@ -135,7 +139,7 @@ class FilesAudioSource(AudioSource):
                     break
         self._file_type = self._filenames[0].suffix.lstrip(".")
 
-    def get_front_cover(self) -> records.FrontCover | None:
+    def get_front_cover(self) -> values.FrontCover | None:
         """Return a FrontCover record or None."""
         for filename in self._filenames:
             one_track = audiofile.AudioFile.open(filename).one_track

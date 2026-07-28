@@ -38,7 +38,7 @@ src/audiolibrarian/domain/
 │   │                     # Medium has media_type (CD, LP, Cassette, Digital) and
 │   │                     # position
 │   ├── values.py         # FrontCover, FileInfo, Performer, People,
-│   │                     # DiscPosition, TrackNumber, AudioFormat    [value objects]
+│   │                     # MediumPosition, TrackNumber, AudioFormat    [value objects]
 │   └── enums.py          # BitrateMode, FileType, Source
 └── services/
     ├── __init__.py
@@ -181,7 +181,7 @@ tests/
 #### Phase 1: Purify Domain Model
 
 - Write unit tests for each new value object before implementation
-- Test invariants (e.g., DiscPosition validation, TrackNumber formatting)
+- Test invariants (e.g., MediumPosition validation, TrackNumber formatting)
 - Ensure existing tests still pass after moving entities
 - Add domain tests for aggregate behavior (Release invariants)
 - Test that value objects are immutable (frozen dataclass)
@@ -409,7 +409,7 @@ inward? Name three.
   - `show(message)`
   - `display_table(data)`
 - Create `ConsoleUI` adapter in `presentation/console_ui.py`:
-  - Implements UserInterface using print, text.input_, and table rendering
+  - Implements UserInterface using print, `text.input_`, and table rendering
 - Move `_summary` rendering from `Base` to `ConsoleUI`
 - Move all `print`, `text.input_`, and confirm logic from `Base` to `ConsoleUI`
 - Move prompts currently inside `musicbrainz.py` (e.g., "Genre not found") to use

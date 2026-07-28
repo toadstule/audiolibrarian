@@ -107,7 +107,7 @@ src/audiolibrarian/
     model/
       release.py        # Release (root), Medium, Track            [entities]
       values.py         # FrontCover, FileInfo, Performer, People,
-                        # DiscPosition, TrackNumber, AudioFormat    [value objects]
+                        # MediumPosition, TrackNumber, AudioFormat    [value objects]
       enums.py          # BitrateMode, FileType, Source
     services/
       source_matching.py  # match source files → tracks; count invariant
@@ -337,7 +337,7 @@ current behavior isn't already covered.
 - Move `records.py` into `domain/model/` split into `release.py` / `values.py` /
   `enums.py`
 - Freeze value objects with `@dataclass(frozen=True)`
-- Introduce `DiscPosition`, `TrackNumber`, `AudioFormat` to cure primitive obsession
+- Introduce `MediumPosition`, `TrackNumber`, `AudioFormat` to cure primitive obsession
 - Keep existing behavior methods (`get_filename`, path helpers)
 - Move path helpers to `domain/services/library_layout.py` if they reference
   filesystem-layout rules
@@ -437,7 +437,7 @@ tests/
 #### Phase 1: Purify Domain Model
 
 - Write unit tests for each new value object before implementation
-- Test invariants (e.g., DiscPosition validation)
+- Test invariants (e.g., MediumPosition validation)
 - Ensure existing tests still pass after moving entities
 - Add domain tests for aggregate behavior (Release invariants)
 
@@ -514,9 +514,9 @@ tests/
 
 - Significant refactoring effort required
 - Temporary increase in complexity during migration
-- Learning curve for team members unfamiliar with DDD
+- Learning curve, for team members unfamiliar with DDD
 - More boilerplate code (ports, adapters, etc.)
-- Deferred patterns may need to be added later if needs change
+- Deferred patterns may need to be added later, if usage needs change
 
 ### Neutral
 

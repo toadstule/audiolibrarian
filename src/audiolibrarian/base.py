@@ -26,7 +26,7 @@ import shutil
 import sys
 import warnings
 from collections.abc import Iterable
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 import colors
 import filelock
@@ -38,10 +38,14 @@ from audiolibrarian import (
     config,
     musicbrainz,
     normalizer,
-    records,
     sh,
     text,
 )
+from audiolibrarian.domain.model import release, values
+
+if TYPE_CHECKING:
+    from audiolibrarian.domain.model.medium import Medium
+    from audiolibrarian.domain.model.release import Release
 
 log = logging.getLogger(__name__)
 
@@ -81,10 +85,10 @@ class Base:
 
         # Initialize stuff that will be defined later.
         self._audio_source: audiosource.AudioSource | None = None
-        self._release: records.Release | None = None
-        self._medium: records.Medium | None = None
+        self._release: Release | None = None
+        self._medium: Medium | None = None
         self._source_is_cd: bool | None = None
-        self._source_example: records.OneTrack | None = None
+        self._source_example: release.OneTrack | None = None
 
     @property
     def _flac_filenames(self) -> list[pathlib.Path]:
@@ -334,10 +338,10 @@ class Base:
         """Tag the given list of files."""
         for filename in filenames:
             song = audiofile.AudioFile.open(filename)
-            song.one_track = records.OneTrack(
+            song.one_track = release.OneTrack(
                 release=self._release,
-                medium_number=self._disc_number,
-                track_number=int(filename.name.split("__")[0]),
+                medium_position=values.MediumPosition(number=self._disc_number, count=self._disc_count),
+                track_number=values.TrackNumber(int(filename.name.split("__")[0])),
             )
             song.write_tags()
 

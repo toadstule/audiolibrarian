@@ -25,20 +25,11 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
+import attrs
 import pytest
 
 from audiolibrarian.audiofile import audiofile
-from audiolibrarian.records import (
-    FrontCover,
-    ListF,
-    Medium,
-    OneTrack,
-    People,
-    Performer,
-    Release,
-    Source,
-    Track,
-)
+from audiolibrarian.domain.model import enums, medium, record, release, track, values
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 
@@ -93,7 +84,7 @@ class TestAudioFile:
     def test__no_changes_wr_blank(self, test_data: Generator[None]) -> None:
         """Verify that a write/read cycle doesn't change any blank tags."""
         _ = test_data
-        blank_info = OneTrack()
+        blank_info = release.OneTrack()
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
                 f = audiofile.AudioFile.open(test_file.name)
@@ -106,51 +97,51 @@ class TestAudioFile:
     def test__no_changes_wr(self, test_data: Generator[None]) -> None:
         """Verify that a write/read cycle doesn't change any tags."""
         _ = test_data
-        info = OneTrack(
-            release=Release(
+        info = release.OneTrack(
+            release=release.Release(
                 album="Album",
-                album_artists=ListF(["Album Artist One", "Album Artist Two"]),
-                album_artists_sort=ListF(["One, Album Artist", "Two, Album Artist"]),
+                album_artists=record.ListF(["Album Artist One", "Album Artist Two"]),
+                album_artists_sort=record.ListF(["One, Album Artist", "Two, Album Artist"]),
                 asins=["ASIN 1", "ASIN 2"],
                 barcodes=["Barcode 1", "Barcode 2"],
                 catalog_numbers=["Catalog Number 1", "Catalog Number 2"],
                 date="2015-09-24",
-                front_cover=FrontCover(data=b"", desc="front", mime="image/jpg"),
-                genres=ListF(["Genre 1", "Genre 2"]),
+                front_cover=values.FrontCover(data=b"", desc="front", mime="image/jpg"),
+                genres=record.ListF(["Genre 1", "Genre 2"]),
                 labels=["Label 1", "Label 2"],
                 media={
-                    7: Medium(
-                        formats=ListF(["Media 1 Format"]),
+                    7: medium.Medium(
+                        formats=record.ListF(["Media 1 Format"]),
                         titles=["Disc title 1", "Disc title 2"],
                         track_count=10,
                         tracks={
-                            3: Track(
+                            values.TrackNumber(3): track.Track(
                                 artist="Track Artist",
-                                artists=ListF(["Track Artist One", "Track Artist Two"]),
+                                artists=record.ListF(["Track Artist One", "Track Artist Two"]),
                                 artists_sort=["One, Track Artist", "Two, Track Artist"],
                                 isrcs=["ISRCS 1", "ISRCS 2"],
-                                musicbrainz_artist_ids=ListF(["MB-Artist-ID-1", "MB-Artist-ID-2"]),
+                                musicbrainz_artist_ids=record.ListF(["MB-Artist-ID-1", "MB-Artist-ID-2"]),
                                 musicbrainz_release_track_id="MB-Release-Track-ID",
                                 musicbrainz_track_id="MB-Track_ID",
                                 title="Track Title",
-                                track_number=3,
+                                track_number=values.TrackNumber(3),
                             )
                         },
                     )
                 },
                 medium_count=14,
-                musicbrainz_album_artist_ids=ListF(["MB-Album-Artist-ID-1", "MB-Album-Artist-ID-2"]),
+                musicbrainz_album_artist_ids=record.ListF(["MB-Album-Artist-ID-1", "MB-Album-Artist-ID-2"]),
                 musicbrainz_album_id="MB-Album-ID",
                 musicbrainz_release_group_id="MB-Release-Group_ID",
                 original_date="1972-04-02",
                 original_year="1992",
-                people=People(
+                people=values.People(
                     engineers=["Engineer 1", "Engineer 2"],
                     lyricists=["Lyricist 1", "Lyricist 2"],
                     mixers=["Mixer 1", "Mixer 2"],
                     performers=[
-                        Performer(name="Performer 1", instrument="Instrument 1"),
-                        Performer(name="Performer 2", instrument="Instrument 2"),
+                        values.Performer(name="Performer 1", instrument="Instrument 1"),
+                        values.Performer(name="Performer 2", instrument="Instrument 2"),
                     ],
                     producers=["Producer 1", "Producer 2"],
                 ),
@@ -158,10 +149,10 @@ class TestAudioFile:
                 release_statuses=["Release Status 1", "Release Status 2"],
                 release_types=["Release Type 1", "Release Type 2"],
                 script="Script",
-                source=Source.TAGS,
+                source=enums.Source.TAGS,
             ),
-            medium_number=7,
-            track_number=3,
+            medium_position=values.MediumPosition(number=7, count=14),
+            track_number=values.TrackNumber(3),
         )
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
@@ -175,8 +166,9 @@ class TestAudioFile:
                 new_info.track.file_info = None
 
                 if src.suffix == ".m4a":
-                    old_info.release.people.performers = None  # m4a doesn't save performers.
-                    old_info.release.front_cover.desc = None  # m4a doesn't save cover desc.
+                    # m4a doesn't save performers or cover desc.
+                    old_info.release.people = attrs.evolve(old_info.release.people, performers=None)
+                    old_info.release.front_cover = attrs.evolve(old_info.release.front_cover, desc=None)
                 if src.suffix == ".mp3":
                     old_info.release.original_date = None  # mp3 doesn't save orig date.
                 assert new_info == old_info, f"Write/Read failed for {src.suffix}"

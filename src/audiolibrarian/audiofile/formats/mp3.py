@@ -21,7 +21,11 @@ from typing import Any, no_type_check
 import mutagen
 import mutagen.id3
 
-from audiolibrarian import audiofile, records
+from audiolibrarian import audiofile
+from audiolibrarian.domain.model import enums, release, values
+from audiolibrarian.domain.model.medium import Medium
+from audiolibrarian.domain.model.record import ListF
+from audiolibrarian.domain.model.track import Track
 
 APIC = mutagen.id3.APIC
 TXXX = mutagen.id3.TXXX
@@ -33,33 +37,39 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
     """AudioFile for MP3 files."""
 
     @no_type_check  # The mutagen library doesn't provide type hints.
-    def read_tags(self) -> records.OneTrack:
+    def read_tags(self) -> release.OneTrack:
         """Read the tags and return a OneTrack object."""
 
-        def get_l(key: str) -> records.ListF | None:
+        def get_l(key: str) -> ListF[str] | None:
             if (value := mut.get(key)) is None:
                 return None
             if "/" in str(value):
-                return records.ListF(str(value).split("/"))
-            return records.ListF(value)
+                return ListF(str(value).split("/"))
+            return ListF(value)
 
         mut = self._mut_file
         front_cover = None
         if apic := mut.get("APIC:front cover", mut.get("APIC:front", mut.get("APIC:"))):
-            front_cover = records.FrontCover(data=apic.data, desc=apic.desc, mime=apic.mime)
+            front_cover = values.FrontCover(data=apic.data, desc=apic.desc, mime=apic.mime)
         tipl = mut["TIPL"].people if mut.get("TIPL") else []
         roles = ("arranger", "composer", "conductor", "engineer", "mix", "producer", "writer")
         medium_count = int(mut["TPOS"][0].split("/")[1]) if mut.get("TPOS") else None
         medium_number = int(mut["TPOS"][0].split("/")[0]) if mut.get("TPOS") else None
         track_count = int(mut["TRCK"][0].split("/")[1]) if mut.get("TRCK") else None
-        track_number = int(mut["TRCK"][0].split("/")[0]) if mut.get("TRCK") else None
+        track_number = values.TrackNumber(int(mut["TRCK"][0].split("/")[0])) if mut.get("TRCK") else None
         bitrate = mut.info.bitrate // 1000
-        bitrate_mode = records.BitrateMode.__members__[str(mut.info.bitrate_mode).rsplit(".", maxsplit=1)[-1]]
+        bitrate_mode = enums.BitrateMode.__members__[str(mut.info.bitrate_mode).rsplit(".", maxsplit=1)[-1]]
         # Shortcut for common CBRs.
-        if bitrate_mode == records.BitrateMode.UNKNOWN and bitrate in (128, 160, 192, 320):
-            bitrate_mode = records.BitrateMode.CBR
-        release = (
-            records.Release(
+        if bitrate_mode == enums.BitrateMode.UNKNOWN and bitrate in (128, 160, 192, 320):
+            bitrate_mode = enums.BitrateMode.CBR
+
+        # Create MediumPosition if we have both number and count
+        medium_position = None
+        if medium_number is not None and medium_count is not None:
+            medium_position = values.MediumPosition(number=medium_number, count=medium_count)
+
+        release_obj = (
+            release.Release(
                 album=mut.get("TALB", [None])[0],
                 album_artists=get_l("TPE2"),
                 album_artists_sort=get_l("TSO2"),
@@ -71,20 +81,20 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
                 genres=get_l("TCON"),
                 labels=get_l("TPUB"),
                 media={
-                    medium_number: records.Medium(
+                    medium_number: Medium(
                         formats=get_l("TMED"),
                         titles=get_l("TSST"),
                         track_count=track_count,
                         tracks={
-                            track_number: records.Track(
+                            track_number: Track(
                                 artist=mut.get("TPE1", [None])[0],
                                 artists=get_l("TXXX:ARTISTS"),
                                 artists_sort=get_l("TSOP"),
-                                file_info=records.FileInfo(
+                                file_info=values.FileInfo(
                                     bitrate=bitrate,
                                     bitrate_mode=bitrate_mode,
                                     path=self.filepath,
-                                    type=records.FileType.MP3,
+                                    type=enums.FileType.MP3,
                                 ),
                                 isrcs=get_l("TSRC"),
                                 musicbrainz_artist_ids=get_l("TXXX:MusicBrainz Artist Id"),
@@ -106,7 +116,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
                 musicbrainz_release_group_id=mut.get("TXXX:MusicBrainz Release Group Id", [None])[0],
                 original_year=str((mut["TDOR"][0]).year) if mut.get("TDOR") else None,
                 people=(
-                    records.People(
+                    values.People(
                         arrangers=[name for role, name in tipl if role == "arranger"] or None,
                         composers=[name for role, name in tipl if role == "composer"] or None,
                         conductors=[name for role, name in tipl if role == "conductor"] or None,
@@ -114,7 +124,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
                         lyricists=get_l("TEXT"),
                         mixers=[name for role, name in tipl if role == "mix"] or None,
                         producers=[name for role, name in tipl if role == "producer"] or None,
-                        performers=[records.Performer(name=n, instrument=i) for i, n in tipl if i not in roles] or None,
+                        performers=[values.Performer(name=n, instrument=i) for i, n in tipl if i not in roles] or None,
                         writers=[name for role, name in tipl if role == "writer"] or None,
                     )
                     or None
@@ -126,42 +136,42 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
             )
             or None
         )
-        if release:
-            release.source = records.Source.TAGS
-        return records.OneTrack(release=release, medium_number=medium_number, track_number=track_number)
+        if release_obj:
+            release_obj.source = enums.Source.TAGS
+        return release.OneTrack(release=release_obj, medium_position=medium_position, track_number=track_number)
 
     @no_type_check  # The mutagen library doesn't provide type hints.
     def write_tags(self) -> None:  # noqa: C901, PLR0912, PLR0915
         """Write the tags."""
 
-        def slash(text: list[str] | records.ListF) -> str:
+        def slash(text: list[str] | ListF[str]) -> str:
             return "/".join(text)
 
-        release, medium_number, medium, track_number, track = self._get_tag_sources()
+        release_, medium_number, medium, track_number, track = self._get_tag_sources()
         tipl_people = (
-            [["arranger", x] for x in (release.people and release.people.arrangers) or []]
-            + [["composer", x] for x in (release.people and release.people.composers) or []]
-            + [["conductor", x] for x in (release.people and release.people.conductors) or []]
-            + [["engineer", x] for x in (release.people and release.people.engineers) or []]
-            + [["mix", x] for x in (release.people and release.people.mixers) or []]
-            + [["producer", x] for x in (release.people and release.people.producers) or []]
-            + [[p.instrument, p.name] for p in (release.people and release.people.performers) or []]
-            + [["writer", x] for x in (release.people and release.people.writers) or []]
+            [["arranger", x] for x in (release_.people and release_.people.arrangers) or []]
+            + [["composer", x] for x in (release_.people and release_.people.composers) or []]
+            + [["conductor", x] for x in (release_.people and release_.people.conductors) or []]
+            + [["engineer", x] for x in (release_.people and release_.people.engineers) or []]
+            + [["mix", x] for x in (release_.people and release_.people.mixers) or []]
+            + [["producer", x] for x in (release_.people and release_.people.producers) or []]
+            + [[p.instrument, p.name] for p in (release_.people and release_.people.performers) or []]
+            + [["writer", x] for x in (release_.people and release_.people.writers) or []]
         )
         tags: list[mutagen.id3.Frame] = []
         # noinspection PyUnusedLocal
         tag: Any = None
-        if tag := release.album:
+        if tag := release_.album:
             tags.append(mutagen.id3.TALB(encoding=1, text=tag))
-        if tag := release.people and release.people.composers:
+        if tag := release_.people and release_.people.composers:
             tags.append(mutagen.id3.TCOM(encoding=1, text=slash(tag)))
-        if tag := release.genres:
+        if tag := release_.genres:
             tags.append(mutagen.id3.TCON(encoding=3, text=slash(tag)))
-        if tag := release.original_year:
+        if tag := release_.original_year:
             tags.append(mutagen.id3.TDOR(encoding=0, text=str(tag)))
-        if tag := release.date:
+        if tag := release_.date:
             tags.append(mutagen.id3.TDRC(encoding=0, text=tag))
-        if tag := release.people and release.people.lyricists:
+        if tag := release_.people and release_.people.lyricists:
             tags.append(mutagen.id3.TEXT(encoding=1, text=slash(tag)))
         if people := tipl_people:
             tags.append(mutagen.id3.TIPL(encoding=1, people=people))
@@ -171,17 +181,17 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
             tags.append(mutagen.id3.TMED(encoding=1, text=slash(tag)))
         if tag := track.artist:
             tags.append(mutagen.id3.TPE1(encoding=1, text=tag))
-        if tag := release.album_artists:
+        if tag := release_.album_artists:
             tags.append(mutagen.id3.TPE2(encoding=1, text=slash(tag)))
-        if tag := release.people and release.people.conductors:
+        if tag := release_.people and release_.people.conductors:
             tags.append(mutagen.id3.TPE3(encoding=1, text=slash(tag)))
-        if (num := medium_number) and (tag := release.medium_count):
+        if (num := medium_number) and (tag := release_.medium_count):
             tags.append(mutagen.id3.TPOS(encoding=0, text=f"{num}/{tag}"))
-        if tag := release.labels:
+        if tag := release_.labels:
             tags.append(mutagen.id3.TPUB(encoding=1, text=slash(tag)))
-        if (num := track_number) and (tag := medium.track_count):
+        if (num := track_number.value if track_number else None) and (tag := medium.track_count):
             tags.append(mutagen.id3.TRCK(encoding=0, text=f"{num}/{tag}"))
-        if tag := release.album_artists_sort:
+        if tag := release_.album_artists_sort:
             tags.append(mutagen.id3.TSO2(encoding=1, text=slash(tag)))
         if tag := track.artists_sort:
             tags.append(mutagen.id3.TSOP(encoding=1, text=slash(tag)))
@@ -191,35 +201,35 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
             tags.append(mutagen.id3.TSST(encoding=1, text=slash(tag)))
         if tag := track.artists:
             tags.append(TXXX(encoding=1, desc="ARTISTS", text=slash(tag)))
-        if tag := release.asins:
+        if tag := release_.asins:
             tags.append(TXXX(encoding=1, desc="ASIN", text=slash(tag)))
-        if tag := release.barcodes:
+        if tag := release_.barcodes:
             tags.append(TXXX(encoding=1, desc="BARCODE", text=slash(tag)))
-        if tag := release.catalog_numbers:
+        if tag := release_.catalog_numbers:
             tags.append(TXXX(encoding=1, desc="CATALOGNUMBER", text=slash(tag)))
-        if tag := release.musicbrainz_album_artist_ids:
+        if tag := release_.musicbrainz_album_artist_ids:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Album Artist Id", text=slash(tag)))
-        if tag := release.musicbrainz_album_id:
+        if tag := release_.musicbrainz_album_id:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Album Id", text=tag))
-        if tag := release.release_countries:
+        if tag := release_.release_countries:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Album Release Country", text=slash(tag)))
-        if tag := release.release_statuses:
+        if tag := release_.release_statuses:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Album Status", text=slash(tag)))
-        if tag := release.release_types:
+        if tag := release_.release_types:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Album Type", text=slash(tag)))
         if tag := track.musicbrainz_artist_ids:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Artist Id", text=slash(tag)))
-        if tag := release.musicbrainz_release_group_id:
+        if tag := release_.musicbrainz_release_group_id:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Release Group Id", text=tag))
         if tag := track.musicbrainz_release_track_id:
             tags.append(TXXX(encoding=1, desc="MusicBrainz Release Track Id", text=tag))
-        if tag := release.script:
+        if tag := release_.script:
             tags.append(TXXX(encoding=1, desc="SCRIPT", text=tag))
-        if tag := release.original_year:
+        if tag := release_.original_year:
             tags.append(TXXX(encoding=1, desc="originalyear", text=str(tag)))
         if id_ := track.musicbrainz_track_id:
             tags.append(UFID(owner=MB_UFID, data=bytes(id_, "utf8")))
-        if (cover := release.front_cover) is not None:
+        if (cover := release_.front_cover) is not None:
             tags.append(APIC(encoding=0, mime=cover.mime, type=3, desc=cover.desc, data=cover.data))
 
         try:

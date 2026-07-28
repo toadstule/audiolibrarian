@@ -21,7 +21,10 @@ from typing import Any
 
 import mutagen.mp4
 
-from audiolibrarian import audiofile, records
+from audiolibrarian import audiofile
+from audiolibrarian.domain.model import enums, record, release, values
+from audiolibrarian.domain.model.medium import Medium
+from audiolibrarian.domain.model.track import Track
 
 log = getLogger(__name__)
 ITUNES = "----:com.apple.iTunes"
@@ -30,7 +33,7 @@ ITUNES = "----:com.apple.iTunes"
 class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
     """AudioFile for M4A files."""
 
-    def read_tags(self) -> records.OneTrack:
+    def read_tags(self) -> release.OneTrack:
         """Read the tags and return a OneTrack object."""
 
         def get_str(key: str) -> str | None:
@@ -39,17 +42,17 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
                 return None
             return str(mut.get(key)[0].decode("utf8"))
 
-        def get_strl(key: str) -> records.ListF | None:
+        def get_strl(key: str) -> record.ListF[str] | None:
             # Return all elements for a given key, utf8-decoded.
             if mut.get(key) is None:
                 return None
-            return records.ListF([x.decode("utf8") for x in mut.get(key)])
+            return record.ListF([x.decode("utf8") for x in mut.get(key)])
 
-        def listf(key: str) -> records.ListF | None:
+        def listf(key: str) -> record.ListF[str] | None:
             # Return a ListF object for a given key.
             if mut.get(key) is None:
                 return None
-            return records.ListF(mut.get(key))
+            return record.ListF(mut.get(key))
 
         mut = self._mut_file
 
@@ -58,13 +61,13 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
             cover = mut["covr"][0]
             # noinspection PyUnresolvedReferences
             mime = "image/png" if cover.imageformat == mutagen.mp4.AtomDataType.PNG else "image/jpg"
-            front_cover = records.FrontCover(data=bytes(cover), mime=mime)
+            front_cover = values.FrontCover(data=bytes(cover), mime=mime)
         medium_count = int(mut["disk"][0][1]) if mut.get("disk") else None
         medium_number = int(mut["disk"][0][0]) if mut.get("disk") else None
         track_count = int(mut["trkn"][0][1]) if mut.get("trkn") else None
-        track_number = int(mut["trkn"][0][0]) if mut.get("trkn") else None
-        release = (
-            records.Release(
+        track_number = values.TrackNumber(int(mut["trkn"][0][0])) if mut.get("trkn") else None
+        release_ = (
+            release.Release(
                 album=mut.get("\xa9alb", [None])[0],
                 album_artists=listf("aART"),
                 album_artists_sort=listf("soaa"),
@@ -76,27 +79,27 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
                 genres=listf("\xa9gen"),
                 labels=get_strl(f"{ITUNES}:LABEL"),
                 media={
-                    medium_number: records.Medium(
+                    medium_number: Medium(
                         formats=get_strl(f"{ITUNES}:MEDIA"),
                         titles=get_strl(f"{ITUNES}:DISCSUBTITLE"),
                         track_count=track_count,
                         tracks={
-                            track_number: records.Track(
+                            track_number: Track(
                                 artist=mut.get("\xa9ART", [None])[0],
                                 artists=get_strl(f"{ITUNES}:ARTISTS"),
                                 artists_sort=mut.get("soar"),
-                                file_info=records.FileInfo(
+                                file_info=values.FileInfo(
                                     bitrate=mut.info.bitrate // 1000,
-                                    bitrate_mode=records.BitrateMode.CBR,
+                                    bitrate_mode=enums.BitrateMode.CBR,
                                     path=self.filepath,
-                                    type=records.FileType.AAC,
+                                    type=enums.FileType.AAC,
                                 ),
                                 isrcs=get_strl(f"{ITUNES}:ISRC"),
                                 musicbrainz_artist_ids=get_strl(f"{ITUNES}:MusicBrainz Artist Id"),
                                 musicbrainz_release_track_id=get_str(f"{ITUNES}:MusicBrainz Release Track Id"),
                                 musicbrainz_track_id=get_str(f"{ITUNES}:MusicBrainz Track Id"),
                                 title=mut.get("\xa9nam", [None])[0],
-                                track_number=int(mut["trkn"][0][0]) if mut.get("trkn") else None,
+                                track_number=values.TrackNumber(int(mut["trkn"][0][0])) if mut.get("trkn") else None,
                             )
                         }
                         if track_number
@@ -112,7 +115,7 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
                 original_date=get_str(f"{ITUNES}:originaldate"),
                 original_year=get_str(f"{ITUNES}:originalyear") or None,
                 people=(
-                    records.People(
+                    values.People(
                         arrangers=get_strl(f"{ITUNES}:ARRANGER"),
                         composers=get_strl(f"{ITUNES}:COMPOSER"),
                         conductors=get_strl(f"{ITUNES}:CONDUCTOR"),
@@ -132,9 +135,14 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
             )
             or None
         )
-        if release:
-            release.source = records.Source.TAGS
-        return records.OneTrack(release=release, medium_number=medium_number, track_number=track_number)
+        if release_:
+            release_.source = enums.Source.TAGS
+        medium_pos = values.MediumPosition(number=medium_number, count=medium_count or 1) if medium_number else None
+        return release.OneTrack(
+            release=release_,
+            medium_position=medium_pos,
+            track_number=track_number,
+        )
 
     def write_tags(self) -> None:
         """Write the tags."""
@@ -144,60 +152,60 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
                 return None
             return mutagen.mp4.MP4FreeForm(bytes(str(text), "utf8"))  # type: ignore[no-untyped-call]
 
-        def ffl(list_: list[str] | None | Any) -> records.ListF | None:  # noqa: ANN401
+        def ffl(list_: list[str] | None | Any) -> record.ListF[bytes] | None:  # noqa: ANN401
             if not list_:
                 return None
-            return records.ListF([ff(x) for x in list_])
+            return record.ListF([ff(x) for x in list_])
 
         # Note: We don't write "performers" to m4a files.
-        release, medium_number, medium, track_number, track = self._get_tag_sources()
+        release_, medium_number, medium, track_number, track = self._get_tag_sources()
         front_cover = None
-        if (cover := release.front_cover) is not None:
+        if (cover := release_.front_cover) is not None:
             # noinspection PyUnresolvedReferences
             image_format = mutagen.mp4.AtomDataType.PNG if cover.mime == "image/png" else mutagen.mp4.AtomDataType.JPEG
             front_cover = [
                 mutagen.mp4.MP4Cover(cover.data, imageformat=image_format)  # type: ignore[no-untyped-call]
             ]
         tags_ = {
-            f"{ITUNES}:ARRANGER": ffl(release.people and release.people.arrangers),
+            f"{ITUNES}:ARRANGER": ffl(release_.people and release_.people.arrangers),
             f"{ITUNES}:ARTISTS": ffl(track.artists),
-            f"{ITUNES}:ASIN": ffl(release.asins),
-            f"{ITUNES}:BARCODE": ffl(release.barcodes),
-            f"{ITUNES}:CATALOGNUMBER": ffl(release.catalog_numbers),
-            f"{ITUNES}:COMPOSER": ffl(release.people and release.people.composers),
-            f"{ITUNES}:CONDUCTOR": ffl(release.people and release.people.conductors),
+            f"{ITUNES}:ASIN": ffl(release_.asins),
+            f"{ITUNES}:BARCODE": ffl(release_.barcodes),
+            f"{ITUNES}:CATALOGNUMBER": ffl(release_.catalog_numbers),
+            f"{ITUNES}:COMPOSER": ffl(release_.people and release_.people.composers),
+            f"{ITUNES}:CONDUCTOR": ffl(release_.people and release_.people.conductors),
             f"{ITUNES}:DISCSUBTITLE": ffl(medium.titles),
-            f"{ITUNES}:ENGINEER": ffl(release.people and release.people.engineers),
+            f"{ITUNES}:ENGINEER": ffl(release_.people and release_.people.engineers),
             f"{ITUNES}:ISRC": ffl(track.isrcs),
-            f"{ITUNES}:LABEL": ffl(release.labels),
-            f"{ITUNES}:LYRICIST": ffl(release.people and release.people.lyricists),
+            f"{ITUNES}:LABEL": ffl(release_.labels),
+            f"{ITUNES}:LYRICIST": ffl(release_.people and release_.people.lyricists),
             f"{ITUNES}:MEDIA": ffl(medium.formats),
-            f"{ITUNES}:MIXER": ffl(release.people and release.people.mixers),
-            f"{ITUNES}:MusicBrainz Album Artist Id": ffl(release.musicbrainz_album_artist_ids),
-            f"{ITUNES}:MusicBrainz Album Id": [ff(release.musicbrainz_album_id)],
-            f"{ITUNES}:MusicBrainz Album Release Country": ffl(release.release_countries),
-            f"{ITUNES}:MusicBrainz Album Status": ffl(release.release_statuses),
-            f"{ITUNES}:MusicBrainz Album Type": ffl(release.release_types),
+            f"{ITUNES}:MIXER": ffl(release_.people and release_.people.mixers),
+            f"{ITUNES}:MusicBrainz Album Artist Id": ffl(release_.musicbrainz_album_artist_ids),
+            f"{ITUNES}:MusicBrainz Album Id": [ff(release_.musicbrainz_album_id)],
+            f"{ITUNES}:MusicBrainz Album Release Country": ffl(release_.release_countries),
+            f"{ITUNES}:MusicBrainz Album Status": ffl(release_.release_statuses),
+            f"{ITUNES}:MusicBrainz Album Type": ffl(release_.release_types),
             f"{ITUNES}:MusicBrainz Artist Id": ffl(track.musicbrainz_artist_ids),
-            f"{ITUNES}:MusicBrainz Release Group Id": [ff(release.musicbrainz_release_group_id)],
+            f"{ITUNES}:MusicBrainz Release Group Id": [ff(release_.musicbrainz_release_group_id)],
             f"{ITUNES}:MusicBrainz Release Track Id": [ff(track.musicbrainz_release_track_id)],
             f"{ITUNES}:MusicBrainz Track Id": [ff(track.musicbrainz_track_id)],
-            f"{ITUNES}:originaldate": [ff(release.original_date)],
-            f"{ITUNES}:originalyear": [ff(release.original_year)],
-            f"{ITUNES}:PRODUCER": ffl(release.people and release.people.producers),
-            f"{ITUNES}:SCRIPT": [ff(release.script)],
-            f"{ITUNES}:WRITER": ffl(release.people and release.people.writers),
-            "\xa9alb": [release.album],
+            f"{ITUNES}:originaldate": [ff(release_.original_date)],
+            f"{ITUNES}:originalyear": [ff(release_.original_year)],
+            f"{ITUNES}:PRODUCER": ffl(release_.people and release_.people.producers),
+            f"{ITUNES}:SCRIPT": [ff(release_.script)],
+            f"{ITUNES}:WRITER": ffl(release_.people and release_.people.writers),
+            "\xa9alb": [release_.album],
             "\xa9ART": [track.artist],
-            "\xa9day": [release.date],
-            "\xa9gen": release.genres,
+            "\xa9day": [release_.date],
+            "\xa9gen": release_.genres,
             "\xa9nam": [track.title],
-            "aART": release.album_artists,
+            "aART": release_.album_artists,
             "covr": front_cover,
-            "disk": [(medium_number, release.medium_count)] if medium_number else None,
-            "soaa": release.album_artists_sort,
+            "disk": [(medium_number, release_.medium_count)] if medium_number else None,
+            "soaa": release_.album_artists_sort,
             "soar": track.artists_sort,
-            "trkn": [(track_number, medium.track_count)] if track_number else None,
+            "trkn": [(track_number.value, medium.track_count)] if track_number else None,
         }
         tags_ = audiofile.Tags(tags_)
 

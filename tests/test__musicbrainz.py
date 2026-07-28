@@ -20,12 +20,13 @@ import logging
 import os
 from pathlib import Path
 
+import attrs
 import pytest
 
 from audiolibrarian import config
 from audiolibrarian.audiofile import audiofile
+from audiolibrarian.domain.model import enums
 from audiolibrarian.musicbrainz import MusicBrainzRelease
-from audiolibrarian.records import Source
 from tests.test__audiofile import _audio_file_copy
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
@@ -54,7 +55,7 @@ class TestMusicBrainzRelease:
                 if (expected := f._one_track.release) is None:
                     # Blank tags in audio file.
                     continue
-                medium_number = f._one_track.medium_number
+                medium_number = f._one_track.medium_position.number
                 track_number = f._one_track.track_number
 
             got = MusicBrainzRelease(
@@ -67,17 +68,17 @@ class TestMusicBrainzRelease:
             expected.front_cover, got.front_cover = None, None  # Don't compare image.
             expected.asins, got.asins = None, None  # Something's weird with ASINS.
             if expected.people is not None:
-                expected.people.engineers, got.people.engineers = None, None
-                expected.people.lyricists, got.people.lyricists = None, None
-                expected.people.mixers, got.people.mixers = None, None
-                expected.people.producers, got.people.producers = None, None
+                expected.people = attrs.evolve(
+                    expected.people, engineers=None, lyricists=None, mixers=None, producers=None
+                )
+                got.people = attrs.evolve(got.people, engineers=None, lyricists=None, mixers=None, producers=None)
             # noinspection PyUnresolvedReferences
             expected.media[medium_number].tracks[track_number].file_info = None
             # noinspection PyUnresolvedReferences
             got.media[medium_number].tracks[track_number].file_info = None
 
             if src.suffix == ".m4a" and got.people:  # We don't store this for m4a files.
-                got.people.performers = None
+                got.people = attrs.evolve(got.people, performers=None)
 
             if src.suffix == ".mp3":  # We don't store this for mp3 files.
                 expected.original_date, got.original_date = None, None
@@ -96,8 +97,8 @@ class TestMusicBrainzRelease:
             assert got.media[medium_number] == expected.media[medium_number], f"Medium failed for {src}"
             expected.media, got.media = None, None
 
-            assert expected.source == Source.TAGS, f"Bad source from file read {src}"
-            assert got.source == Source.MUSICBRAINZ, f"Bad source from musicbrainz {src}"
+            assert expected.source == enums.Source.TAGS, f"Bad source from file read {src}"
+            assert got.source == enums.Source.MUSICBRAINZ, f"Bad source from musicbrainz {src}"
             expected.source, got.source = None, None
 
             assert got == expected, f"Failed for {src}"

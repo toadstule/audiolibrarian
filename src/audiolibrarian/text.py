@@ -22,6 +22,7 @@ import sys
 from typing import Any
 
 import picard_src
+from audiolibrarian.domain.model import values
 
 _DIGIT_REGEX = re.compile(r"([0-9]+)")
 _UUID_REGEX = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.IGNORECASE)
@@ -74,13 +75,13 @@ def get_numbers(text: str) -> list[int]:
     return [int(x) for x in _DIGIT_REGEX.findall(text)]
 
 
-def get_track_number(filename: str) -> int:
+def get_track_number(filename: str) -> values.TrackNumber:
     """Get a track number from a filename or from the user."""
     if numbers := get_numbers(filename):
-        return numbers[0]
+        return values.TrackNumber(numbers[0])
     while True:  # pragma: no cover
         try:
-            return int(input_(f"Enter the track number for: {filename}"))
+            return values.TrackNumber(int(input_(f"Enter the track number for: {filename}")))
         except ValueError:
             pass
 

@@ -23,7 +23,10 @@ from typing import Any, ClassVar
 
 import mutagen
 
-from audiolibrarian import records
+from audiolibrarian.domain.model import release, values
+from audiolibrarian.domain.model.medium import Medium
+from audiolibrarian.domain.model.release import Release
+from audiolibrarian.domain.model.track import Track
 
 
 class AudioFile(abc.ABC):
@@ -87,28 +90,28 @@ class AudioFile(abc.ABC):
         return self._filepath
 
     @property
-    def one_track(self) -> records.OneTrack:
+    def one_track(self) -> release.OneTrack:
         """Return the OneTrack representation of the audio file."""
         return self._one_track
 
     @one_track.setter
-    def one_track(self, one_track: records.OneTrack) -> None:
+    def one_track(self, one_track: release.OneTrack) -> None:
         """Set the OneTrack representation of the audio file."""
         self._one_track = one_track
 
     @abc.abstractmethod
-    def read_tags(self) -> records.OneTrack:
+    def read_tags(self) -> release.OneTrack:
         """Read the tags from the audio file and return a populated OneTrack record."""
 
     @abc.abstractmethod
     def write_tags(self) -> None:
         """Write the tags to the audio file."""
 
-    def _get_tag_sources(self) -> tuple[records.Release, int, records.Medium, int, records.Track]:
+    def _get_tag_sources(self) -> tuple[Release, int | None, Medium, values.TrackNumber | None, Track]:
         # Return the objects and information required to generate tags.
-        release = self.one_track.release or records.Release()
-        medium_number = self.one_track.medium_number
-        medium = self.one_track.medium or records.Medium()
-        track_number = self.one_track.track_number
-        track = self.one_track.track or records.Track()
-        return release, medium_number, medium, track_number, track
+        release_ = self.one_track.release or Release()
+        medium_number = self.one_track.medium_position.number if self.one_track.medium_position else None
+        medium = self.one_track.medium or Medium()
+        track_number = self.one_track.track_number or None
+        track = self.one_track.track or Track()
+        return release_, medium_number, medium, track_number, track
