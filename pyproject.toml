@@ -1,25 +1,25 @@
 [build-system]
 build-backend = "uv_build"
-requires = ["uv_build<0.12"]
+requires = ["uv_build<0.13"]
 
 [dependency-groups]
 dev = [
-    "coverage>=7.13.5",
+    "coverage>=7.15",
     "import-linter>=2.13",
-    "mkdocs-material>=9.7.6",
-    "mkdocs>=1.6.1",
-    "mkdocstrings[python]>=1.0.4",
-    "mypy>=1.20.2",
-    "pymarkdownlnt>=0.9.36",
-    "pytest-env>=1.6.0",
-    "pytest-mock>=3.15.1",
-    "pytest-vcr>=1.0.2",
-    "pytest>=9.0.3",
-    "ruff>=0.15.12",
-    "types-pyyaml>=6.0.12.20260408",
-    "types-requests>=2.33.0.20260408",
-    "types-setuptools>=82.0.0.20260408",
-    "uv-build>=0.11.7",
+    "mkdocs-material>=9.7",
+    "mkdocs>=1.6",
+    "mkdocstrings[python]>=1.0",
+    "mypy>=2.3",
+    "pymarkdownlnt>=0.9",
+    "pytest-env>=1.7",
+    "pytest-mock>=3.15",
+    "pytest-vcr>=1.0",
+    "pytest>=9.1",
+    "ruff>=0.16",
+    "types-pyyaml>=6.0",
+    "types-requests>=2.33",
+    "types-setuptools>=83.0",
+    "uv-build>=0.12",
 ]
 
 [project]
@@ -35,19 +35,19 @@ classifiers = [
 ]
 description = "Manage my audio library."
 dependencies = [
-    "ansicolors>=1.1.8",
-    "attrs>=26.1.0",
-    "discid>=1.4.0",
-    "ffmpeg-normalize>=1.37.6",
-    "filelock>=3.29.0",
-    "fuzzywuzzy>=0.18.0",
-    "musicbrainzngs>=0.7.1",
-    "mutagen>=1.47.0",
-    "pydantic-settings>=2.14.0",
-    "python-levenshtein>=0.27.3",
-    "pyyaml>=6.0.3",
-    "requests>=2.33.1",
-    "xdg-base-dirs>=6.0.2",
+    "ansicolors>=1.1",
+    "attrs>=26.1",
+    "discid>=1.4",
+    "ffmpeg-normalize>=1.41",
+    "filelock>=3.32",
+    "fuzzywuzzy>=0.18",
+    "musicbrainzngs>=0.7",
+    "mutagen>=1.48",
+    "pydantic-settings>=2.14",
+    "python-levenshtein>=0.27",
+    "pyyaml>=6.0",
+    "requests>=2.34",
+    "xdg-base-dirs>=6.0",
 ]
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]

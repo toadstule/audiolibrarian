@@ -153,7 +153,7 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
                 return None
             return mutagen.mp4.MP4FreeForm(bytes(str(text), "utf8"))  # type: ignore[no-untyped-call]
 
-        def ffl(list_: list[str] | None | Any) -> record.ListF[bytes] | None:  # noqa: ANN401
+        def ffl(list_: list[str] | Any | None) -> record.ListF[bytes] | None:  # noqa: ANN401
             if not list_:
                 return None
             return record.ListF([ff(x) for x in list_])

@@ -193,7 +193,7 @@ class FlacFile(audiofile.AudioFile, extensions={".flac"}):
         self._mut_file.save()
 
     @staticmethod
-    def _make_performer_tag(performers: list[values.Performer] | None | Any) -> list[str] | None:  # noqa: ANN401
+    def _make_performer_tag(performers: list[values.Performer] | Any | None) -> list[str] | None:  # noqa: ANN401
         # Return a list of performer tag strings "name (instrument)".
         if performers is None:
             return None
