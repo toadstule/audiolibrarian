@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from audiolibrarian.domain.model.track import Track
 
 
-@attrs.define(kw_only=True)
+@attrs.define(kw_only=True, frozen=True)
 class Release(Record):
     """A release."""
 
@@ -70,12 +70,16 @@ class Release(Record):
         if self.media is None:
             msg = "Missing release information"
             raise ValueError(msg)
-        tracks = "\n".join(
-            (
-                f"  {str(n).zfill(2)}: {t.title}"
-                for n, t in sorted(self.media[medium_number].tracks.items(), key=lambda x: x[0].value)
+        medium_obj = self.media.get(medium_number)
+        if medium_obj is None or medium_obj.tracks is None:
+            tracks = "  (no tracks)"
+        else:
+            tracks = "\n".join(
+                (
+                    f"  {str(n).zfill(2)}: {t.title}"
+                    for n, t in sorted(medium_obj.tracks.items(), key=lambda x: x[0].value)
+                )
             )
-        )
         return "\n".join(
             (
                 f"Album: {self.album}",
@@ -87,7 +91,7 @@ class Release(Record):
         )
 
 
-@attrs.define(kw_only=True)
+@attrs.define(kw_only=True, frozen=True)
 class OneTrack(Record):
     """A single track."""
 

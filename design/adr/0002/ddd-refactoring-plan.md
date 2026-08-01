@@ -5,6 +5,15 @@ Domain-Driven Design principles using a pragmatic hexagonal architecture, as des
 in ADR 0002. It serves as a working document for planning and tracking the migration
 effort.
 
+> **Revised during Phase 1.1.** Implementing "Release as an aggregate root" surfaced that
+> `Release` is not one — nothing mutates it, nothing loads or saves it by identity, and its
+> only invariant lives on a value object. Phase 1.1 was rewritten to *freeze* the metadata
+> model instead of encapsulating it, and a new Phase 1.2 promotes **Library Layout** to the
+> centre of the domain, since that is where the real business rules (and a live bug) turned
+> out to be. See *Why Release Is Not an Aggregate Root* and *Decision: The Manifest Is
+> Provenance Only*. A more radical alternative was considered and rejected —
+> see `alternate-ddd-refactoring-plan.md`.
+
 ## Overview
 
 The refactoring will be executed incrementally in phases to minimize disruption and allow
@@ -33,18 +42,26 @@ src/audiolibrarian/domain/
 ├── __init__.py
 ├── model/
 │   ├── __init__.py
-│   ├── release.py        # Release (root), Medium, Track            [entities]
-│   │                     # Release references Album via album_name/album_id
-│   │                     # Medium has media_type (CD, LP, Cassette, Digital) and
-│   │                     # position
+│   ├── release.py        # Release, Medium, Track    [immutable metadata description]
+│   │                     # NOT an aggregate root - see "Why Release Is Not an
+│   │                     # Aggregate Root" below. Built from one of two provenances:
+│   │                     # a MusicBrainz response, or an audio file's tags.
+│   │                     # Release references its Album via album / musicbrainz_album_id
 │   ├── values.py         # FrontCover, FileInfo, Performer, People,
 │   │                     # MediumPosition, TrackNumber, AudioFormat    [value objects]
 │   └── enums.py          # BitrateMode, FileType, Source
 └── services/
     ├── __init__.py
     ├── source_matching.py  # match source files → tracks; count invariant
-    └── library_layout.py   # artist/album/disc path rules
+    └── library_layout.py   # THE core domain rules: format trees, artist/album dir,
+                            # the discN rule, track filenames. Single source of truth.
 ```
+
+**Where the domain logic actually is.** The centre of gravity is
+`services/library_layout.py`, not `model/release.py`. `Release` is an immutable description
+that carries metadata *into* the layout rules; the rules themselves — which tree, which
+directory, whether a `discN` level applies, what the file is called — are the business logic
+worth protecting. Phase 1.2 makes that explicit.
 
 ### Application Layer
 
@@ -183,8 +200,30 @@ tests/
 - Write unit tests for each new value object before implementation
 - Test invariants (e.g., MediumPosition validation, TrackNumber formatting)
 - Ensure existing tests still pass after moving entities
-- Add domain tests for aggregate behavior (Release invariants)
 - Test that value objects are immutable (frozen dataclass)
+
+#### Phase 1.1: Freeze the Metadata Model
+
+- Assert `Release`, `Medium`, `Track`, and `OneTrack` all raise
+  `attrs.exceptions.FrozenInstanceError` on attribute assignment
+- Cover the two `attrs.evolve` sites: front-cover backfill produces a *new* `Release` and
+  leaves the original untouched; `Source.TAGS` stamping survives the
+  `Release(...) or None` truthiness check
+- Revert the private-attribute reach-arounds in `tests/test__musicbrainz.py`
+- `mypy src/` must be clean — frozen classes surface any missed assignment site
+- No new tests for aggregate invariants: there are none to test
+
+#### Phase 1.2: Library Layout
+
+- Test-first, since this is new domain logic:
+  - `library_layout` yields identical `discN` decisions for a CLI-derived and a tag-derived
+    medium position (the divergence this phase removes)
+  - single-medium releases get **no** `discN` component; multi-medium releases get one
+  - format tree names come from one place
+  - track filenames round-trip through `TrackNumber.from_filename`
+- **Regression test for the manifest path bug**: a two-medium release must write two distinct
+  `Manifest.yaml` files, under `source/Artist/YYYY__Album/disc1/` and `.../disc2/`
+- End-to-end check that the write path and read path now agree — see Success Criteria
 
 #### Phase 2: Declare Ports
 
@@ -301,23 +340,18 @@ violated?
 **Tasks**:
 
 - Move `records.py` into `domain/model/` split into:
-  - `release.py` - Release, Medium, Track entities (Release references Album via
-    album_name/album_id)
+  - `release.py` - Release, Medium, Track (Release references its Album via `album` and
+    `musicbrainz_album_id`)
   - `values.py` - FrontCover, FileInfo, Performer, People value objects
   - `enums.py` - BitrateMode, FileType, Source enums
-- Freeze value objects with `@attr.frozen=True` (attrs is already a project dependency)
+- Freeze value objects with `@attrs.define(frozen=True)` (attrs is already a project
+  dependency)
 - Introduce new value objects to cure primitive obsession:
-  - `DiscPosition(number, count)` - validates `1 ≤ number ≤ count` once
+  - `MediumPosition(number, count)` - validates `1 ≤ number ≤ count` once
   - `TrackNumber(int)` - knows how to render as `"02"` and parse from filename
   - `AudioFormat` - FLAC/M4A/MP3 as first-class concept
-- Keep existing behavior methods (`get_filename`, path helpers)
-- Move path helpers to `domain/services/library_layout.py`:
-  - Criterion: If a helper encodes business rules about library structure (e.g.,
-    "artist/album/disc" layout), it's domain
-  - If a helper uses `os.path` only for path joining (no business logic), it can stay in
-    domain/services
-  - If a helper interacts with the actual filesystem (checking if paths exist), it's
-    infrastructure
+- Keep existing behavior methods (`get_filename`, path helpers) in place for now; Phase 1.2
+  consolidates them into `domain/services/library_layout.py`
 - Ensure `domain/` imports only stdlib + external libraries + itself (no cross-layer
   imports)
 - Update imports throughout codebase:
@@ -329,11 +363,185 @@ violated?
 **Why now**: The domain is the center of the hexagon; everything else will depend on it,
 so it must be clean and dependency-free before we build outward.
 
-**DDD concept taught**: Entity vs. Value Object, Aggregate & invariants, curing primitive
-obsession
+**DDD concept taught**: Entity vs. Value Object, curing primitive obsession
 
-**Learning checkpoint**: Which of my model classes are entities and which are value
-objects, and why? What invariant does `Release` protect?
+**Learning checkpoint**: Which of my model classes carry identity and which are pure values,
+and why? Where do the invariants actually live? (Answering this honestly is what led to the
+Phase 1.1 revision.)
+
+---
+
+### Phase 1.1: Freeze the Metadata Model *(replaces "Release as Aggregate")*
+
+> **This phase was originally "Implement Release as Aggregate with Invariants." It was
+> revised after the evidence showed `Release` is not an aggregate root.** See
+> *Why Release Is Not an Aggregate Root* below.
+
+**Tasks**:
+
+- Revert the aggregate-encapsulation experiment:
+  - `Release._media` → `media` and `Medium._tracks` → `tracks` (public again)
+  - Delete the `MappingProxyType` properties — they allocate a fresh proxy on every
+    access and guard nothing, since nothing mutates the dicts anyway
+  - Revert `tests/test__musicbrainz.py` to compare without reaching through private
+    attributes (the encapsulation forced the tests to reach *around* it — the tell that it
+    was protecting nothing)
+- Add `frozen=True` to `Release`, `Track`, and `OneTrack` (`Medium` already has it). This is
+  real protection at zero test cost: it makes aliasing surprises impossible.
+- Convert the two genuine mutation sites to `attrs.evolve`:
+  - `base.py` front-cover backfill →
+    `self._release = attrs.evolve(self._release, front_cover=cover)`.
+    This matters: the same `_release` instance is aliased across every `AudioFile` in the
+    album via `Base._tag_files`.
+  - `flac.py` / `m4a.py` / `mp3.py` `release_obj.source = Source.TAGS` → `attrs.evolve`
+    **after** the `Release(...) or None` truthiness check. Passing `source=` into the
+    constructor would break `Record.__bool__`, which reports falsy only when *every* field
+    is `None`.
+- Give `Release.get_medium` a single contract. It currently returns `None` when `media` is
+  `None` but raises `KeyError` for a missing disc — pick one.
+- Delete `Release.pp`. It has no production caller, and it calls `.tracks.items()` with no
+  `None` guard. `Base._summary` does the real rendering, and Phase 4 moves that to
+  `ConsoleUI`.
+- Run full test suite and `mypy src/` (frozen classes will surface any assignment site the
+  grep missed).
+
+**Why now**: Phase 1 extracted the structure. This phase makes the metadata model genuinely
+immutable — which is the protection that actually applies here — instead of adding aggregate
+machinery for a consistency boundary that does not exist.
+
+**DDD concept taught**: Immutability vs. encapsulation; recognizing when a pattern is
+ceremony. Learning where a pattern is *not* worth its cost is a core DDD skill.
+
+**Learning checkpoint**: What test would fail if `Release` were a true aggregate root that
+does not fail today? Why is `frozen=True` protection, while `MappingProxyType` over a
+public-by-convention dict is not?
+
+---
+
+### Why Release Is Not an Aggregate Root
+
+An aggregate root is a **consistency boundary**: a cluster of objects that must always be
+valid *together*, loaded and saved as a unit, mutated only through the root. `Release` meets
+none of those conditions in this codebase:
+
+- **Nothing mutates the collections.** There is no `del`, no item assignment, and no `.pop`
+  against `media` or `tracks` anywhere in `src/`. A consistency boundary with no mutations
+  has nothing to keep consistent.
+- **No `Release` is ever loaded or saved as a unit.** `Base._write_manifest` hand-flattens
+  13 scalar keys — no tracks, no people, no cover. `Reconvert` reads exactly two of them
+  (`disc_number`, `disc_count`) and re-queries MusicBrainz over the network for everything
+  else. There is no repository that returns a `Release` by identity.
+- **The only invariant in the model is on a value object.** `MediumPosition` validates
+  `1 ≤ number ≤ count` in `values.py`. `Release` protects nothing.
+- **Disc selection is a read, not a mutation.** `Base` calls
+  `release.get_medium(position_number=...)`; nothing ever removes media or tracks from a
+  `Release`.
+
+What `Release` actually is: **an immutable metadata description of one edition of an Album**,
+built from one of two provenances — a MusicBrainz HTTP response, or the tags of an existing
+audio file (`Source.TAGS`). It is consumed to compute paths, filenames, and tag payloads,
+then discarded at process exit.
+
+**This does not make it a DTO.** A DTO is a dumb carrier. `Release` owns real behavior — the
+artist/album/disc naming policy — and that behavior is the most valuable domain logic in the
+project. Phase 1.2 promotes it rather than demoting it.
+
+An alternative plan (`alternate-ddd-refactoring-plan.md`) reached the correct conclusion
+about the aggregate and then over-corrected: it demoted `Release` to a DTO, deleted
+`LibraryRepository` on the grounds that nothing is persistent, and modeled the pipeline as
+a `ConversionJob` *domain entity*. That over-correction is rejected. The reasons are recorded
+in that document's header.
+
+---
+
+### Decision: The Manifest Is Provenance Only
+
+The `Manifest.yaml` question is the same question as the aggregate question, so it is settled
+here rather than deferred.
+
+Today `Base._write_manifest` writes 13 keys and `Reconvert` reads exactly two
+(`disc_number`, `disc_count`). Everything else — `album`, `artist`, `genre`, `date`,
+`musicbrainz_info`, `source_info` — is **write-only**. `Reconvert` re-queries MusicBrainz
+using search data read back out of the source FLAC tags.
+
+Three options were considered: leave it as provenance, use `musicbrainz_info` to look the
+release up by ID instead of fuzzy-searching, or round-trip a full `Release` so `reconvert`
+works offline.
+
+**Decision: the manifest is provenance only.**
+
+- A *Manifest* records what a library entry was made **from** — source type, bitrate,
+  MusicBrainz IDs, disc position — for human and forensic use.
+- It is **not** a serialized `Release`, and it does not enable offline reconvert.
+- `Reconvert` keeps re-querying MusicBrainz from source tags and keeps taking only
+  `disc_number` / `disc_count` from the manifest.
+- Do **not** trim the currently-unread keys. They cost nothing and their value is
+  documentary.
+
+**Consequence, and why it belongs in this plan**: this confirms that `Release` is not a
+persistent entity. Had we chosen the third option, `Release` would gain a real repository and
+a real lifecycle, and the original aggregate framing would have been at least partly correct.
+Choosing provenance-only closes that door deliberately — which is what licenses Phase 1.1 to
+remove the aggregate machinery instead of merely postponing it.
+
+Update `docs/glossary.md` accordingly: the current entry claims the manifest is "the
+persisted provenance of a `Release` in the `Library`, **enabling *Reconvert***," which
+overstates what it does.
+
+---
+
+### Phase 1.2: Make Library Layout the Center of the Domain
+
+This is the phase that replaces the value the aggregate pattern was supposed to provide.
+**Library Layout is the real business rule set in this project** — where a track goes and
+what it is called — and it is currently smeared across four sites with two disagreeing
+sources of truth and a live bug.
+
+**Tasks**:
+
+- Create `domain/services/library_layout.py` as the single owner of:
+  - the four format tree names (`flac` / `m4a` / `mp3` / `source`), currently bare string
+    literals in `Base._move_files` and repeated in `Base._write_manifest`
+  - artist/album directory naming (moved from `Release.get_artist_album_path`, still using
+    `text.filename_from_title`)
+  - **one** `discN` rule (see the divergence below)
+  - track filenames (moved from `Track.get_filename`)
+- Collapse the duplicate call sites onto the new service: `Base._move_files`,
+  `Base._write_manifest`, `OneTrack.get_artist_album_disc_path`, and the two ad-hoc
+  track-number re-parses in `Base._rename_wav` and `Base._tag_files` — both of which should
+  use the existing `values.TrackNumber.from_filename`, currently unused in `src/`.
+- Resolve `values.AudioFormat`, which is referenced only by tests today: either adopt it as
+  the encoder/tree key here, or delete it.
+- Add the two regression tests described below.
+- Run full test suite.
+
+**The `discN` divergence to fix**: there are two independent implementations of the same
+decision, and they read from different sources.
+
+| Site | Decides `discN` from |
+| --- | --- |
+| `Base._move_files` (the write path) | `Base._multi_disc` — CLI `--disc` or manifest-derived |
+| `OneTrack.get_artist_album_disc_path` (the `rename` path) | tag-derived `MediumPosition.count` |
+
+Because `rename` recomputes the layout from tags, any disagreement between these two means
+`rename` will move files that `convert` just placed. One rule, one source of truth.
+
+**The live bug to fix**: `Base._write_manifest` builds the album path **without** the `discN`
+component, while `Base._move_files` puts multi-disc source files **into** `discN`. Every disc
+of a multi-disc release therefore writes to the same
+`source/Artist/YYYY__Album/Manifest.yaml`, one level above its own FLAC files — each disc
+silently overwriting the last. Existing libraries keep working because `_find_manifests`
+uses `rglob`; only newly written manifests land in the corrected location.
+
+**Why now**: this is the highest-value extraction available, and it must land before Phase 3
+builds `FilesystemLibraryRepository` — the repository should consume one layout rule, not
+re-derive a third copy of it.
+
+**DDD concept taught**: Domain Service; finding the real domain logic by looking for the
+rules that are duplicated and disagreeing.
+
+**Learning checkpoint**: The layout rules were split across `Release`, `OneTrack`, and
+`Base`. Why did that split happen, and what made the manifest path bug invisible for so long?
 
 ---
 
@@ -380,9 +588,20 @@ way do the dependency arrows point, and why is that inverted from a naive design
   - Create `infrastructure/encoders/flac_encoder.py`
   - Create `infrastructure/encoders/m4a_encoder.py`
   - Create `infrastructure/encoders/mp3_encoder.py`
-- Pull `_move_files`, `get_artist_album_path`, `_write_manifest`, `_read_manifest` from `Base`
-  into `FilesystemLibraryRepository`:
-  - Create `infrastructure/library/filesystem_library_repository.py`
+- Build `FilesystemLibraryRepository` in `infrastructure/library/`. **The library is read as
+  well as written**, so this port is two-directional — the reads are currently scattered
+  across four `rglob`/`glob` sites and belong here:
+
+  - `path_for(release, medium_position, fmt)` — the path arithmetic in `_move_files` and
+    `_write_manifest`, delegating the rules to Phase 1.2's `library_layout`
+  - `store(...)` / `move(...)` — `Base._move_files` (`rmtree` + `Path.rename`)
+  - `find_manifests(dirs)` — `Base._find_manifests`
+  - `iter_audio_files(dirs)` — `Base._find_audio_files`
+  - `prune_empty(path)` — the `glob`/`rmdir` walk inside the `Rename` command
+  - `write_manifest(...)` / `read_manifest(...)` — `Base._write_manifest` / `_read_manifest`
+
+  Note: `Path.rename` raises across filesystem boundaries. The repository is the right place
+  to decide whether that becomes `shutil.move`.
 - Wrap `musicbrainz.py` as the `MusicBrainzProvider` ACL behind `MetadataProvider`:
   - Create `infrastructure/musicbrainz/musicbrainz_provider.py`
   - Create `infrastructure/musicbrainz/musicbrainz_mapper.py`
@@ -528,6 +747,8 @@ actually need, and what would trigger it?
 ```text
 chore(ddd): add glossary + layer skeleton + import-linter contract    (Phase 0)
 refactor(domain): extract pure domain model + value objects           (Phase 1)
+refactor(domain): freeze the metadata model; drop aggregate ceremony  (Phase 1.1)
+refactor(domain): consolidate library layout rules; fix manifest path (Phase 1.2)
 refactor(app): define ports; move AudioSource/TagGateway/Normalizer   (Phase 2)
 refactor(infra): extract encoders, library repository, MB ACL         (Phase 3)
 refactor(ui): introduce UserInterface + ConsoleUI                     (Phase 4)
@@ -581,7 +802,7 @@ felt:
 
 The refactoring is complete when:
 
-- [ ] All 6 phases are completed
+- [ ] All phases are completed (0, 1, 1.1, 1.2, 2–6)
 - [ ] `Base` class is removed
 - [ ] All tests pass with new structure
 - [ ] Import-linter contract passes
@@ -590,3 +811,15 @@ The refactoring is complete when:
 - [ ] CLI commands are thin adapters
 - [ ] Documentation is updated
 - [ ] Learning checkpoints are answered
+
+Phase-1.1/1.2-specific criteria:
+
+- [ ] `Release`, `Medium`, `Track`, `OneTrack` are all frozen; no attribute assignment
+      remains anywhere in `src/`
+- [ ] Exactly one implementation of the `discN` rule, one definition of the four format tree
+      names, and one track-number parser
+- [ ] A two-disc release writes one `Manifest.yaml` per disc, alongside that disc's files
+- [ ] **The end-to-end proof**: run `audiolibrarian convert` on a real two-disc album, then
+      `audiolibrarian rename --dry-run` over the result. It must report **no** renames. The
+      write path and the read path computing identical layouts is the whole point of Phase
+      1.2, and this is the cheapest way to verify it.

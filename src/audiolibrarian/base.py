@@ -28,6 +28,7 @@ import warnings
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Final
 
+import attrs
 import colors
 import filelock
 import yaml
@@ -181,7 +182,7 @@ class Base:
         self._medium = self._release.media[int(self._disc_number)]
         if not self._release.front_cover and self._audio_source and (cover := self._audio_source.get_front_cover()):
             log.info("Using front-cover image from source file")
-            self._release.front_cover = cover
+            self._release = attrs.evolve(self._release, front_cover=cover)
         summary, okay = self._summary()
         print(summary)
         if not okay:

@@ -19,6 +19,7 @@
 import re
 from typing import Any
 
+import attrs
 import mutagen.flac
 
 from audiolibrarian import audiofile
@@ -125,7 +126,7 @@ class FlacFile(audiofile.AudioFile, extensions={".flac"}):
             or None
         )
         if release_obj:
-            release_obj.source = enums.Source.TAGS
+            release_obj = attrs.evolve(release_obj, source=enums.Source.TAGS)
         return release.OneTrack(release=release_obj, medium_position=medium_position, track_number=track_number)
 
     def write_tags(self) -> None:

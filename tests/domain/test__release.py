@@ -7,7 +7,7 @@ import pathlib
 
 import pytest
 
-from audiolibrarian.domain.model import enums, medium, record, release, track, values
+from audiolibrarian.domain.model import medium, record, release, track, values
 
 
 class TestRelease:
@@ -86,6 +86,39 @@ class TestRelease:
         release_obj = release.Release(album="Test Album")
         with pytest.raises(ValueError, match="Missing release information"):
             release_obj.pp(1)
+
+    def test__release_pp_missing_medium_shows_no_tracks(self) -> None:
+        """Release with media but missing specific medium should show no tracks."""
+        medium_obj = medium.Medium(
+            track_count=2,
+            tracks={values.TrackNumber(1): track.Track(title="Track 1", track_number=values.TrackNumber(1))},
+        )
+        release_obj = release.Release(
+            album="Test Album",
+            album_artists=record.ListF(["Artist"]),
+            medium_count=2,
+            media={1: medium_obj},
+        )
+        result = release_obj.pp(2)
+        assert "Album: Test Album" in result
+        assert "Artist(s): Artist" in result
+        assert "Medium: 2 of 2" in result
+        assert "  (no tracks)" in result
+
+    def test__release_pp_medium_without_tracks_shows_no_tracks(self) -> None:
+        """Release with medium but no tracks should show no tracks."""
+        medium_obj = medium.Medium(track_count=0, tracks=None)
+        release_obj = release.Release(
+            album="Test Album",
+            album_artists=record.ListF(["Artist"]),
+            medium_count=1,
+            media={1: medium_obj},
+        )
+        result = release_obj.pp(1)
+        assert "Album: Test Album" in result
+        assert "Artist(s): Artist" in result
+        assert "Medium: 1 of 1" in result
+        assert "  (no tracks)" in result
 
 
 class TestOneTrack:

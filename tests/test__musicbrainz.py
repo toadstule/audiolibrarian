@@ -25,9 +25,44 @@ import pytest
 
 from audiolibrarian import config
 from audiolibrarian.audiofile import audiofile
-from audiolibrarian.domain.model import enums
+from audiolibrarian.domain.model import enums, release, values
 from audiolibrarian.musicbrainz import MusicBrainzRelease
 from tests.test__audiofile import _audio_file_copy
+
+
+def _normalize_release_for_comparison(release_obj: release.Release) -> release.Release:
+    """Normalize a Release for comparison by removing fields we don't want to check.
+
+    Test helper function for comparing Release objects from different sources.
+    """
+    evolved = release_obj
+    # Remove genres, front_cover, asins, source
+    evolved = attrs.evolve(evolved, genres=None, front_cover=None, asins=None, source=None)
+    # Normalize people if present
+    if evolved.people is not None:
+        evolved = attrs.evolve(
+            evolved, people=attrs.evolve(evolved.people, engineers=None, lyricists=None, mixers=None, producers=None)
+        )
+    return evolved
+
+
+def _remove_file_info_from_release(
+    release_obj: release.Release, medium_number: int, track_number: values.TrackNumber
+) -> release.Release:
+    """Remove file_info from a specific track in a Release.
+
+    Test helper function for comparing Release objects without file-specific metadata.
+    """
+    if not release_obj.media or medium_number not in release_obj.media:
+        return release_obj
+    medium_obj = release_obj.media[medium_number]
+    if not medium_obj.tracks or track_number not in medium_obj.tracks:
+        return release_obj
+    track_obj = medium_obj.tracks[track_number]
+    track_without_info = attrs.evolve(track_obj, file_info=None)
+    medium_without_info = attrs.evolve(medium_obj, tracks={**medium_obj.tracks, track_number: track_without_info})
+    return attrs.evolve(release_obj, media={**release_obj.media, medium_number: medium_without_info})
+
 
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 if log_level := os.getenv("LOG_LEVEL"):
@@ -64,41 +99,49 @@ class TestMusicBrainzRelease:
             ).get_release()
 
             # Remove stuff we don't want to compare.
-            expected.genres, got.genres = None, None  # Genres should be ignored.
-            expected.front_cover, got.front_cover = None, None  # Don't compare image.
-            expected.asins, got.asins = None, None  # Something's weird with ASINS.
-            if expected.people is not None:
-                expected.people = attrs.evolve(
-                    expected.people, engineers=None, lyricists=None, mixers=None, producers=None
-                )
-                got.people = attrs.evolve(got.people, engineers=None, lyricists=None, mixers=None, producers=None)
-            # noinspection PyUnresolvedReferences
-            expected.media[medium_number].tracks[track_number].file_info = None
-            # noinspection PyUnresolvedReferences
-            got.media[medium_number].tracks[track_number].file_info = None
+            expected = _normalize_release_for_comparison(expected)
+            got = _normalize_release_for_comparison(got)
+
+            # Remove file_info from the specific track
+            expected = _remove_file_info_from_release(expected, medium_number, track_number)
+            got = _remove_file_info_from_release(got, medium_number, track_number)
 
             if src.suffix == ".m4a" and got.people:  # We don't store this for m4a files.
-                got.people = attrs.evolve(got.people, performers=None)
+                got = attrs.evolve(got, people=attrs.evolve(got.people, performers=None))
 
             if src.suffix == ".mp3":  # We don't store this for mp3 files.
-                expected.original_date, got.original_date = None, None
+                expected = attrs.evolve(expected, original_date=None)
+                got = attrs.evolve(got, original_date=None)
 
             assert got.people == expected.people, f"People failed for {src}"
-            expected.people, got.people = None, None
+            expected = attrs.evolve(expected, people=None)
+            got = attrs.evolve(got, people=None)
 
             # noinspection PyUnresolvedReferences
             assert (
                 got.media[medium_number].tracks[track_number] == expected.media[medium_number].tracks[track_number]
             ), f"Track failed for {src}"
             # noinspection PyUnresolvedReferences
-            expected.media[medium_number].tracks, got.media[medium_number].tracks = None, None
+            expected = attrs.evolve(
+                expected,
+                media={
+                    k: attrs.evolve(m, tracks=None) if k == medium_number else m
+                    for k, m in (expected.media or {}).items()
+                },
+            )
+            got = attrs.evolve(
+                got,
+                media={
+                    k: attrs.evolve(m, tracks=None) if k == medium_number else m for k, m in (got.media or {}).items()
+                },
+            )
 
             # noinspection PyUnresolvedReferences
             assert got.media[medium_number] == expected.media[medium_number], f"Medium failed for {src}"
-            expected.media, got.media = None, None
+            expected = attrs.evolve(expected, media=None)
+            got = attrs.evolve(got, media=None)
 
             assert expected.source == enums.Source.TAGS, f"Bad source from file read {src}"
             assert got.source == enums.Source.MUSICBRAINZ, f"Bad source from musicbrainz {src}"
-            expected.source, got.source = None, None
 
             assert got == expected, f"Failed for {src}"

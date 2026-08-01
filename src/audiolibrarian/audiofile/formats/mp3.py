@@ -18,6 +18,7 @@
 #
 from typing import Any, no_type_check
 
+import attrs
 import mutagen
 import mutagen.id3
 
@@ -137,7 +138,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
             or None
         )
         if release_obj:
-            release_obj.source = enums.Source.TAGS
+            release_obj = attrs.evolve(release_obj, source=enums.Source.TAGS)
         return release.OneTrack(release=release_obj, medium_position=medium_position, track_number=track_number)
 
     @no_type_check  # The mutagen library doesn't provide type hints.

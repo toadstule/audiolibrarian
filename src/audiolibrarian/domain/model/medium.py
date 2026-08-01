@@ -9,7 +9,7 @@ from audiolibrarian.domain.model import track, values
 from audiolibrarian.domain.model.record import ListF, Record
 
 
-@attrs.define(kw_only=True)
+@attrs.define(kw_only=True, frozen=True)
 class Medium(Record):
     """A medium."""
 

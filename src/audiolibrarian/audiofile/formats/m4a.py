@@ -19,6 +19,7 @@
 from logging import getLogger
 from typing import Any
 
+import attrs
 import mutagen.mp4
 
 from audiolibrarian import audiofile
@@ -66,7 +67,7 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
         medium_number = int(mut["disk"][0][0]) if mut.get("disk") else None
         track_count = int(mut["trkn"][0][1]) if mut.get("trkn") else None
         track_number = values.TrackNumber(int(mut["trkn"][0][0])) if mut.get("trkn") else None
-        release_ = (
+        release_obj = (
             release.Release(
                 album=mut.get("\xa9alb", [None])[0],
                 album_artists=listf("aART"),
@@ -135,11 +136,11 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
             )
             or None
         )
-        if release_:
-            release_.source = enums.Source.TAGS
+        if release_obj:
+            release_obj = attrs.evolve(release_obj, source=enums.Source.TAGS)
         medium_pos = values.MediumPosition(number=medium_number, count=medium_count or 1) if medium_number else None
         return release.OneTrack(
-            release=release_,
+            release=release_obj,
             medium_position=medium_pos,
             track_number=track_number,
         )

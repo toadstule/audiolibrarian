@@ -34,6 +34,49 @@ from audiolibrarian.domain.model import enums, medium, record, release, track, v
 test_data_path = (Path(__file__).parent / "test_data").resolve()
 
 
+def _normalize_onetrack_for_comparison(one_track: release.OneTrack, suffix: str) -> release.OneTrack:
+    """Normalize a OneTrack for comparison by removing file-specific and format-specific metadata.
+
+    Test helper function for comparing OneTrack objects from different sources.
+    """
+    if not one_track.release or not one_track.release.media or not one_track.medium_position:
+        return one_track
+    medium_num = one_track.medium_position.number
+    if medium_num not in one_track.release.media:
+        return one_track
+    medium_obj = one_track.release.media[medium_num]
+    if not medium_obj.tracks or not one_track.track_number:
+        return one_track
+    track_obj = medium_obj.tracks[one_track.track_number]
+    track_without_info = attrs.evolve(track_obj, file_info=None)
+    medium_without_info = attrs.evolve(
+        medium_obj, tracks={**medium_obj.tracks, one_track.track_number: track_without_info}
+    )
+    release_without_info = attrs.evolve(
+        one_track.release, media={**one_track.release.media, medium_num: medium_without_info}
+    )
+    result = attrs.evolve(one_track, release=release_without_info)
+
+    # Handle format-specific differences
+    if suffix == ".m4a" and result.release:
+        # m4a doesn't save performers or cover desc.
+        if result.release.people:
+            release_without_info = attrs.evolve(
+                result.release, people=attrs.evolve(result.release.people, performers=None)
+            )
+            result = attrs.evolve(result, release=release_without_info)
+        if result.release.front_cover:
+            release_without_info = attrs.evolve(
+                result.release, front_cover=attrs.evolve(result.release.front_cover, desc=None)
+            )
+            result = attrs.evolve(result, release=release_without_info)
+    elif suffix == ".mp3" and result.release:
+        # mp3 doesn't save original_date.
+        result = attrs.evolve(result, release=attrs.evolve(result.release, original_date=None))
+
+    return result
+
+
 class TestAudioFile:
     """Test AudioFile."""
 
@@ -163,14 +206,8 @@ class TestAudioFile:
                 new_info = f.read_tags()
 
                 # Remove stuff we don't want to check.
-                new_info.track.file_info = None
-
-                if src.suffix == ".m4a":
-                    # m4a doesn't save performers or cover desc.
-                    old_info.release.people = attrs.evolve(old_info.release.people, performers=None)
-                    old_info.release.front_cover = attrs.evolve(old_info.release.front_cover, desc=None)
-                if src.suffix == ".mp3":
-                    old_info.release.original_date = None  # mp3 doesn't save orig date.
+                new_info = _normalize_onetrack_for_comparison(new_info, src.suffix)
+                old_info = _normalize_onetrack_for_comparison(old_info, src.suffix)
                 assert new_info == old_info, f"Write/Read failed for {src.suffix}"
 
 

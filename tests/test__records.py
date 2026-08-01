@@ -1,5 +1,7 @@
 """Test records."""
 
+import attrs
+
 #
 #  Copyright (c) 2000-2025 Stephen Jibson
 #
@@ -96,5 +98,5 @@ class TestOneTrack:
         """Test get-artist-album-disc-path."""
         assert str(one_track.get_artist_album_disc_path()) == "One,_Album_Artist/1992__Album/disc7"
 
-        one_track.medium_position = values.MediumPosition(number=1, count=1)
-        assert str(one_track.get_artist_album_disc_path()) == "One,_Album_Artist/1992__Album"
+        modified_one_track = attrs.evolve(one_track, medium_position=values.MediumPosition(number=1, count=1))
+        assert str(modified_one_track.get_artist_album_disc_path()) == "One,_Album_Artist/1992__Album"
