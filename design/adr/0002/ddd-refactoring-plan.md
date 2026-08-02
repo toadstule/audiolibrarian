@@ -518,10 +518,12 @@ sources of truth and a live bug.
 **The `discN` divergence to fix**: there are two independent implementations of the same
 decision, and they read from different sources.
 
-| Site | Decides `discN` from |
-| --- | --- |
-| `Base._move_files` (the write path) | `Base._multi_disc` — CLI `--disc` or manifest-derived |
-| `OneTrack.get_artist_album_disc_path` (the `rename` path) | tag-derived `MediumPosition.count` |
+<!-- pyml disable line-length -->
+| Site                                                      | Decides `discN` from                                  |
+|-----------------------------------------------------------|-------------------------------------------------------|
+| `Base._move_files` (the write path)                       | `Base._multi_disc` — CLI `--disc` or manifest-derived |
+| `OneTrack.get_artist_album_disc_path` (the `rename` path) | tag-derived `MediumPosition.count`                    |
+<!-- pyml enable line-length -->
 
 Because `rename` recomputes the layout from tags, any disagreement between these two means
 `rename` will move files that `convert` just placed. One rule, one source of truth.

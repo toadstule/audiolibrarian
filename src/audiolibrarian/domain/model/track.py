@@ -5,7 +5,6 @@
 
 import attrs
 
-from audiolibrarian import text
 from audiolibrarian.domain.model import values
 from audiolibrarian.domain.model.record import ListF, Record
 
@@ -24,13 +23,3 @@ class Track(Record):
     musicbrainz_track_id: str | None = None
     title: str | None = None
     track_number: values.TrackNumber | None = None
-
-    def get_filename(self, suffix: str = "") -> str:
-        """Return a sane filename based on track number and title.
-
-        If suffix is included, it will be appended to the filename.
-        """
-        if self.title is None or self.track_number is None:
-            msg = "Unable to generate a filename for Track with missing number and/or title"
-            raise ValueError(msg)
-        return f"{self.track_number}__{text.filename_from_title(self.title)}{suffix}"

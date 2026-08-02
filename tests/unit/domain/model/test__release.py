@@ -27,36 +27,6 @@ class TestRelease:
         assert release_obj.date == "2020-01-01"
         assert release_obj.original_year == "2020"
 
-    def test__release_get_artist_album_path(self) -> None:
-        """Release should generate correct artist/album path."""
-        release_obj = release.Release(
-            album="The Album",
-            album_artists_sort=record.ListF(["Artist, The"]),
-            original_year="2020",
-        )
-        path = release_obj.get_artist_album_path()
-        assert path == pathlib.Path("Artist,_The/2020__The_Album")
-
-    def test__release_get_artist_album_path_missing_artists_raises_error(self) -> None:
-        """Release without artists should raise ValueError."""
-        release_obj = release.Release(
-            album="The Album",
-            album_artists_sort=None,
-            original_year="2020",
-        )
-        with pytest.raises(ValueError, match="Unable to determine artist path"):
-            release_obj.get_artist_album_path()
-
-    def test__release_get_artist_album_path_missing_year_raises_error(self) -> None:
-        """Release without year should raise ValueError."""
-        release_obj = release.Release(
-            album="The Album",
-            album_artists_sort=record.ListF(["Artist, The"]),
-            original_year=None,
-        )
-        with pytest.raises(ValueError, match="Unable to determine album path"):
-            release_obj.get_artist_album_path()
-
     def test__release_pp(self) -> None:
         """Release should generate correct pretty print string."""
         track1 = track.Track(title="Track 1", track_number=values.TrackNumber(1))
@@ -207,57 +177,3 @@ class TestOneTrack:
             track_number=values.TrackNumber(1),
         )
         assert onetrack.track is None
-
-    def test__onetrack_get_artist_album_disc_path_single_medium(self) -> None:
-        """OneTrack with single medium should return artist/album path."""
-        release_obj = release.Release(
-            album="The Album",
-            album_artists_sort=record.ListF(["Artist, The"]),
-            original_year="2020",
-        )
-        medium_position = values.MediumPosition(number=1, count=1)
-        onetrack = release.OneTrack(
-            release=release_obj,
-            medium_position=medium_position,
-            track_number=values.TrackNumber(1),
-        )
-        path = onetrack.get_artist_album_disc_path()
-        assert path == pathlib.Path("Artist,_The/2020__The_Album")
-
-    def test__onetrack_get_artist_album_disc_path_multiple_mediums(self) -> None:
-        """OneTrack with multiple mediums should return artist/album/disc path."""
-        release_obj = release.Release(
-            album="The Album",
-            album_artists_sort=record.ListF(["Artist, The"]),
-            original_year="2020",
-        )
-        medium_position = values.MediumPosition(number=2, count=3)
-        onetrack = release.OneTrack(
-            release=release_obj,
-            medium_position=medium_position,
-            track_number=values.TrackNumber(1),
-        )
-        path = onetrack.get_artist_album_disc_path()
-        assert path == pathlib.Path("Artist,_The/2020__The_Album/disc2")
-
-    def test__onetrack_get_artist_album_disc_path_missing_medium_position_raises_error(self) -> None:
-        """OneTrack without medium position should raise ValueError."""
-        release_obj = release.Release(album="Test Album")
-        onetrack = release.OneTrack(
-            release=release_obj,
-            medium_position=None,
-            track_number=values.TrackNumber(1),
-        )
-        with pytest.raises(ValueError, match="Unable to determine path"):
-            onetrack.get_artist_album_disc_path()
-
-    def test__onetrack_get_artist_album_disc_path_missing_release_raises_error(self) -> None:
-        """OneTrack without release should raise ValueError."""
-        medium_position = values.MediumPosition(number=1, count=1)
-        onetrack = release.OneTrack(
-            release=None,
-            medium_position=medium_position,
-            track_number=values.TrackNumber(1),
-        )
-        with pytest.raises(ValueError, match="Unable to determine path"):
-            onetrack.get_artist_album_disc_path()

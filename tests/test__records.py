@@ -87,16 +87,3 @@ class TestOneTrack:
             medium_position=values.MediumPosition(number=7, count=14),
             track_number=values.TrackNumber(3),
         )
-
-    def test__record_class(self, one_track: release.OneTrack) -> None:
-        """Test record class."""
-        assert one_track.release.album_artists.first == "Album Artist One"
-        assert one_track.track.asdict().get("artist") == "Track Artist"
-        assert one_track.track.get_filename() == "03__Track_Title"
-
-    def test__get_artist_album_disc_path(self, one_track: release.OneTrack) -> None:
-        """Test get-artist-album-disc-path."""
-        assert str(one_track.get_artist_album_disc_path()) == "One,_Album_Artist/1992__Album/disc7"
-
-        modified_one_track = attrs.evolve(one_track, medium_position=values.MediumPosition(number=1, count=1))
-        assert str(modified_one_track.get_artist_album_disc_path()) == "One,_Album_Artist/1992__Album"

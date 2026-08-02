@@ -5,12 +5,10 @@
 
 from __future__ import annotations
 
-import pathlib
 from typing import TYPE_CHECKING
 
 import attrs
 
-from audiolibrarian import text
 from audiolibrarian.domain.model.record import Record
 
 if TYPE_CHECKING:
@@ -47,23 +45,6 @@ class Release(Record):
     release_types: list[str] | None = None
     script: str | None = None
     source: enums.Source | None = None
-
-    def get_artist_album_path(self) -> pathlib.Path:
-        """Return a directory for the artist/album/disc combination.
-
-        Example:
-          -  artist__the/1969__the_album
-        """
-        first_artist = self.album_artists_sort.first if self.album_artists_sort else None
-        if self.album_artists_sort is None or first_artist is None:
-            msg = "Unable to determine artist path without artist(s)"
-            raise ValueError(msg)
-        artist_dir = pathlib.Path(text.filename_from_title(first_artist))
-        if self.original_year is None or self.album is None:
-            msg = "Unable to determine album path without year and album"
-            raise ValueError(msg)
-        album_dir = pathlib.Path(text.filename_from_title(f"{self.original_year}__{self.album}"))
-        return artist_dir / album_dir
 
     def pp(self, medium_number: int) -> str:
         """Return a string summary of the Release."""
@@ -112,17 +93,3 @@ class OneTrack(Record):
         if self.medium and self.medium.tracks:
             return self.medium.tracks[self.track_number]
         return None
-
-    def get_artist_album_disc_path(self) -> pathlib.Path:
-        """Return a directory for the artist/album/disc combination.
-
-        Example:
-          - artist__the/1969__the_album
-          - artist__the/1969__the_album/disc2
-        """
-        if not self.medium_position or not self.release:
-            msg = "Unable to determine path without medium position or release"
-            raise ValueError(msg)
-        if self.medium_position.count == 1:
-            return self.release.get_artist_album_path()
-        return self.release.get_artist_album_path() / f"disc{self.medium_position.number}"

@@ -44,7 +44,6 @@ class TestAudioLibrarian:
 
     def test__single_media(self, al_base: base.Base) -> None:
         """Test single media."""
-        assert not al_base._multi_disc
         assert al_base._flac_filenames == []
         assert al_base._m4a_filenames == []
         assert al_base._mp3_filenames == []
@@ -60,7 +59,6 @@ class TestAudioLibrarian:
         """Test multi-media."""
         al = base.Base(args=Namespace(disc="2/3"), settings=settings)
 
-        assert al._multi_disc
         searcher = al._get_searcher()
         assert searcher.disc_number == "2"
 

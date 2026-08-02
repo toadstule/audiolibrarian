@@ -9,18 +9,12 @@ from typing import TYPE_CHECKING, ClassVar
 
 import attrs
 
-from audiolibrarian.domain.model import enums
 from audiolibrarian.domain.model.record import Record
 
 if TYPE_CHECKING:
     import pathlib
 
-
-@attrs.define(kw_only=True, frozen=True)
-class AudioFormat(Record):
-    """An audio format (FLAC, M4A, MP3, etc.)."""
-
-    file_type: enums.FileType = attrs.field(validator=attrs.validators.instance_of(enums.FileType))
+    from audiolibrarian.domain.model import enums
 
 
 @attrs.define(kw_only=True, frozen=True)

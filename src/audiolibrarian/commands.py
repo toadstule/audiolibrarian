@@ -23,6 +23,7 @@ import re
 from typing import Any
 
 from audiolibrarian import __version__, audiofile, audiosource, base, config, genremanager
+from audiolibrarian.domain.services import library_layout
 
 log = logging.getLogger(__name__)
 
@@ -207,10 +208,15 @@ class Rename(_Command, base.Base):
                 continue
             depth = 3 if filepath.parent.name.startswith("disc") else 2
             old_name = filepath
+            if audio_file.one_track.release is None or audio_file.one_track.medium_position is None:
+                msg = "Unable to determine filename"
+                raise ValueError(msg)
             new_name = (
                 filepath.parents[depth]
-                / audio_file.one_track.get_artist_album_disc_path()
-                / audio_file.one_track.track.get_filename(filepath.suffix)
+                / library_layout.artist_year_album_disc_path(
+                    audio_file.one_track.release, audio_file.one_track.medium_position
+                )
+                / library_layout.track_filename(audio_file.one_track.track, suffix=filepath.suffix)
             )
             if old_name != new_name:
                 print(f"Renaming:\n  {old_name} -> \n  {new_name}")

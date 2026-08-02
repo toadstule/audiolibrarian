@@ -1,24 +1,11 @@
+#  Copyright (C) 2000-2026 Stephen T. Jibson.
+#  SPDX-License-Identifier: GPL-3.0-only
+
 """AudioLibrarian base class.
 
 Useful stuff: https://help.mp3tag.de/main_tags.html
 """
 
-#
-#  Copyright (c) 2000-2025 Stephen Jibson
-#
-#  This file is part of audiolibrarian.
-#
-#  Audiolibrarian is free software: you can redistribute it and/or modify it under the terms of the
-#  GNU General Public License as published by the Free Software Foundation, either version 3 of the
-#  License, or (at your option) any later version.
-#
-#  Audiolibrarian is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-#  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-#  the GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License along with audiolibrarian.
-#  If not, see <https://www.gnu.org/licenses/>.
-#
 import argparse
 import logging
 import pathlib
@@ -43,6 +30,7 @@ from audiolibrarian import (
     text,
 )
 from audiolibrarian.domain.model import release, values
+from audiolibrarian.domain.services import library_layout
 
 if TYPE_CHECKING:
     from audiolibrarian.domain.model.medium import Medium
@@ -105,11 +93,6 @@ class Base:
     def _mp3_filenames(self) -> list[pathlib.Path]:
         """Return the current list of mp3 files in the work directory."""
         return sorted(self._mp3_dir.glob("*.mp3"), key=text.alpha_numeric_key)
-
-    @property
-    def _multi_disc(self) -> bool:
-        """Return True if this is part of a multi-disc set."""
-        return (self._disc_number, self._disc_count) != (1, 1)
 
     @property
     def _source_filenames(self) -> list[pathlib.Path]:
@@ -244,29 +227,29 @@ class Base:
 
     def _move_files(self, *, move_source: bool = True) -> None:
         """Move converted/tagged files from the work directory into the library directory."""
-        artist_album_dir = self._release.get_artist_album_path()
-        flac_dir = self._library_dir / "flac" / artist_album_dir
-        m4a_dir = self._library_dir / "m4a" / artist_album_dir
-        mp3_dir = self._library_dir / "mp3" / artist_album_dir
-        source_dir = self._library_dir / "source" / artist_album_dir
-        if self._multi_disc:
-            flac_dir /= f"disc{self._disc_number}"
-            m4a_dir /= f"disc{self._disc_number}"
-            mp3_dir /= f"disc{self._disc_number}"
-            source_dir /= f"disc{self._disc_number}"
-        for path in [flac_dir, m4a_dir, mp3_dir] + ([source_dir] if move_source else []):
-            if path.is_dir():
-                shutil.rmtree(path)
-            path.mkdir(parents=True)
-        for path in self._flac_filenames:
-            path.rename(flac_dir / path.name)
-        for path in self._m4a_filenames:
-            path.rename(m4a_dir / path.name)
-        for path in self._mp3_filenames:
-            path.rename(mp3_dir / path.name)
-        if move_source:
-            for path in self._source_filenames:
-                path.rename(source_dir / path.name)
+        if self._release is None:
+            msg = "Release is required to move files"
+            raise ValueError(msg)
+        work_paths = {
+            library_layout.FormatTreeName.FLAC: self._flac_filenames,
+            library_layout.FormatTreeName.M4A: self._m4a_filenames,
+            library_layout.FormatTreeName.MP3: self._mp3_filenames,
+            library_layout.FormatTreeName.SOURCE: self._source_filenames,
+        }
+        for format_tree_name in library_layout.FormatTreeName:
+            if format_tree_name == library_layout.FormatTreeName.SOURCE and not move_source:
+                continue
+            library_path = library_layout.full_path(
+                root_path=self._library_dir,
+                format_tree_name=format_tree_name,
+                release=self._release,
+                medium_position=values.MediumPosition(number=self._disc_number, count=self._disc_count),
+            )
+            if library_path.is_dir():
+                shutil.rmtree(library_path)
+            library_path.mkdir(parents=True)
+            for work_path in work_paths[format_tree_name]:
+                work_path.rename(library_path / work_path.name)
 
     def _normalize(self) -> None:
         """Normalize the wav files using the selected normalizer."""
@@ -276,7 +259,7 @@ class Base:
         """Rename the wav files to a filename-sane representation of the track title."""
         for old_path in self._wav_filenames:
             track_number = text.get_track_number(str(old_path.name))
-            title_filename = self._medium.tracks[track_number].get_filename(".wav")
+            title_filename = library_layout.track_filename(self._medium.tracks[track_number], suffix=".wav")
             new_path = old_path.parent / title_filename
             if new_path.resolve() != old_path.resolve():
                 log.info("RENAMING: %s --> %s", old_path.name, new_path.name)
@@ -301,7 +284,7 @@ class Base:
         okay = True
         no_match = "(no match)"
         col1 = [f.stem if f else no_match for f in self._audio_source.source_list]
-        col2 = [t.get_filename() for _, t in sorted(self._medium.tracks.items())]
+        col2 = [library_layout.track_filename(t) for _, t in sorted(self._medium.tracks.items())]
         col3 = [f"{str(n).zfill(2)}: {t.title}" for n, t in sorted(self._medium.tracks.items())]
         min_total_w = 74  # Make sure we've got enough width for MB Release URL.
         width = 40
@@ -342,28 +325,28 @@ class Base:
             song.one_track = release.OneTrack(
                 release=self._release,
                 medium_position=values.MediumPosition(number=self._disc_number, count=self._disc_count),
-                track_number=values.TrackNumber(int(filename.name.split("__")[0])),
+                track_number=values.TrackNumber.from_filename(filename.name),
             )
             song.write_tags()
 
     def _write_manifest(self) -> None:
         """Write out a manifest file with release information."""
-        release = self._release  # We use this a lot below.
+        release_ = self._release  # We use this a lot below.
         file_info = self._source_example.track.file_info
         manifest = {
-            "album": release.album,
-            "artist": release.album_artists.first,
-            "artist_sort_name": release.album_artists_sort.first,
-            "media": release.media[self._disc_number].formats.first,
-            "genre": release.genres.first,
+            "album": release_.album,
+            "artist": release_.album_artists.first,
+            "artist_sort_name": release_.album_artists_sort.first,
+            "media": release_.media[self._disc_number].formats.first,
+            "genre": release_.genres.first,
             "disc_number": self._disc_number,
             "disc_count": self._disc_count,
-            "original_year": release.original_year,
-            "date": release.date,
+            "original_year": release_.original_year,
+            "date": release_.date,
             "musicbrainz_info": {
-                "albumid": release.musicbrainz_album_id,
-                "albumartistid": release.musicbrainz_album_artist_ids.first,
-                "releasegroupid": release.musicbrainz_release_group_id,
+                "albumid": release_.musicbrainz_album_id,
+                "albumartistid": release_.musicbrainz_album_artist_ids.first,
+                "releasegroupid": release_.musicbrainz_release_group_id,
             },
             "source_info": {
                 "type": file_info.type.name,
@@ -372,7 +355,7 @@ class Base:
             },
         }
         if self.command == "manifest":
-            manifest_filename = self._manifest_file  # Write to current directory.
+            manifest_path = pathlib.Path(self._manifest_file)  # Write to current directory.
             if self._source_is_cd:
                 manifest["source_info"] = {
                     "type": "CD",
@@ -380,12 +363,21 @@ class Base:
                     "bitrate_mode": "CBR",
                 }
         else:
-            source_dir = self._library_dir / "source"
-            artist_album_dir = self._release.get_artist_album_path()
-            manifest_filename = str(source_dir / artist_album_dir / self._manifest_file)
-        with pathlib.Path(manifest_filename).open("w", encoding="utf-8") as manifest_file:
+            if release_ is None:
+                msg = "Release is required to write manifest"
+                raise ValueError(msg)
+            manifest_path = (
+                library_layout.full_path(
+                    root_path=self._library_dir,
+                    format_tree_name=library_layout.FormatTreeName.SOURCE,
+                    release=release_,
+                    medium_position=values.MediumPosition(number=self._disc_number, count=self._disc_count),
+                )
+                / self._manifest_file
+            )
+        with pathlib.Path(manifest_path).open("w", encoding="utf-8") as manifest_file:
             yaml.dump(manifest, manifest_file)
-        print(f"Wrote {manifest_filename}")
+        print(f"Wrote {manifest_path}")
 
     @staticmethod
     def _find_audio_files(directories: list[str | pathlib.Path]) -> Iterable[audiofile.AudioFile]:

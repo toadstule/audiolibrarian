@@ -6,7 +6,7 @@
 import attrs
 import pytest
 
-from audiolibrarian.domain.model.values import AudioFormat, MediumPosition, TrackNumber
+from audiolibrarian.domain.model.values import MediumPosition, TrackNumber
 
 
 class TestDiscPosition:
@@ -143,52 +143,3 @@ class TestTrackNumber:
         track = TrackNumber(value=8)
         result = track.asdict()
         assert result == {"value": 8}
-
-
-class TestAudioFormat:
-    """Tests for AudioFormat value object."""
-
-    def test__audio_format_flac(self) -> None:
-        """AudioFormat for FLAC should be created successfully."""
-        from audiolibrarian.domain.model import enums
-
-        format_obj = AudioFormat(file_type=enums.FileType.FLAC)
-        assert format_obj.file_type == enums.FileType.FLAC
-
-    def test__audio_format_m4a(self) -> None:
-        """AudioFormat for M4A (AAC) should be created successfully."""
-        from audiolibrarian.domain.model import enums
-
-        format_obj = AudioFormat(file_type=enums.FileType.AAC)
-        assert format_obj.file_type == enums.FileType.AAC
-
-    def test__audio_format_mp3(self) -> None:
-        """AudioFormat for MP3 should be created successfully."""
-        from audiolibrarian.domain.model import enums
-
-        format_obj = AudioFormat(file_type=enums.FileType.MP3)
-        assert format_obj.file_type == enums.FileType.MP3
-
-    def test__audio_format_is_frozen(self) -> None:
-        """AudioFormat should be immutable (frozen)."""
-        from audiolibrarian.domain.model import enums
-
-        format_obj = AudioFormat(file_type=enums.FileType.FLAC)
-        with pytest.raises(attrs.exceptions.FrozenInstanceError):
-            # noinspection dataclass
-            format_obj.file_type = enums.FileType.MP3  # type: ignore[misc]
-
-    def test__audio_format_bool_true(self) -> None:
-        """AudioFormat with value should evaluate to True."""
-        from audiolibrarian.domain.model import enums
-
-        format_obj = AudioFormat(file_type=enums.FileType.FLAC)
-        assert format_obj
-
-    def test__audio_format_asdict(self) -> None:
-        """AudioFormat should convert to dict correctly."""
-        from audiolibrarian.domain.model import enums
-
-        format_obj = AudioFormat(file_type=enums.FileType.MP3)
-        result = format_obj.asdict()
-        assert result == {"file_type": enums.FileType.MP3}

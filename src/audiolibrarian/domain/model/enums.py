@@ -14,14 +14,14 @@ class BitrateMode(enum.Enum):
     VBR = 2
 
 
-class FileType(enum.Enum):
+class FileType(enum.StrEnum):
     """Audio file types."""
 
-    UNKNOWN = 0
-    AAC = 1
-    FLAC = 2
-    MP3 = 3
-    WAV = 4
+    UNKNOWN = "unknown"
+    AAC = "mp4"
+    FLAC = enum.auto()
+    MP3 = enum.auto()
+    WAV = enum.auto()
 
 
 class Source(enum.Enum):
