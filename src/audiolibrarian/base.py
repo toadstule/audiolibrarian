@@ -1,4 +1,4 @@
-#  Copyright (C) 2000-2026 Stephen T. Jibson.
+#  Copyright (C) 2020-2026 Stephen T. Jibson.
 #  SPDX-License-Identifier: GPL-3.0-only
 
 """AudioLibrarian base class.
