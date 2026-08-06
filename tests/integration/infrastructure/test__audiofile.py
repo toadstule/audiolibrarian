@@ -15,10 +15,11 @@ from typing import Any
 import attrs
 import pytest
 
+from audiolibrarian.application.ports.tag_gateway import TagGatewayP
 from audiolibrarian.audiofile import audiofile
 from audiolibrarian.domain.model import enums, medium, record, release, track, values
 
-test_data_path = (Path(__file__).parent / "test_data").resolve()
+test_data_path = (Path(__file__).parents[2] / "test_data").resolve()
 
 
 def _normalize_onetrack_for_comparison(one_track: release.OneTrack, suffix: str) -> release.OneTrack:
@@ -88,6 +89,14 @@ class TestAudioFile:
                 filepath = test_data_path / filename
                 got = hashlib.md5(filepath.read_bytes()).hexdigest()
                 assert checksum == got, f"Mismatched checksum for {filepath}"
+
+    def test__protocol_compliance(self) -> None:
+        """Test protocol compliance."""
+        src = next(self._blank_test_files)
+        with _audio_file_copy(src) as test_file:
+            audio_file_instance = audiofile.AudioFile.open(test_file.name)
+        # noinspection protocol
+        assert isinstance(audio_file_instance, TagGatewayP), "AudioFile does not implement TagGatewayP."
 
     def test__no_changes_rw(self, test_data: Generator[None]) -> None:
         """Verify that a read/write cycle doesn't change any tags."""

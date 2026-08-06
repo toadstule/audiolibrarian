@@ -5,7 +5,6 @@
 
 import logging
 import pathlib
-import shutil
 import subprocess
 
 import pytest
@@ -13,7 +12,10 @@ import pytest_mock
 from _pytest.monkeypatch import MonkeyPatch
 
 from audiolibrarian import config
-from audiolibrarian import normalizer as normalizer_
+from audiolibrarian.infrastructure.normalizers._normalizer import Normalizer
+from audiolibrarian.infrastructure.normalizers.ffmpeg import FFmpegNormalizer
+from audiolibrarian.infrastructure.normalizers.noop import NoOpNormalizer
+from audiolibrarian.infrastructure.normalizers.wavegain import WaveGainNormalizer
 
 
 def test_noop_normalizer(tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixture) -> None:
@@ -26,7 +28,7 @@ def test_noop_normalizer(tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixtur
     test_file.touch()
 
     # Initialize and call normalizer
-    normalizer = normalizer_.NoOpNormalizer(config.EmptySettings())
+    normalizer = NoOpNormalizer(config.EmptySettings())
     normalizer.normalize({test_file})
 
     # Verify no changes were made and log message was emitted
@@ -48,7 +50,7 @@ def test_wavegain_normalizer_success(tmp_path: pathlib.Path, mocker: pytest_mock
 
     # Execute
     settings = config.NormalizeWavegainSettings(gain=5, preset="radio")
-    normalizer = normalizer_.WaveGainNormalizer(settings)
+    normalizer = WaveGainNormalizer(settings)
     normalizer.normalize({test_file})
 
     # Verify command was called correctly
@@ -72,7 +74,7 @@ def test_ffmpeg_normalizer_success(tmp_path: pathlib.Path, mocker: pytest_mock.M
 
     # Execute
     settings = config.NormalizeFFmpegSettings(target_level=-13.0)
-    normalizer = normalizer_.FFmpegNormalizer(settings)
+    normalizer = FFmpegNormalizer(settings)
     normalizer.normalize({test_file})
 
     # Verify FFmpegNormalize was called correctly
@@ -90,66 +92,99 @@ def test_ffmpeg_normalizer_success(tmp_path: pathlib.Path, mocker: pytest_mock.M
 def test_normalizer_factory_none() -> None:
     """Test factory returns NoOpNormalizer when normalizer is 'none'."""
     settings = config.NormalizeSettings(normalizer="none")
-    normalizer = normalizer_.Normalizer.factory(settings)
-    assert isinstance(normalizer, normalizer_.NoOpNormalizer)
+    normalizer = Normalizer.factory(settings)
+    assert isinstance(normalizer, NoOpNormalizer)
 
 
 def test_normalizer_factory_wavegain(monkeypatch: MonkeyPatch) -> None:
     """Test factory returns WaveGainNormalizer when wavegain is available."""
-    # Mock shutil.which to simulate wavegain being available
-    monkeypatch.setattr(shutil, "which", lambda x: "/fake/path/wavegain" if x == "wavegain" else None)
+    # Ensure wavegain is in registry
+    original_registry = Normalizer._registry.copy()
+    Normalizer._registry["wavegain"] = WaveGainNormalizer
 
-    settings = config.NormalizeSettings(normalizer="wavegain")
-    normalizer = normalizer_.Normalizer.factory(settings)
-    assert isinstance(normalizer, normalizer_.WaveGainNormalizer)
+    try:
+        settings = config.NormalizeSettings(normalizer="wavegain")
+        normalizer = Normalizer.factory(settings)
+        assert isinstance(normalizer, WaveGainNormalizer)
+    finally:
+        Normalizer._registry = original_registry
 
 
 def test_normalizer_factory_ffmpeg(monkeypatch: MonkeyPatch) -> None:
     """Test factory returns FFmpegNormalizer when ffmpeg is available."""
-    # Mock shutil.which to simulate ffmpeg being available
-    monkeypatch.setattr(shutil, "which", lambda x: "/fake/path/ffmpeg" if x == "ffmpeg" else None)
+    # Ensure ffmpeg is in registry
+    original_registry = Normalizer._registry.copy()
+    Normalizer._registry["ffmpeg"] = FFmpegNormalizer
 
-    settings = config.NormalizeSettings(normalizer="ffmpeg")
-    normalizer = normalizer_.Normalizer.factory(settings)
-    assert isinstance(normalizer, normalizer_.FFmpegNormalizer)
+    try:
+        settings = config.NormalizeSettings(normalizer="ffmpeg")
+        normalizer = Normalizer.factory(settings)
+        assert isinstance(normalizer, FFmpegNormalizer)
+    finally:
+        Normalizer._registry = original_registry
 
 
 def test_normalizer_factory_auto_wavegain(monkeypatch: MonkeyPatch) -> None:
     """Test factory returns WaveGainNormalizer in auto mode when wavegain is available."""
-    # Mock shutil.which to simulate wavegain being available
-    monkeypatch.setattr(shutil, "which", lambda x: "/fake/path/wavegain" if x == "wavegain" else None)
+    # Ensure both are in registry and wavegain is auto-selected
+    original_registry = Normalizer._registry.copy()
+    original_auto_normalizer = Normalizer._auto_normalizer
+    original_auto_priority = Normalizer._auto_priority
+    Normalizer._registry["wavegain"] = WaveGainNormalizer
+    Normalizer._registry["ffmpeg"] = FFmpegNormalizer
+    Normalizer._auto_normalizer = WaveGainNormalizer
+    Normalizer._auto_priority = 2  # WaveGain priority
 
-    settings = config.NormalizeSettings(normalizer="auto")
-    normalizer = normalizer_.Normalizer.factory(settings)
-    assert isinstance(normalizer, normalizer_.WaveGainNormalizer)
+    try:
+        settings = config.NormalizeSettings(normalizer="auto")
+        normalizer = Normalizer.factory(settings)
+        assert isinstance(normalizer, WaveGainNormalizer)
+    finally:
+        Normalizer._registry = original_registry
+        Normalizer._auto_normalizer = original_auto_normalizer
+        Normalizer._auto_priority = original_auto_priority
 
 
 def test_normalizer_factory_auto_ffmpeg(monkeypatch: MonkeyPatch) -> None:
     """Test factory returns FFmpegNormalizer in auto mode when ffmpeg is available."""
+    # Ensure only ffmpeg is in registry
+    original_registry = Normalizer._registry.copy()
+    original_auto_normalizer = Normalizer._auto_normalizer
+    original_auto_priority = Normalizer._auto_priority
+    Normalizer._registry.pop("wavegain", None)
+    Normalizer._registry["ffmpeg"] = FFmpegNormalizer
+    Normalizer._auto_normalizer = FFmpegNormalizer
+    Normalizer._auto_priority = 1  # FFmpeg priority
 
-    # Mock shutil.which to simulate only ffmpeg being available
-    def mock_which(cmd: str) -> str | None:
-        if cmd == "wavegain":
-            return None
-        if cmd == "ffmpeg":
-            return "/fake/path/ffmpeg"
-        return None
-
-    monkeypatch.setattr(shutil, "which", mock_which)
-
-    settings = config.NormalizeSettings(normalizer="auto")
-    normalizer = normalizer_.Normalizer.factory(settings)
-    assert isinstance(normalizer, normalizer_.FFmpegNormalizer)
+    try:
+        settings = config.NormalizeSettings(normalizer="auto")
+        normalizer = Normalizer.factory(settings)
+        assert isinstance(normalizer, FFmpegNormalizer)
+    finally:
+        Normalizer._registry = original_registry
+        Normalizer._auto_normalizer = original_auto_normalizer
+        Normalizer._auto_priority = original_auto_priority
 
 
 def test_normalizer_factory_auto_fallback(monkeypatch: MonkeyPatch) -> None:
     """Test factory falls back to NoOpNormalizer when no normalizers are available."""
-    # Mock shutil.which to simulate no normalizers available
-    monkeypatch.setattr(shutil, "which", lambda _: None)
+    # Ensure no normalizers are in registry
+    original_registry = Normalizer._registry.copy()
+    original_auto_normalizer = Normalizer._auto_normalizer
+    original_auto_priority = Normalizer._auto_priority
+    Normalizer._registry.pop("wavegain", None)
+    Normalizer._registry.pop("ffmpeg", None)
+    Normalizer._auto_normalizer = None
+    Normalizer._auto_priority = -1
 
-    settings = config.NormalizeSettings(normalizer="auto")
-    normalizer = normalizer_.Normalizer.factory(settings)
-    assert isinstance(normalizer, normalizer_.NoOpNormalizer)
+    try:
+        settings = config.NormalizeSettings(normalizer="auto")
+        normalizer = Normalizer.factory(settings)
+        assert isinstance(normalizer, NoOpNormalizer)
+    finally:
+        Normalizer._registry = original_registry
+        Normalizer._auto_normalizer = original_auto_normalizer
+        Normalizer._auto_priority = original_auto_priority
 
 
 def test_wavegain_normalizer_error_handling(
@@ -175,7 +210,7 @@ def test_wavegain_normalizer_error_handling(
 
     # Execute & Verify
     settings = config.NormalizeWavegainSettings()
-    normalizer = normalizer_.WaveGainNormalizer(settings)
+    normalizer = WaveGainNormalizer(settings)
     with pytest.raises(subprocess.CalledProcessError):
         normalizer.normalize({test_file})
 

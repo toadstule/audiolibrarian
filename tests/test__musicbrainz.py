@@ -14,7 +14,7 @@ from audiolibrarian import config
 from audiolibrarian.audiofile import audiofile
 from audiolibrarian.domain.model import enums, release, values
 from audiolibrarian.musicbrainz import MusicBrainzRelease
-from tests.test__audiofile import _audio_file_copy
+from tests.integration.infrastructure.test__audiofile import _audio_file_copy
 
 
 def _normalize_release_for_comparison(release_obj: release.Release) -> release.Release:

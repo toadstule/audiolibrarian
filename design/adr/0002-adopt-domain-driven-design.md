@@ -12,7 +12,7 @@ difficult to maintain and extend:
 
 - **Anemic domain model**: Entities in `records.py` are primarily data containers with
   minimal behavior
-- **Scattered business logic**: Domain rules are spread across `base.py`,
+- **Scattered business logic**: Domain rules are spread across `_audiosource.py`,
   `commands.py`, and various service classes
 - **Mixed concerns**: The `Base` class orchestrates workflows but also contains domain
   logic
@@ -108,7 +108,7 @@ src/audiolibrarian/
       release.py        # Release, Medium, Track   [immutable metadata description]
       values.py         # FrontCover, FileInfo, Performer, People,
                         # MediumPosition, TrackNumber, AudioFormat    [value objects]
-      enums.py          # BitrateMode, FileType, Source
+      enums.py          # BitrateMode, FileFormat, Source
     services/
       source_matching.py  # match source files → tracks; count mismatch check
       library_layout.py   # THE core domain rules: format trees, artist/album dir,

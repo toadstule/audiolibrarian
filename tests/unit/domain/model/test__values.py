@@ -3,6 +3,8 @@
 
 """Tests for domain value objects."""
 
+from unittest.mock import patch
+
 import attrs
 import pytest
 
@@ -110,6 +112,12 @@ class TestTrackNumber:
         """Track number from filename with double digit should work."""
         track = TrackNumber.from_filename("15__the_lumberjack_song.mp3")
         assert track.value == 15
+
+    def test__track_number_from_user_input(self) -> None:
+        """Track number from user input should work."""
+        with patch("builtins.input", return_value="12"):
+            track = TrackNumber.from_user_input("12")
+        assert track.value == 12
 
     def test__track_number_str_single_digit(self) -> None:
         """Track number string representation should pad single digit with zero."""

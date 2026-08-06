@@ -3,13 +3,15 @@
 
 """Text utilities."""
 
-import pathlib
+from __future__ import annotations
+
 import re
-import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import picard_src
-from audiolibrarian.domain.model import values
+
+if TYPE_CHECKING:
+    import pathlib
 
 _DIGIT_REGEX = re.compile(r"([0-9]+)")
 _UUID_REGEX = re.compile(r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}", re.IGNORECASE)
@@ -62,29 +64,11 @@ def get_numbers(text: str) -> list[int]:
     return [int(x) for x in _DIGIT_REGEX.findall(text)]
 
 
-def get_track_number(filename: str) -> values.TrackNumber:
-    """Get a track number from a filename or from the user."""
-    if numbers := get_numbers(filename):
-        return values.TrackNumber(numbers[0])
-    while True:  # pragma: no cover
-        try:
-            return values.TrackNumber(int(input_(f"Enter the track number for: {filename}")))
-        except ValueError:
-            pass
-
-
 def get_uuid(text: str) -> str | None:
     """Return the first UUID found within a given string."""
     if (match := _UUID_REGEX.search(text)) is not None:
         return match.group()
     return None
-
-
-def input_(prompt: str) -> str:  # pragma: no cover
-    """Sound a terminal bell then prompt the user for input."""
-    sys.stdout.write("\a")  # Terminal bell escape char.
-    sys.stdout.flush()
-    return input(prompt)
 
 
 def join(strings: list[str], joiner: str = ", ", word: str = "and") -> str:

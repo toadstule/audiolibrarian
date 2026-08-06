@@ -82,7 +82,7 @@ class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
                                     bitrate=bitrate,
                                     bitrate_mode=bitrate_mode,
                                     path=self.filepath,
-                                    type=enums.FileType.MP3,
+                                    type=enums.FileFormat.MP3,
                                 ),
                                 isrcs=get_l("TSRC"),
                                 musicbrainz_artist_ids=get_l("TXXX:MusicBrainz Artist Id"),

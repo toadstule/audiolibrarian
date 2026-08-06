@@ -43,6 +43,7 @@ dependencies = [
     "fuzzywuzzy>=0.18",
     "musicbrainzngs>=0.7",
     "mutagen>=1.48",
+    "pydantic>=2.13",
     "pydantic-settings>=2.14",
     "python-levenshtein>=0.27",
     "pyyaml>=6.0",
@@ -66,10 +67,38 @@ Repository = "https://github.com/toadstule/audiolibrarian"
 root_package = "audiolibrarian"
 
 [[tool.importlinter.contracts]]
+name = "layer-dependency-rule"
+type = "layers"
+layers = [
+    "audiolibrarian.presentation",
+    "audiolibrarian.infrastructure",
+    "audiolibrarian.application",
+    "audiolibrarian.domain",
+    "audiolibrarian.common",
+]
+container = "audiolibrarian"
+
+[[tool.importlinter.contracts]]
 name = "domain-layer-dependency-rule"
 type = "layers"
-layers = ["audiolibrarian.presentation", "audiolibrarian.infrastructure", "audiolibrarian.application", "audiolibrarian.domain"]
-container = "audiolibrarian"
+layers = [
+    "audiolibrarian.domain.services",
+    "audiolibrarian.domain.model",
+]
+container = "audiolibrarian.domain"
+
+[[tool.importlinter.contracts]]
+name = "domain-model-layer-dependency-rule"
+type = "layers"
+layers = [
+    "audiolibrarian.domain.model.release",
+    "audiolibrarian.domain.model.medium",
+    "audiolibrarian.domain.model.track",
+    "audiolibrarian.domain.model.values",
+    "audiolibrarian.domain.model.enums",
+    "audiolibrarian.domain.model.record",
+]
+container = "audiolibrarian.domain"
 
 [tool.mypy]
 ignore_missing_imports = true

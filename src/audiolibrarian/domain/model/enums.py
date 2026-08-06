@@ -3,6 +3,8 @@
 
 """Domain model: enums."""
 
+from __future__ import annotations
+
 import enum
 
 
@@ -14,14 +16,14 @@ class BitrateMode(enum.Enum):
     VBR = 2
 
 
-class FileType(enum.StrEnum):
-    """Audio file types."""
+class FileFormat(enum.StrEnum):
+    """Audio file formats."""
 
-    UNKNOWN = "unknown"
     AAC = "mp4"
     FLAC = enum.auto()
     MP3 = enum.auto()
     WAV = enum.auto()
+    UNKNOWN = enum.auto()
 
 
 class Source(enum.Enum):

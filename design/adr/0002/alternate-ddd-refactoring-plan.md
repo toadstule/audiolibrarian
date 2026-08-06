@@ -92,7 +92,7 @@ src/audiolibrarian/domain/
 │   ├── library_layout.py   # LibraryLayout value object (path rules)      [value object]
 │   ├── metadata.py         # ReleaseMetadata DTO (from MusicBrainz)       [DTO]
 │   ├── values.py           # TrackNumber, AudioFormat, FileInfo, etc.     [value objects]
-│   └── enums.py            # BitrateMode, FileType, Source                [enums]
+│   └── enums.py            # BitrateMode, FileFormat, Source                [enums]
 └── services/
     ├── __init__.py
     ├── source_matching.py  # match source files → track metadata

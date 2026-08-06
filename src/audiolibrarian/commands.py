@@ -9,8 +9,10 @@ import pathlib
 import re
 from typing import Any
 
-from audiolibrarian import __version__, audiofile, audiosource, base, config, genremanager
+from audiolibrarian import __version__, audiofile, base, config, genremanager
 from audiolibrarian.domain.services import library_layout
+from audiolibrarian.infrastructure.audiosources.cd_source import CDAudioSource
+from audiolibrarian.infrastructure.audiosources.file_source import FilesAudioSource
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +73,7 @@ class Convert(_Command, base.Base):
         """Initialize a Convert command handler."""
         super().__init__(args, settings)
         self._source_is_cd = False
-        self._audio_source = audiosource.FilesAudioSource([pathlib.Path(x) for x in args.filename])
+        self._audio_source = FilesAudioSource([pathlib.Path(x) for x in args.filename])
         self._get_tag_info()
         self._convert()
         self._write_manifest()
@@ -126,7 +128,7 @@ class Manifest(_Command, base.Base):
         """Initialize a Manifest command handler."""
         super().__init__(args, settings)
         self._source_is_cd = args.cd
-        self._audio_source = audiosource.FilesAudioSource([pathlib.Path(x) for x in args.filename])
+        self._audio_source = FilesAudioSource([pathlib.Path(x) for x in args.filename])
         source_filenames = self._audio_source.get_source_filenames()
         self._source_example = audiofile.AudioFile.open(source_filenames[0]).read_tags()
         self._get_tag_info()
@@ -158,7 +160,7 @@ class Reconvert(_Command, base.Base):
         count = len(manifest_paths)
         for i, manifest_path in enumerate(manifest_paths):
             print(f"Processing {i + 1} of {count} ({i / count:.0%}): {manifest_path}...")
-            self._audio_source = audiosource.FilesAudioSource([manifest_path.parent])
+            self._audio_source = FilesAudioSource([manifest_path.parent])
             manifest = self._read_manifest(manifest_path)
             self._disc_number, self._disc_count = manifest["disc_number"], manifest["disc_count"]
             self._get_tag_info()
@@ -253,7 +255,7 @@ class Rip(_Command, base.Base):
         """Initialize a Rip command handler."""
         super().__init__(args, settings)
         self._source_is_cd = True
-        self._audio_source = audiosource.CDAudioSource(settings)
+        self._audio_source = CDAudioSource(settings)
         self._get_tag_info()
         self._convert()
         self._write_manifest()

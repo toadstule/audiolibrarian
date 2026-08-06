@@ -5,7 +5,7 @@
 
 import pytest
 
-from audiolibrarian import text
+from audiolibrarian.common import text
 
 
 class TestText:

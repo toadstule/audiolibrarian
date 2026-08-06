@@ -16,7 +16,8 @@ import mutagen.flac
 import mutagen.id3
 import mutagen.mp4
 
-from audiolibrarian import config, musicbrainz, text
+from audiolibrarian import config, musicbrainz
+from audiolibrarian.common import user_input
 
 log = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ class GenreManager:
             key=lambda x: x[1]["name"],
         ):
             artist_name = artist["name"]
-            i = text.input_(f"Continue with {artist_name} (YES, no, skip)[Y, n, s]: ").lower().strip()
+            i = user_input.input_str(f"Continue with {artist_name} (YES, no, skip)[Y, n, s]: ").lower().strip()
             if i == "n":
                 break
             if i != "s":

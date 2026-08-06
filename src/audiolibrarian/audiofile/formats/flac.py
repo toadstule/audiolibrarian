@@ -69,7 +69,7 @@ class FlacFile(audiofile.AudioFile, extensions={".flac"}):
                                     bitrate=mut.info.bitrate // 1000,
                                     bitrate_mode=enums.BitrateMode.CBR,
                                     path=self.filepath,
-                                    type=enums.FileType.FLAC,
+                                    type=enums.FileFormat.FLAC,
                                 ),
                                 isrcs=mut.get("isrc"),
                                 musicbrainz_artist_ids=listf(mut.get("musicbrainz_artistid")),

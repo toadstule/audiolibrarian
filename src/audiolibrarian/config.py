@@ -24,14 +24,19 @@ configuration and cache locations.
 Sensitive fields (like passwords) are handled using pydantic.SecretStr for security.
 """
 
-import argparse
+from __future__ import annotations
+
 import logging
 import pathlib
-from typing import Annotated, Final, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Final, Literal
 
 import pydantic
 import pydantic_settings
 import xdg_base_dirs
+
+if TYPE_CHECKING:
+    import argparse
+
 
 CONFIG_PATH: Final[pathlib.Path] = xdg_base_dirs.xdg_config_home() / "audiolibrarian" / "config.toml"
 
@@ -75,6 +80,10 @@ class NormalizeSettings(pydantic.BaseModel):
     normalizer: Literal["auto", "wavegain", "ffmpeg", "none"] = "auto"
     ffmpeg: NormalizeFFmpegSettings = NormalizeFFmpegSettings()
     wavegain: NormalizeWavegainSettings = NormalizeWavegainSettings()
+
+    def get(self, key: str, default: Any = None) -> Any:  # noqa: ANN401
+        """Get a setting by key."""
+        return getattr(self, key, default)
 
 
 class Settings(pydantic_settings.BaseSettings):

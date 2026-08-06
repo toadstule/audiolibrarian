@@ -9,7 +9,7 @@ import enum
 import pathlib
 from typing import TYPE_CHECKING
 
-from audiolibrarian import text
+from audiolibrarian.common import text
 
 if TYPE_CHECKING:
     from audiolibrarian.domain.model.release import Release

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import attrs
 
+from audiolibrarian.common import user_input
 from audiolibrarian.domain.model.record import Record
 
 if TYPE_CHECKING:
@@ -24,7 +25,7 @@ class FileInfo(Record):
     bitrate: int | None = None
     bitrate_mode: enums.BitrateMode | None = None
     path: pathlib.Path | None = None
-    type: enums.FileType | None = None
+    type: enums.FileFormat | None = None
 
 
 @attrs.define(kw_only=True, frozen=True)
@@ -87,6 +88,11 @@ class TrackNumber(Record):
     def from_filename(cls, filename: str) -> TrackNumber:
         """Extract the track number from a filename."""
         return cls(value=int(filename.split("__", 1)[0]))
+
+    @classmethod
+    def from_user_input(cls, prompt: str) -> TrackNumber:
+        """Prompt the user for a track number."""
+        return cls(value=user_input.input_int(prompt, min_=0))
 
     def __str__(self) -> str:
         """Return the track number as a string, padded with zeros."""

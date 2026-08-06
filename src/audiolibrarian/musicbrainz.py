@@ -17,7 +17,8 @@ import requests
 from fuzzywuzzy import fuzz
 from requests import auth
 
-from audiolibrarian import __version__, config, text
+from audiolibrarian import __version__, config
+from audiolibrarian.common import text, user_input
 from audiolibrarian.domain.model import enums, values
 from audiolibrarian.domain.model.medium import Medium
 from audiolibrarian.domain.model.record import ListF
@@ -183,7 +184,7 @@ class MusicBrainzRelease:
             return str(next(g["name"] for g in sorted(release_group["genres"], key=x_count, reverse=True)))
         if artist.get("genres"):
             return str(next(g["name"] for g in sorted(artist["genres"], key=x_count, reverse=True)))
-        return text.input_("Genre not found; enter the genre [Alternative]: ") or "Alternative"
+        return user_input.input_str("Genre not found; enter the genre [Alternative]: ") or "Alternative"
 
     def _get_media(self) -> dict[int, Medium] | None:
         # Return a dict of Media objects, keyed on number or position (or None).
@@ -276,7 +277,7 @@ class MusicBrainzRelease:
             artist_ids,
         ) = self._process_artist_credit(release["artist-credit"])
         artist_phrase = text.fix(release.get("artist-credit-phrase", ""))
-        year = release.get("release-event-list", [{}])[0].get("date") or text.input_("Release year: ")
+        year = release.get("release-event-list", [{}])[0].get("date") or user_input.input_str("Release year: ")
         album_type = [release_group["primary-type"].lower()]
         if release_group["type"].lower() != album_type[0]:
             album_type.append(release_group["type"].lower())
@@ -401,7 +402,7 @@ class Searcher:
             log.info("RELEASE_GROUPS: {release_group_ids}")
             release_id = self._prompt_release_id(release_group_ids)
         else:
-            release_id = self._prompt_uuid("MusicBrainz Release ID: ")
+            release_id = user_input.input_uuid("MusicBrainz Release ID: ")
 
         return MusicBrainzRelease(release_id=release_id, settings=self._settings).get_release()
 
@@ -436,12 +437,4 @@ class Searcher:
             url = f"https://musicbrainz.org/release-group/{release_group_id}"
             print(url)
             webbrowser.open(url)
-        return self._prompt_uuid("\nRelease ID or URL: ")
-
-    @staticmethod
-    def _prompt_uuid(prompt: str) -> str:
-        # Prompt for, and return a UUID.
-        while True:
-            uuid = text.get_uuid(text.input_(prompt))
-            if uuid is not None:
-                return uuid
+        return user_input.input_uuid("\nRelease ID or URL: ")

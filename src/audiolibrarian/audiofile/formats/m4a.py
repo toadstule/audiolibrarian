@@ -80,7 +80,7 @@ class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
                                     bitrate=mut.info.bitrate // 1000,
                                     bitrate_mode=enums.BitrateMode.CBR,
                                     path=self.filepath,
-                                    type=enums.FileType.AAC,
+                                    type=enums.FileFormat.AAC,
                                 ),
                                 isrcs=get_strl(f"{ITUNES}:ISRC"),
                                 musicbrainz_artist_ids=get_strl(f"{ITUNES}:MusicBrainz Artist Id"),

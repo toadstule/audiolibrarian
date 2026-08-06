@@ -49,7 +49,7 @@ src/audiolibrarian/domain/
 │   │                     # Release references its Album via album / musicbrainz_album_id
 │   ├── values.py         # FrontCover, FileInfo, Performer, People,
 │   │                     # MediumPosition, TrackNumber, AudioFormat    [value objects]
-│   └── enums.py          # BitrateMode, FileType, Source
+│   └── enums.py          # BitrateMode, FileFormat, Source
 └── services/
     ├── __init__.py
     ├── source_matching.py  # match source files → tracks; count invariant
@@ -343,7 +343,7 @@ violated?
   - `release.py` - Release, Medium, Track (Release references its Album via `album` and
     `musicbrainz_album_id`)
   - `values.py` - FrontCover, FileInfo, Performer, People value objects
-  - `enums.py` - BitrateMode, FileType, Source enums
+  - `enums.py` - BitrateMode, FileFormat, Source enums
 - Freeze value objects with `@attrs.define(frozen=True)` (attrs is already a project
   dependency)
 - Introduce new value objects to cure primitive obsession:
@@ -389,7 +389,7 @@ Phase 1.1 revision.)
 - Add `frozen=True` to `Release`, `Track`, and `OneTrack` (`Medium` already has it). This is
   real protection at zero test cost: it makes aliasing surprises impossible.
 - Convert the two genuine mutation sites to `attrs.evolve`:
-  - `base.py` front-cover backfill →
+  - `_audiosource.py` front-cover backfill →
     `self._release = attrs.evolve(self._release, front_cover=cover)`.
     This matters: the same `_release` instance is aliased across every `AudioFile` in the
     album via `Base._tag_files`.
@@ -556,7 +556,7 @@ rules that are duplicated and disagreeing.
   - `audio_source.py` - AudioSource port (today's ABC becomes the interface)
   - `tag_gateway.py` - TagGateway port (today's AudioFile ABC)
   - `encoder.py` - Encoder port
-  - `normalizer.py` - Normalizer port (today's ABC)
+  - `_normalizer.py` - Normalizer port (today's ABC)
   - `library_repository.py` - LibraryRepository port
   - `user_interface.py` - UserInterface port
 - Move existing ABCs to become the port interfaces
@@ -724,7 +724,7 @@ don't?
 **Tasks**:
 
 - Delete `Base` class
-- Delete `base.py` file
+- Delete `_audiosource.py` file
 - Split tests into three categories:
   - **Domain tests**: No mocks, pure objects testing invariants and value object behavior
   - **Use-case tests**: With fake adapters, testing orchestration

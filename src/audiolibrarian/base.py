@@ -22,19 +22,19 @@ import yaml
 
 from audiolibrarian import (
     audiofile,
-    audiosource,
     config,
     musicbrainz,
-    normalizer,
     sh,
-    text,
 )
+from audiolibrarian.common import text, user_input
 from audiolibrarian.domain.model import release, values
 from audiolibrarian.domain.services import library_layout
+from audiolibrarian.infrastructure.normalizers._normalizer import Normalizer
 
 if TYPE_CHECKING:
     from audiolibrarian.domain.model.medium import Medium
     from audiolibrarian.domain.model.release import Release
+    from audiolibrarian.infrastructure.audiosources._audiosource import AudioSource
 
 log = logging.getLogger(__name__)
 
@@ -70,10 +70,10 @@ class Base:
 
         self._lock = filelock.FileLock(str(self._work_dir) + ".lock")
 
-        self._normalizer = normalizer.Normalizer.factory(self._settings.normalize)
+        self._normalizer = Normalizer.factory(self._settings.normalize)
 
         # Initialize stuff that will be defined later.
-        self._audio_source: audiosource.AudioSource | None = None
+        self._audio_source: AudioSource | None = None
         self._release: Release | None = None
         self._medium: Medium | None = None
         self._source_is_cd: bool | None = None
@@ -171,7 +171,7 @@ class Base:
         if not okay:
             print(colors.color("\n*** Track count does not match file count ***\n", fg="red"))
             skip_confirm = False
-        if not skip_confirm and text.input_("Confirm [N,y]: ").lower() != "y":  # pragma: no cover
+        if not skip_confirm and user_input.input_str("Confirm [N,y]: ").lower() != "y":  # pragma: no cover
             sys.exit(1)
 
     def _make_clean_workdirs(self) -> None:
@@ -258,7 +258,11 @@ class Base:
     def _rename_wav(self) -> None:
         """Rename the wav files to a filename-sane representation of the track title."""
         for old_path in self._wav_filenames:
-            track_number = text.get_track_number(str(old_path.name))
+            numbers = text.get_numbers(str(old_path.name))
+            if numbers:
+                track_number = values.TrackNumber(value=int(numbers[0]))
+            else:
+                track_number = values.TrackNumber.from_user_input(f"Enter the track number for: {old_path.name}")
             title_filename = library_layout.track_filename(self._medium.tracks[track_number], suffix=".wav")
             new_path = old_path.parent / title_filename
             if new_path.resolve() != old_path.resolve():

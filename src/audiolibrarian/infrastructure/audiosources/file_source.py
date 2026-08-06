@@ -1,114 +1,27 @@
-#  Copyright (C) 2020-2025 Stephen T. Jibson.
+#  Copyright (C) 2026 Stephen T. Jibson.
 #  SPDX-License-Identifier: GPL-3.0-only
 
-"""AudioSource."""
+"""AudioSource from local files."""
 
-import abc
+from __future__ import annotations
+
 import logging
-import os
-import pathlib
 import shutil
 import subprocess
-import tempfile
-from collections.abc import Callable  # noqa: TC003
+from typing import TYPE_CHECKING
 
-import discid
+from audiolibrarian import audiofile, sh
+from audiolibrarian.common import text
+from audiolibrarian.infrastructure.audiosources._audiosource import AudioSource
 
-from audiolibrarian import audiofile, config, sh, text
-from audiolibrarian.domain.model import values
+if TYPE_CHECKING:
+    import pathlib
+    from collections.abc import Callable
+
+    from audiolibrarian.domain.model import values
+
 
 log = logging.getLogger(__name__)
-
-
-class AudioSource(abc.ABC):
-    """An abstract base class for AudioSource classes."""
-
-    def __init__(self) -> None:
-        """Initialize an AudioSource."""
-        self._temp_dir: pathlib.Path = pathlib.Path(tempfile.mkdtemp())
-        self._source_list: list[pathlib.Path | None] = []
-
-    def __del__(self) -> None:
-        """Remove any temp files."""
-        if self._temp_dir.is_dir():
-            shutil.rmtree(self._temp_dir)
-
-    @property
-    def source_list(self) -> list[pathlib.Path | None]:
-        """Return a list with source file paths and blanks.
-
-        The list will be ordered by track number, with None in spaces where no
-        filename is present for that track number.
-        """
-        if not self._source_list:
-            source_filenames = self.get_source_filenames()
-            length = max(text.get_track_number(str(f.name)).value for f in source_filenames)
-            result: list[pathlib.Path | None] = [None] * length
-            if length:
-                for filename in source_filenames:
-                    idx = text.get_track_number(str(filename.name)).value - 1
-                    result[idx] = filename
-            self._source_list = result
-        return self._source_list
-
-    def copy_wavs(self, dest_dir: pathlib.Path) -> None:
-        """Copy wav files to the given destination directory."""
-        for filename in self.get_wav_filenames():
-            shutil.copy2(filename, dest_dir / filename.name)
-
-    def get_front_cover(self) -> values.FrontCover | None:
-        """Return a FrontCover record or None."""
-        return None
-
-    @abc.abstractmethod
-    def get_search_data(self) -> dict[str, str]:
-        """Return a dictionary of search data useful for doing a MusicBrainz search."""
-
-    @abc.abstractmethod
-    def get_source_filenames(self) -> list[pathlib.Path]:
-        """Return a list of the original source file paths."""
-
-    def get_wav_filenames(self) -> list[pathlib.Path]:
-        """Return a list of the prepared wav file paths."""
-        return sorted(self._temp_dir.glob("*.wav"), key=text.alpha_numeric_key)
-
-    @abc.abstractmethod
-    def prepare_source(self) -> None:
-        """Convert the source to wav files."""
-
-
-class CDAudioSource(AudioSource):
-    """AudioSource from a compact disc."""
-
-    def __init__(self, settings: config.Settings) -> None:
-        """Initialize a CDAudioSource."""
-        super().__init__()
-        self._cd = discid.read(settings.discid_device or None, features=["mcn"])
-
-    def get_search_data(self) -> dict[str, str]:
-        """Return a dictionary of search data useful for doing a MusicBrainz search."""
-        result = {"disc_id": self._cd.id}
-        if self._cd.mcn is not None:
-            result["disc_mcn"] = self._cd.mcn
-        return result
-
-    def get_source_filenames(self) -> list[pathlib.Path]:
-        """Return a list of the original source file paths.
-
-        Since we're working with a CD, these files may not yet exist if they have not been
-        read from the disc.
-        """
-        return [self._temp_dir / f"track{str(n + 1).zfill(2)}.cdda.wav" for n in range(self._cd.last_track_num)]
-
-    def prepare_source(self) -> None:
-        """Pull audio from the CD to wav files."""
-        cwd = pathlib.Path.cwd()
-        os.chdir(self._temp_dir)
-        try:
-            subprocess.run(("/usr/bin/cd-paranoia", "-B"), check=True)
-        finally:
-            os.chdir(cwd)
-        subprocess.run(("/usr/bin/eject",), check=False)
 
 
 class FilesAudioSource(AudioSource):

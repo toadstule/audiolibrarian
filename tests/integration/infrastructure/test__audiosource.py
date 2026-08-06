@@ -5,12 +5,14 @@
 
 from pathlib import Path
 from typing import Final
+from unittest.mock import patch
 
 import pytest
 
-from audiolibrarian.audiosource import FilesAudioSource
+from audiolibrarian.application.ports.audio_source import AudioSourceP
+from audiolibrarian.infrastructure.audiosources.file_source import FilesAudioSource
 
-test_data_path = (Path(__file__).parent / "test_data").resolve()
+test_data_path = (Path(__file__).parents[2] / "test_data").resolve()
 
 
 class TestAudioSource:
@@ -19,17 +21,22 @@ class TestAudioSource:
     _TEST_FILE_COUNT: Final[int] = 7
     _TEST_TRACK_NUMBER: Final[int] = 9
 
-    @pytest.fixture(scope="class")
     @classmethod
+    @pytest.fixture(scope="class")
     def audio_source(cls) -> FilesAudioSource:
         """Return a FLAC audio source instance."""
         return FilesAudioSource([test_data_path / f"0{cls._TEST_TRACK_NUMBER}.flac"])
 
-    @pytest.fixture(scope="class")
     @classmethod
+    @pytest.fixture(scope="class")
     def blank_audio_source(cls) -> FilesAudioSource:
         """Return an MP3 audio source instance."""
         return FilesAudioSource([test_data_path / "00.mp3"])
+
+    def test__protocol_compliance(self, blank_audio_source: FilesAudioSource) -> None:
+        """Test protocol compliance."""
+        # noinspection protocol
+        assert isinstance(blank_audio_source, AudioSourceP), "FilesAudioSource does not implement AudioSourceP."
 
     def test__single_directory_argument(self) -> None:
         """Test single directory argument."""
@@ -68,3 +75,12 @@ class TestAudioSource:
         for i in range(self._TEST_TRACK_NUMBER - 1):
             assert source_list[i] is None
         assert source_list[self._TEST_TRACK_NUMBER - 1] is not None
+
+    def test__get_track_number_from_filename(self, audio_source: FilesAudioSource) -> None:
+        """Test track number from filename."""
+        assert audio_source._get_track_number("1__one.flac").value == 1
+
+    def test__get_track_number_from_user_input(self, audio_source: FilesAudioSource) -> None:
+        """Test track number from user input."""
+        with patch("builtins.input", return_value="2"):
+            assert audio_source._get_track_number("two.flac").value == 2
