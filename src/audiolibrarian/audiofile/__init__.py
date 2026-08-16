@@ -3,7 +3,6 @@
 
 """Audio file library."""
 
-from audiolibrarian.audiofile.audiofile import AudioFile
 from audiolibrarian.audiofile.tags import Tags
 
-__all__ = ["AudioFile", "Tags"]
+__all__ = ["Tags"]

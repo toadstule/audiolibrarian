@@ -1,7 +1,7 @@
 #  Copyright (C) 2020-2025 Stephen T. Jibson.
 #  SPDX-License-Identifier: GPL-3.0-only
 
-"""Test AudioFile."""
+"""Test TagGateway."""
 
 import contextlib
 import copy
@@ -66,7 +66,7 @@ def _normalize_onetrack_for_comparison(one_track: release.OneTrack, suffix: str)
 
 
 class TestAudioFile:
-    """Test AudioFile."""
+    """Test TagGateway."""
 
     _blank_test_files = (p.resolve() for p in test_data_path.glob("00.*"))
 
@@ -94,9 +94,9 @@ class TestAudioFile:
         """Test protocol compliance."""
         src = next(self._blank_test_files)
         with _audio_file_copy(src) as test_file:
-            audio_file_instance = audiofile.AudioFile.open(test_file.name)
+            audio_file_instance = audiofile.TagGateway.open(test_file.name)
         # noinspection protocol
-        assert isinstance(audio_file_instance, TagGatewayP), "AudioFile does not implement TagGatewayP."
+        assert isinstance(audio_file_instance, TagGatewayP), "TagGateway does not implement TagGatewayP."
 
     def test__no_changes_rw(self, test_data: Generator[None]) -> None:
         """Verify that a read/write cycle doesn't change any tags."""
@@ -104,7 +104,7 @@ class TestAudioFile:
         extensions = (".flac", ".m4a", ".mp3")
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
-                f = audiofile.AudioFile.open(test_file.name)
+                f = audiofile.TagGateway.open(test_file.name)
                 before = dict(f._mut_file.tags or {})
                 f.write_tags()
                 after = dict(f._mut_file.tags or {})
@@ -126,12 +126,12 @@ class TestAudioFile:
         blank_info = release.OneTrack()
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
-                f = audiofile.AudioFile.open(test_file.name)
+                f = audiofile.TagGateway.open(test_file.name)
                 f.one_track = blank_info
                 f.write_tags()
                 info = f.read_tags()
                 assert info == blank_info, f"Blank file modified for {src.suffix}"
-                assert f.__repr__().startswith("AudioFile: /")
+                assert f.__repr__().startswith("TagGateway: /")
 
     def test__no_changes_wr(self, test_data: Generator[None]) -> None:
         """Verify that a write/read cycle doesn't change any tags."""
@@ -195,7 +195,7 @@ class TestAudioFile:
         )
         for src in self._blank_test_files:
             with _audio_file_copy(src) as test_file:
-                f = audiofile.AudioFile.open(test_file.name)
+                f = audiofile.TagGateway.open(test_file.name)
                 f._one_track = info
                 f.write_tags()
                 old_info = copy.deepcopy(info)
@@ -208,18 +208,18 @@ class TestAudioFile:
 
 
 class TestAudioFileMisc:
-    """Test AudioFile miscellaneous functions."""
+    """Test TagGateway miscellaneous functions."""
 
     def test__file_not_found(self) -> None:
         """Test file-not-found."""
         with pytest.raises(FileNotFoundError):
-            audiofile.AudioFile.open("your_mom_goes_to_college.mp3")
+            audiofile.TagGateway.open("your_mom_goes_to_college.mp3")
 
     def test__file_not_supported(self) -> None:
         """Test file-not-supported."""
         with pytest.raises(NotImplementedError):
             # The current file should always be around, and never be an audio file.
-            audiofile.AudioFile.open(__file__)
+            audiofile.TagGateway.open(__file__)
 
 
 def _audio_file_copy(src_filepath: pathlib.Path) -> contextlib.closing[Any]:

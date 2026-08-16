@@ -26,10 +26,13 @@ from audiolibrarian import (
     musicbrainz,
     sh,
 )
+from audiolibrarian.application.ports.tag_gateway import TagGatewayP
 from audiolibrarian.common import text, user_input
 from audiolibrarian.domain.model import release, values
 from audiolibrarian.domain.services import library_layout
-from audiolibrarian.infrastructure.normalizers._normalizer import Normalizer
+from audiolibrarian.infrastructure import tags
+from audiolibrarian.infrastructure.normalizers.normalizer import Normalizer
+from audiolibrarian.infrastructure.tags import tag_gateway
 
 if TYPE_CHECKING:
     from audiolibrarian.domain.model.medium import Medium
@@ -325,7 +328,7 @@ class Base:
     def _tag_files(self, filenames: list[pathlib.Path]) -> None:
         """Tag the given list of files."""
         for filename in filenames:
-            song = audiofile.AudioFile.open(filename)
+            song = tags.create_tag_gateway(filename)
             song.one_track = release.OneTrack(
                 release=self._release,
                 medium_position=values.MediumPosition(number=self._disc_number, count=self._disc_count),
@@ -384,20 +387,20 @@ class Base:
         print(f"Wrote {manifest_path}")
 
     @staticmethod
-    def _find_audio_files(directories: list[str | pathlib.Path]) -> Iterable[audiofile.AudioFile]:
+    def _find_audio_files(directories: list[str | pathlib.Path]) -> Iterable[TagGatewayP]:
         """Yield audiofile objects found in the given directories."""
         paths: list[pathlib.Path] = []
         # Grab all the paths first because thing may change as files are renamed.
         for directory in directories:
             path = pathlib.Path(directory)
-            for ext in audiofile.AudioFile.extensions():
+            for ext in tag_gateway.TagGateway.extensions():
                 paths.extend(path.rglob(f"*{ext}"))
         paths = sorted(set(paths))
         # Using yield rather than returning a list saves us from simultaneously storing
-        # potentially thousands of AudioFile objects in memory at the same time.
+        # potentially thousands of TagGateway objects in memory at the same time.
         for path in paths:
             try:
-                yield audiofile.AudioFile.open(path)
+                yield tags.create_tag_gateway(path)
             except FileNotFoundError:
                 continue
 

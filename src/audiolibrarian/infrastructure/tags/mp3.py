@@ -1,7 +1,7 @@
 #  Copyright (C) 2020-2025 Stephen T. Jibson.
 #  SPDX-License-Identifier: GPL-3.0-only
 
-"""AudioFile support for mp3 files."""
+"""TagGateway support for mp3 files."""
 
 from typing import Any, no_type_check
 
@@ -9,11 +9,11 @@ import attrs
 import mutagen
 import mutagen.id3
 
-from audiolibrarian import audiofile
 from audiolibrarian.domain.model import enums, release, values
 from audiolibrarian.domain.model.medium import Medium
 from audiolibrarian.domain.model.record import ListF
 from audiolibrarian.domain.model.track import Track
+from audiolibrarian.infrastructure.tags import tag_gateway
 
 APIC = mutagen.id3.APIC
 TXXX = mutagen.id3.TXXX
@@ -21,8 +21,8 @@ UFID = mutagen.id3.UFID
 MB_UFID = "http://musicbrainz.org"
 
 
-class Mp3File(audiofile.AudioFile, extensions={".mp3"}):
-    """AudioFile for MP3 files."""
+class Mp3TagGateway(tag_gateway.TagGateway, extensions={".mp3"}):
+    """TagGateway for MP3 files."""
 
     @no_type_check  # The mutagen library doesn't provide type hints.
     def read_tags(self) -> release.OneTrack:

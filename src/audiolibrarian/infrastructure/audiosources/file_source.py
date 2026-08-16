@@ -10,8 +10,9 @@ import shutil
 import subprocess
 from typing import TYPE_CHECKING
 
-from audiolibrarian import audiofile, sh
+from audiolibrarian import sh
 from audiolibrarian.common import text
+from audiolibrarian.infrastructure import tags
 from audiolibrarian.infrastructure.audiosources._audiosource import AudioSource
 
 if TYPE_CHECKING:
@@ -42,7 +43,7 @@ class FilesAudioSource(AudioSource):
     def get_front_cover(self) -> values.FrontCover | None:
         """Return a FrontCover record or None."""
         for filename in self._filenames:
-            one_track = audiofile.AudioFile.open(filename).one_track
+            one_track = tags.create_tag_gateway(filename).one_track
             release = one_track.release
             if release.front_cover:
                 return release.front_cover
@@ -51,7 +52,7 @@ class FilesAudioSource(AudioSource):
     def get_search_data(self) -> dict[str, str]:
         """Return a dictionary of search data useful for doing a MusicBrainz search."""
         for filename in self._filenames:
-            one_track = audiofile.AudioFile.open(filename).one_track
+            one_track = tags.create_tag_gateway(filename).one_track
             release = one_track.release
             track = one_track.track
 

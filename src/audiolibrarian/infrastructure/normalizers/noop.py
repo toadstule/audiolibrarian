@@ -7,7 +7,7 @@ import logging
 import pathlib
 
 from audiolibrarian import config
-from audiolibrarian.infrastructure.normalizers._normalizer import Normalizer
+from audiolibrarian.infrastructure.normalizers.normalizer import Normalizer
 
 log = logging.getLogger(__name__)
 

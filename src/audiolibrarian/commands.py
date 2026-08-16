@@ -9,8 +9,9 @@ import pathlib
 import re
 from typing import Any
 
-from audiolibrarian import __version__, audiofile, base, config, genremanager
+from audiolibrarian import __version__, base, config, genremanager
 from audiolibrarian.domain.services import library_layout
+from audiolibrarian.infrastructure import tags
 from audiolibrarian.infrastructure.audiosources.cd_source import CDAudioSource
 from audiolibrarian.infrastructure.audiosources.file_source import FilesAudioSource
 
@@ -130,7 +131,7 @@ class Manifest(_Command, base.Base):
         self._source_is_cd = args.cd
         self._audio_source = FilesAudioSource([pathlib.Path(x) for x in args.filename])
         source_filenames = self._audio_source.get_source_filenames()
-        self._source_example = audiofile.AudioFile.open(source_filenames[0]).read_tags()
+        self._source_example = tags.create_tag_gateway(source_filenames[0]).read_tags()
         self._get_tag_info()
         self._write_manifest()
 

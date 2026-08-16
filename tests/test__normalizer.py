@@ -12,9 +12,9 @@ import pytest_mock
 from _pytest.monkeypatch import MonkeyPatch
 
 from audiolibrarian import config
-from audiolibrarian.infrastructure.normalizers._normalizer import Normalizer
 from audiolibrarian.infrastructure.normalizers.ffmpeg import FFmpegNormalizer
 from audiolibrarian.infrastructure.normalizers.noop import NoOpNormalizer
+from audiolibrarian.infrastructure.normalizers.normalizer import Normalizer
 from audiolibrarian.infrastructure.normalizers.wavegain import WaveGainNormalizer
 
 

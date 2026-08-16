@@ -17,7 +17,7 @@ class TagGatewayP(Protocol):
     one_track: release.OneTrack
 
     @classmethod
-    def open(cls, filename: str | pathlib.Path) -> Self:
+    def factory(cls, filename: str | pathlib.Path) -> Self:
         """Construct a TagGateway instance (factory method)."""
         ...
 

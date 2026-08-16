@@ -1,7 +1,7 @@
 #  Copyright (C) 2020-2025 Stephen T. Jibson.
 #  SPDX-License-Identifier: GPL-3.0-only
 
-"""AudioFile support for m4a files."""
+"""TagGateway support for m4a files."""
 
 from logging import getLogger
 from typing import Any
@@ -13,13 +13,14 @@ from audiolibrarian import audiofile
 from audiolibrarian.domain.model import enums, record, release, values
 from audiolibrarian.domain.model.medium import Medium
 from audiolibrarian.domain.model.track import Track
+from audiolibrarian.infrastructure.tags import tag_gateway
 
 log = getLogger(__name__)
 ITUNES = "----:com.apple.iTunes"
 
 
-class M4aFile(audiofile.AudioFile, extensions={".m4a"}):
-    """AudioFile for M4A files."""
+class M4aTagGateway(tag_gateway.TagGateway, extensions={".m4a"}):
+    """TagGateway for M4A files."""
 
     def read_tags(self) -> release.OneTrack:
         """Read the tags and return a OneTrack object."""

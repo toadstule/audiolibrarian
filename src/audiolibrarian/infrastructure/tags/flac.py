@@ -1,7 +1,7 @@
 #  Copyright (C) 2020-2025 Stephen T. Jibson.
 #  SPDX-License-Identifier: GPL-3.0-only
 
-"""AudioFile support for flac files."""
+"""TagGateway support for flac files."""
 
 import re
 from typing import Any
@@ -15,10 +15,11 @@ from audiolibrarian.domain.model.medium import Medium
 from audiolibrarian.domain.model.record import ListF
 from audiolibrarian.domain.model.release import Release
 from audiolibrarian.domain.model.track import Track
+from audiolibrarian.infrastructure.tags import tag_gateway
 
 
-class FlacFile(audiofile.AudioFile, extensions={".flac"}):
-    """AudioFile for Flac files."""
+class FlacTagGateway(tag_gateway.TagGateway, extensions={".flac"}):
+    """TagGateway for Flac files."""
 
     def read_tags(self) -> release.OneTrack:
         """Read the tags and return a OneTrack object."""

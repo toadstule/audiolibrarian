@@ -117,7 +117,7 @@ src/audiolibrarian/
     ports/              # interfaces the core needs (abstractions it OWNS)
       metadata_provider.py
       audio_source.py
-      tag_gateway.py       # read/write tags (today's AudioFile ABC)
+      tag_gateway.py       # read/write tags (today's TagGateway ABC)
       encoder.py
       normalizer.py
       library_repository.py
@@ -234,7 +234,7 @@ src/audiolibrarian/
 - **`TagGateway`**
   - Methods: `read(path) -> OneTrack`, `write(path, one_track)`
   - Adapters: FLAC/M4A/MP3
-  - Source today: today's `AudioFile` ABC
+  - Source today: today's `TagGateway` ABC
 
 - **`Encoder`**
   - Methods: `encode(wavs, fmt, dest)`
@@ -408,7 +408,7 @@ current behavior isn't already covered.
 ### Phase 2: Declare the Ports; Reclassify Accidental Ports as Adapters
 
 - Create the `application/ports/*` interfaces
-- Move `AudioSource`, `AudioFile`→`TagGateway`, `Normalizer` under the new port
+- Move `AudioSource`, `TagGateway`→`TagGateway`, `Normalizer` under the new port
   definitions
 - The ABCs become the ports; concrete classes move to `infrastructure/` as adapters
 - **Why now**: With a clean domain, we can express what the core needs as interfaces

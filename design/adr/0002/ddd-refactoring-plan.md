@@ -75,7 +75,7 @@ src/audiolibrarian/application/
 │   ├── __init__.py
 │   ├── metadata_provider.py
 │   ├── audio_source.py
-│   ├── tag_gateway.py       # read/write tags (today's AudioFile ABC)
+│   ├── tag_gateway.py       # read/write tags (today's TagGateway ABC)
 │   ├── encoder.py
 │   ├── normalizer.py
 │   ├── library_repository.py
@@ -391,7 +391,7 @@ Phase 1.1 revision.)
 - Convert the two genuine mutation sites to `attrs.evolve`:
   - `_audiosource.py` front-cover backfill →
     `self._release = attrs.evolve(self._release, front_cover=cover)`.
-    This matters: the same `_release` instance is aliased across every `AudioFile` in the
+    This matters: the same `_release` instance is aliased across every `TagGateway` in the
     album via `Base._tag_files`.
   - `flac.py` / `m4a.py` / `mp3.py` `release_obj.source = Source.TAGS` → `attrs.evolve`
     **after** the `Release(...) or None` truthiness check. Passing `source=` into the
@@ -554,15 +554,15 @@ rules that are duplicated and disagreeing.
 - Create the `application/ports/*` interfaces:
   - `metadata_provider.py` - MetadataProvider port
   - `audio_source.py` - AudioSource port (today's ABC becomes the interface)
-  - `tag_gateway.py` - TagGateway port (today's AudioFile ABC)
+  - `tag_gateway.py` - TagGateway port (today's TagGateway ABC)
   - `encoder.py` - Encoder port
-  - `_normalizer.py` - Normalizer port (today's ABC)
+  - `normalizer.py` - Normalizer port (today's ABC)
   - `library_repository.py` - LibraryRepository port
   - `user_interface.py` - UserInterface port
 - Move existing ABCs to become the port interfaces
 - Move concrete implementations to `infrastructure/` as adapters:
   - `CDAudioSource`, `FilesAudioSource` → `infrastructure/audiosources/`
-  - `AudioFile` subclasses → `infrastructure/tags/`
+  - `TagGateway` subclasses → `infrastructure/tags/`
   - `Normalizer` subclasses → `infrastructure/normalizers/`
 - Update imports throughout codebase:
   - Search for imports of moved ABCs (e.g.,

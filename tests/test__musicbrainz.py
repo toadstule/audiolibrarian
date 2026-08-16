@@ -73,7 +73,7 @@ class TestMusicBrainzRelease:
         extensions = (".flac", ".m4a", ".mp3")
         for src in [p.resolve() for p in test_data_path.glob("*") if p.suffix in extensions]:
             with _audio_file_copy(src) as test_file:
-                f = audiofile.AudioFile.open(test_file.name)
+                f = audiofile.TagGateway.open(test_file.name)
                 if (expected := f._one_track.release) is None:
                     # Blank tags in audio file.
                     continue
